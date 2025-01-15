@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -99,8 +99,8 @@ const NewGame = () => {
     }
   };
 
-  // Fetch players when component mounts
-  useState(() => {
+  // Changed from useState to useEffect
+  useEffect(() => {
     fetchPlayers();
   }, []);
 
