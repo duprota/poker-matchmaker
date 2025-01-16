@@ -1,33 +1,89 @@
+import { useEffect, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Game {
-  id: number;
+  id: string;
   date: string;
-  players: string[];
-  buyIn: number;
-  status: "ongoing" | "completed";
+  status: string;
+  players: {
+    name: string;
+    initial_buyin: number;
+  }[];
 }
 
 const Games = () => {
-  const games: Game[] = [
-    {
-      id: 1,
-      date: "2024-01-20",
-      players: ["John", "Mike", "Sarah"],
-      buyIn: 100,
-      status: "completed",
-    },
-    {
-      id: 2,
-      date: "2024-01-27",
-      players: ["John", "Mike", "Sarah", "Tom"],
-      buyIn: 100,
-      status: "ongoing",
-    },
-  ];
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        console.log("Fetching games...");
+        const { data: gamesData, error: gamesError } = await supabase
+          .from("games")
+          .select("*")
+          .order("date", { ascending: false });
+
+        if (gamesError) throw gamesError;
+
+        // For each game, fetch its players
+        const gamesWithPlayers = await Promise.all(
+          gamesData.map(async (game) => {
+            const { data: playersData, error: playersError } = await supabase
+              .from("game_players")
+              .select(`
+                initial_buyin,
+                player:players (
+                  name
+                )
+              `)
+              .eq("game_id", game.id);
+
+            if (playersError) throw playersError;
+
+            return {
+              ...game,
+              players: playersData.map((p) => ({
+                name: p.player.name,
+                initial_buyin: p.initial_buyin,
+              })),
+            };
+          })
+        );
+
+        console.log("Games with players:", gamesWithPlayers);
+        setGames(gamesWithPlayers);
+      } catch (error) {
+        console.error("Error fetching games:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load games",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGames();
+  }, [toast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto py-8">
+          <p className="text-white">Loading games...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,19 +101,22 @@ const Games = () => {
             <Card key={game.id} className="p-4">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold">Game #{game.id}</h3>
-                  <p className="text-gray-600">{game.date}</p>
+                  <h3 className="text-xl font-semibold">Game Details</h3>
+                  <p className="text-gray-600">{new Date(game.date).toLocaleDateString()}</p>
                 </div>
-                <span className={`px-2 py-1 rounded text-sm ${
-                  game.status === "ongoing" 
-                    ? "bg-yellow-200 text-yellow-800" 
-                    : "bg-green-200 text-green-800"
-                }`}>
+                <span
+                  className={`px-2 py-1 rounded text-sm ${
+                    game.status === "ongoing"
+                      ? "bg-yellow-200 text-yellow-800"
+                      : "bg-green-200 text-green-800"
+                  }`}
+                >
                   {game.status}
                 </span>
               </div>
-              <p className="text-gray-600 mb-2">Buy-in: ${game.buyIn}</p>
-              <p className="text-gray-600 mb-4">Players: {game.players.join(", ")}</p>
+              <p className="text-gray-600 mb-4">
+                Players: {game.players.map((p) => p.name).join(", ")}
+              </p>
               <Button asChild variant="secondary" className="w-full">
                 <Link to={`/games/${game.id}`}>View Details</Link>
               </Button>
