@@ -2,29 +2,91 @@ import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
-interface Player {
-  id: number;
-  name: string;
-  totalGames: number;
-  totalWinnings: number;
-}
+type Player = Tables<"players">;
 
 const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerEmail, setNewPlayerEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const addPlayer = () => {
-    if (newPlayerName.trim()) {
-      const newPlayer: Player = {
-        id: players.length + 1,
-        name: newPlayerName.trim(),
-        totalGames: 0,
-        totalWinnings: 0,
-      };
-      setPlayers([...players, newPlayer]);
+  // Fetch players on component mount
+  useEffect(() => {
+    fetchPlayers();
+  }, []);
+
+  const fetchPlayers = async () => {
+    try {
+      console.log("Fetching players...");
+      const { data, error } = await supabase.from("players").select("*");
+      
+      if (error) {
+        throw error;
+      }
+
+      console.log("Players fetched:", data);
+      setPlayers(data || []);
+    } catch (error) {
+      console.error("Error fetching players:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load players",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addPlayer = async () => {
+    if (!newPlayerName.trim() || !newPlayerEmail.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide both name and email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log("Adding new player:", { name: newPlayerName, email: newPlayerEmail });
+      const { data, error } = await supabase
+        .from("players")
+        .insert([
+          {
+            name: newPlayerName.trim(),
+            email: newPlayerEmail.trim(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      console.log("Player added successfully:", data);
+      setPlayers([...players, data]);
       setNewPlayerName("");
+      setNewPlayerEmail("");
+      toast({
+        title: "Success",
+        description: "Player added successfully",
+      });
+    } catch (error) {
+      console.error("Error adding player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add player",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,24 +96,37 @@ const Players = () => {
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold text-white mb-6">Players</h1>
         
-        <div className="flex gap-4 mb-8">
-          <Input
-            placeholder="Player name"
-            value={newPlayerName}
-            onChange={(e) => setNewPlayerName(e.target.value)}
-            className="max-w-xs"
-          />
-          <Button onClick={addPlayer}>Add Player</Button>
-        </div>
+        <Card className="p-6 mb-8">
+          <div className="flex flex-col gap-4">
+            <div>
+              <Input
+                placeholder="Player name"
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                className="mb-2"
+              />
+              <Input
+                placeholder="Player email"
+                type="email"
+                value={newPlayerEmail}
+                onChange={(e) => setNewPlayerEmail(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={addPlayer} 
+              disabled={loading}
+              className="w-full md:w-auto"
+            >
+              {loading ? "Adding..." : "Add Player"}
+            </Button>
+          </div>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {players.map((player) => (
             <Card key={player.id} className="p-4">
               <h3 className="text-xl font-semibold mb-2">{player.name}</h3>
-              <p className="text-gray-600">Games played: {player.totalGames}</p>
-              <p className="text-gray-600">
-                Total winnings: ${player.totalWinnings.toFixed(2)}
-              </p>
+              <p className="text-gray-500 dark:text-gray-400">{player.email}</p>
             </Card>
           ))}
         </div>
