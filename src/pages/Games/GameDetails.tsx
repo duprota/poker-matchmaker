@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface GamePlayer {
   id: string;
@@ -196,6 +204,13 @@ const GameDetails = () => {
     }
   };
 
+  const calculateFinalResult = (player: GamePlayer) => {
+    const finalSum = player.final_result || 0;
+    const buyIn = player.initial_buyin || 0;
+    const rebuys = player.total_rebuys || 0;
+    return finalSum - buyIn - (rebuys * buyIn);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -297,14 +312,30 @@ const GameDetails = () => {
           {game.status === "completed" && (
             <div>
               <h2 className="text-xl font-semibold mb-4">Final Results</h2>
-              <div className="grid gap-4">
-                {game.players.map((gamePlayer) => (
-                  <div key={gamePlayer.id} className="flex justify-between items-center">
-                    <span>{gamePlayer.player.name}</span>
-                    <span>Final Result: ${gamePlayer.final_result || 0}</span>
-                  </div>
-                ))}
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player Name</TableHead>
+                    <TableHead className="text-right">Buy In</TableHead>
+                    <TableHead className="text-right">Rebuys</TableHead>
+                    <TableHead className="text-right">Final Sum</TableHead>
+                    <TableHead className="text-right">Final Result</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {game.players.map((gamePlayer) => (
+                    <TableRow key={gamePlayer.id}>
+                      <TableCell>{gamePlayer.player.name}</TableCell>
+                      <TableCell className="text-right">${gamePlayer.initial_buyin}</TableCell>
+                      <TableCell className="text-right">${gamePlayer.total_rebuys * gamePlayer.initial_buyin}</TableCell>
+                      <TableCell className="text-right">${gamePlayer.final_result || 0}</TableCell>
+                      <TableCell className={`text-right ${calculateFinalResult(gamePlayer) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        ${calculateFinalResult(gamePlayer)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </Card>
