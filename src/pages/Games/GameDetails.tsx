@@ -13,7 +13,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface GamePlayer {
   id: string;
@@ -46,6 +48,7 @@ const GameDetails = () => {
   // Track rebuys and results for each player
   const [rebuys, setRebuys] = useState<Record<string, number>>({});
   const [results, setResults] = useState<Record<string, number>>({});
+  const [hasBalanceError, setHasBalanceError] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -92,6 +95,11 @@ const GameDetails = () => {
           ...gameData,
           players: playersData,
         });
+
+        // Check balance when game is loaded
+        if (gameData.status === 'completed') {
+          checkBalance(playersData);
+        }
       } catch (error) {
         console.error("Error fetching game:", error);
         toast({
@@ -121,6 +129,20 @@ const GameDetails = () => {
       ...prev,
       [playerId]: parseInt(value) || 0
     }));
+  };
+
+  const checkBalance = (players: GamePlayer[]) => {
+    const totalBuyInsAndRebuys = players.reduce((acc, player) => {
+      return acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin);
+    }, 0);
+
+    const totalResults = players.reduce((acc, player) => {
+      return acc + (player.final_result || 0);
+    }, 0);
+
+    const hasError = totalBuyInsAndRebuys !== totalResults;
+    setHasBalanceError(hasError);
+    return hasError;
   };
 
   const saveRebuys = async () => {
@@ -153,6 +175,21 @@ const GameDetails = () => {
   const saveResults = async () => {
     setSavingResults(true);
     try {
+      // Check if results balance before saving
+      const updatedPlayers = game!.players.map(player => ({
+        ...player,
+        final_result: results[player.id] || 0
+      }));
+      
+      if (checkBalance(updatedPlayers)) {
+        toast({
+          title: "Error",
+          description: "The sum of final results must equal the total buy-ins and rebuys",
+          variant: "destructive",
+        });
+        return;
+      }
+
       for (const [playerId, result] of Object.entries(results)) {
         const { error } = await supabase
           .from("game_players")
@@ -180,6 +217,16 @@ const GameDetails = () => {
   const finalizeGame = async () => {
     setFinalizing(true);
     try {
+      // Check if results balance before finalizing
+      if (checkBalance(game!.players)) {
+        toast({
+          title: "Error",
+          description: "Cannot finalize game: The sum of final results must equal the total buy-ins and rebuys",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("games")
         .update({ status: "completed" })
@@ -233,6 +280,24 @@ const GameDetails = () => {
     );
   }
 
+  const calculateTotals = () => {
+    const totals = {
+      buyIns: 0,
+      rebuys: 0,
+      finalSum: 0,
+      finalResult: 0
+    };
+
+    game.players.forEach(player => {
+      totals.buyIns += player.initial_buyin;
+      totals.rebuys += player.total_rebuys * player.initial_buyin;
+      totals.finalSum += player.final_result || 0;
+      totals.finalResult += calculateFinalResult(player);
+    });
+
+    return totals;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -256,6 +321,15 @@ const GameDetails = () => {
             <p>Date: {new Date(game.date).toLocaleDateString()}</p>
             <p>Status: {game.status}</p>
           </div>
+
+          {hasBalanceError && game.status === 'completed' && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>
+                Warning: The sum of final results does not match the total buy-ins and rebuys. 
+                Please update the results to ensure they balance.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {game.status === "ongoing" && (
             <div className="space-y-6">
@@ -335,6 +409,15 @@ const GameDetails = () => {
                     </TableRow>
                   ))}
                 </TableBody>
+                <TableFooter>
+                  <TableRow className="border-t-2">
+                    <TableCell>Totals</TableCell>
+                    <TableCell className="text-right">${calculateTotals().buyIns}</TableCell>
+                    <TableCell className="text-right">${calculateTotals().rebuys}</TableCell>
+                    <TableCell className="text-right">${calculateTotals().finalSum}</TableCell>
+                    <TableCell className="text-right">${calculateTotals().finalResult}</TableCell>
+                  </TableRow>
+                </TableFooter>
               </Table>
             </div>
           )}
