@@ -14,7 +14,7 @@ interface GameHistoryEntry {
   event_type: 'rebuy' | 'result_update';
   amount: number;
   created_at: string;
-  game_player: {
+  game_players: {
     player: {
       name: string;
     };
@@ -40,7 +40,7 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
             event_type,
             amount,
             created_at,
-            game_player!inner (
+            game_players!inner (
               player!inner (
                 name
               )
@@ -85,7 +85,7 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
                 {new Date(entry.created_at).toLocaleString()}
               </TableCell>
               <TableCell>
-                {entry.game_player?.player?.name || 'Unknown Player'}
+                {entry.game_players?.player?.name || 'Unknown Player'}
               </TableCell>
               <TableCell>
                 {entry.event_type === 'rebuy' ? 'Rebuy' : 'Result Update'}
