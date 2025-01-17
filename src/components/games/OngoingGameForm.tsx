@@ -22,6 +22,7 @@ interface OngoingGameFormProps {
   onSaveResults: () => void;
   savingRebuys: boolean;
   savingResults: boolean;
+  setRebuys: (rebuys: Record<string, number>) => void;
 }
 
 export const OngoingGameForm = ({
@@ -34,7 +35,14 @@ export const OngoingGameForm = ({
   onSaveResults,
   savingRebuys,
   savingResults,
+  setRebuys,
 }: OngoingGameFormProps) => {
+  const handleSaveRebuys = () => {
+    onSaveRebuys();
+    // Reset rebuys after saving
+    setRebuys({});
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -53,7 +61,7 @@ export const OngoingGameForm = ({
           ))}
         </div>
         <Button 
-          onClick={onSaveRebuys} 
+          onClick={handleSaveRebuys} 
           disabled={savingRebuys}
           className="w-full md:w-auto"
         >

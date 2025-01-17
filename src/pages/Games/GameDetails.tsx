@@ -59,12 +59,11 @@ const GameDetails = () => {
 
         if (error) throw error;
 
-        // Record the rebuy in game history using the game_player ID
         const { error: historyError } = await supabase
           .from("game_history")
           .insert({
             game_id: id,
-            game_player_id: playerId, // Link to game_player instead of player
+            game_player_id: playerId,
             event_type: 'rebuy',
             amount: rebuyAmount
           });
@@ -241,6 +240,7 @@ const GameDetails = () => {
               onSaveResults={saveResults}
               savingRebuys={savingRebuys}
               savingResults={savingResults}
+              setRebuys={setRebuys}
             />
           )}
 
