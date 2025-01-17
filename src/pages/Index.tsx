@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { AuthError, AuthApiError, Session } from '@supabase/supabase-js';
@@ -34,7 +34,7 @@ const Index = () => {
     return error.message;
   };
 
-  const fetchUserRole = useCallback(async (userId: string) => {
+  async function fetchUserRole(userId: string) {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -43,23 +43,17 @@ const Index = () => {
         .single();
 
       if (error) throw error;
-
-      setUserRole(data?.role || 'user');
+      return data?.role || 'user';
     } catch (error) {
       console.error('Error fetching user role:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch user role",
-        variant: "destructive",
-      });
+      return 'user';
     }
-  }, [toast]);
+  }
 
   useEffect(() => {
     let mounted = true;
 
-    // Initial session check
-    const initializeAuth = async () => {
+    async function initializeAuth() {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -71,44 +65,50 @@ const Index = () => {
           return;
         }
 
-        setSession(session);
         if (session?.user) {
-          await fetchUserRole(session.user.id);
+          const role = await fetchUserRole(session.user.id);
+          if (mounted) {
+            setSession(session);
+            setUserRole(role);
+          }
         }
       } catch (error) {
-        if (!mounted) return;
         console.error('Error during auth initialization:', error);
       } finally {
         if (mounted) {
           setIsLoading(false);
         }
       }
-    };
+    }
 
     initializeAuth();
 
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', { event, session });
-      
       if (!mounted) return;
+      
+      console.log('Auth state changed:', event, session);
 
       switch (event) {
         case 'SIGNED_IN':
-          setAuthError(null);
-          setSession(session);
           if (session?.user) {
-            await fetchUserRole(session.user.id);
+            const role = await fetchUserRole(session.user.id);
+            if (mounted) {
+              setAuthError(null);
+              setSession(session);
+              setUserRole(role);
+              toast({
+                title: "Welcome!",
+                description: "You've successfully signed in.",
+              });
+            }
           }
-          toast({
-            title: "Welcome!",
-            description: "You've successfully signed in.",
-          });
           break;
         case 'SIGNED_OUT':
-          setAuthError(null);
-          setSession(null);
-          setUserRole(null);
+          if (mounted) {
+            setAuthError(null);
+            setSession(null);
+            setUserRole(null);
+          }
           break;
         case 'USER_UPDATED':
           if (session?.user.email_confirmed_at) {
@@ -122,7 +122,7 @@ const Index = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchUserRole]); // Add fetchUserRole to dependencies
+  }, []); // Empty dependency array since all functions are now stable
 
   const handlePromoteToManager = async () => {
     try {
