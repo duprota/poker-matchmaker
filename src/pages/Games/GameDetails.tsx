@@ -64,7 +64,7 @@ const GameDetails = () => {
           .from("game_history")
           .insert({
             game_id: id,
-            player_id: gamePlayer.player_id,
+            player_id: gamePlayer.player.id, // Fixed: Using player.id instead of player_id
             event_type: 'rebuy',
             amount: rebuyAmount
           });
@@ -125,7 +125,7 @@ const GameDetails = () => {
           .from("game_history")
           .insert({
             game_id: id,
-            player_id: gamePlayer.player_id,
+            player_id: gamePlayer.player.id, // Fixed: Using player.id instead of player_id
             event_type: 'result_update',
             amount: result
           });
