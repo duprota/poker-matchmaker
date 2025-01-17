@@ -12,12 +12,15 @@ const Index = () => {
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
+      console.log("Fetching dashboard stats...");
       const [gamesCount, playersCount, lastGame, topProfit] = await Promise.all([
         supabase.from('games').select('id', { count: 'exact' }),
         supabase.from('players').select('id', { count: 'exact' }),
         supabase.from('games').select('date').order('date', { ascending: false }).limit(1),
         supabase.from('game_players').select('final_result').order('final_result', { ascending: false }).limit(1)
       ]);
+      
+      console.log("Stats results:", { gamesCount, playersCount, lastGame, topProfit });
       
       return {
         gamesCount: gamesCount.count || 0,
@@ -28,26 +31,33 @@ const Index = () => {
     }
   });
 
-  // Fetch recent games
+  // Fetch recent games with nested player data
   const { data: recentGames } = useQuery({
     queryKey: ['recent-games'],
     queryFn: async () => {
-      const { data } = await supabase
+      console.log("Fetching recent games...");
+      const { data, error } = await supabase
         .from('games')
         .select(`
           id,
           name,
           date,
           game_players (
-            player_id,
+            player:players (
+              name
+            ),
             final_result
-          ),
-          players (
-            name
           )
         `)
         .order('date', { ascending: false })
         .limit(3);
+
+      if (error) {
+        console.error("Error fetching recent games:", error);
+        throw error;
+      }
+
+      console.log("Recent games data:", data);
       return data;
     }
   });
@@ -134,6 +144,9 @@ const Index = () => {
                 <CardContent>
                   <div className="text-sm text-muted-foreground">
                     {format(new Date(game.date), 'PPp')}
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Players: {game.game_players.map(gp => gp.player.name).join(', ')}
                   </div>
                   <Link 
                     to={`/games/${game.id}`}
