@@ -30,6 +30,7 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
+        console.log("Fetching game history for game:", gameId);
         const { data, error } = await supabase
           .from('game_history')
           .select(`
@@ -45,6 +46,7 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        console.log("Game history data:", data);
         setHistory(data || []);
       } catch (error) {
         console.error('Error fetching game history:', error);
