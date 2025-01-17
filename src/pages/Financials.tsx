@@ -199,7 +199,6 @@ const Financials = () => {
         description: "The payment has been marked as paid successfully.",
       });
 
-      // Refresh the data
       queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
     } catch (error) {
       console.error('Error marking payment as paid:', error);
@@ -241,15 +240,19 @@ const Financials = () => {
     );
   }
 
+  const pendingTransactions = transactions?.filter(t => t.paymentStatus === 'pending') || [];
+  const paidTransactions = transactions?.filter(t => t.paymentStatus === 'paid') || [];
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold text-white mb-6">Historical Transactions</h1>
         
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Consolidated Debts</h2>
-          {transactions && transactions.length > 0 ? (
+        {/* Pending Transactions */}
+        <Card className="p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Pending Transactions</h2>
+          {pendingTransactions.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -262,7 +265,7 @@ const Financials = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction, index) => (
+                {pendingTransactions.map((transaction, index) => (
                   <TableRow key={index}>
                     <TableCell>{transaction.from}</TableCell>
                     <TableCell>{transaction.to}</TableCell>
@@ -278,15 +281,13 @@ const Financials = () => {
                     </TableCell>
                     <TableCell>{transaction.paymentStatus}</TableCell>
                     <TableCell>
-                      {transaction.paymentStatus === 'pending' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleMarkAsPaid(transaction.gamePlayerIds)}
-                        >
-                          Mark as Paid
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleMarkAsPaid(transaction.gamePlayerIds)}
+                      >
+                        Mark as Paid
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -294,7 +295,38 @@ const Financials = () => {
             </Table>
           ) : (
             <div className="text-center py-4 text-muted-foreground">
-              No consolidated debts to display.
+              No pending transactions to display.
+            </div>
+          )}
+        </Card>
+
+        {/* Paid Transactions History */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Payment History</h2>
+          {paidTransactions.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>From</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paidTransactions.map((transaction, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{transaction.from}</TableCell>
+                    <TableCell>{transaction.to}</TableCell>
+                    <TableCell className="text-right">${transaction.amount.toFixed(2)}</TableCell>
+                    <TableCell>{transaction.paymentStatus}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              No payment history to display.
             </div>
           )}
         </Card>
