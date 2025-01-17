@@ -8,6 +8,7 @@ import { GameHeader } from "@/components/games/GameHeader";
 import { GameInformation } from "@/components/games/GameInformation";
 import { OngoingGameForm } from "@/components/games/OngoingGameForm";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
+import { PaymentManagement } from "@/components/games/PaymentManagement";
 
 interface GamePlayer {
   id: string;
@@ -18,6 +19,8 @@ interface GamePlayer {
   initial_buyin: number;
   total_rebuys: number;
   final_result: number | null;
+  payment_status: string;
+  payment_amount: number;
 }
 
 interface Game {
@@ -60,6 +63,8 @@ const GameDetails = () => {
             initial_buyin,
             total_rebuys,
             final_result,
+            payment_status,
+            payment_amount,
             player:players (
               name,
               email
@@ -143,6 +148,44 @@ const GameDetails = () => {
       toast({
         title: "Error",
         description: "Failed to update result",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updatePaymentStatus = async (playerId: string, status: string) => {
+    try {
+      console.log(`Updating payment status for player ${playerId} to ${status}`);
+      
+      const { error } = await supabase
+        .from("game_players")
+        .update({ payment_status: status })
+        .eq("id", playerId);
+
+      if (error) throw error;
+
+      // Update local state
+      setGame(prevGame => {
+        if (!prevGame) return null;
+        return {
+          ...prevGame,
+          players: prevGame.players.map(player =>
+            player.id === playerId
+              ? { ...player, payment_status: status }
+              : player
+          )
+        };
+      });
+
+      toast({
+        title: "Success",
+        description: "Payment status updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update payment status",
         variant: "destructive",
       });
     }
@@ -376,12 +419,19 @@ const GameDetails = () => {
           )}
 
           {game.status === "completed" && (
-            <CompletedGameTable
-              players={game.players}
-              calculateFinalResult={calculateFinalResult}
-              totals={calculateTotals()}
-              onUpdateResults={updatePlayerResult}
-            />
+            <>
+              <CompletedGameTable
+                players={game.players}
+                calculateFinalResult={calculateFinalResult}
+                totals={calculateTotals()}
+                onUpdateResults={updatePlayerResult}
+              />
+              <PaymentManagement
+                players={game.players}
+                calculateFinalResult={calculateFinalResult}
+                onUpdatePaymentStatus={updatePaymentStatus}
+              />
+            </>
           )}
         </Card>
       </div>
