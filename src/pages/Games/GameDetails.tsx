@@ -2,20 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableFooter,
-} from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { GameHeader } from "@/components/games/GameHeader";
+import { GameInformation } from "@/components/games/GameInformation";
+import { OngoingGameForm } from "@/components/games/OngoingGameForm";
+import { CompletedGameTable } from "@/components/games/CompletedGameTable";
 
 interface GamePlayer {
   id: string;
@@ -45,7 +37,6 @@ const GameDetails = () => {
   const [finalizing, setFinalizing] = useState(false);
   const { toast } = useToast();
 
-  // Track rebuys and results for each player
   const [rebuys, setRebuys] = useState<Record<string, number>>({});
   const [results, setResults] = useState<Record<string, number>>({});
   const [hasBalanceError, setHasBalanceError] = useState(false);
@@ -81,7 +72,6 @@ const GameDetails = () => {
         console.log("Game data:", gameData);
         console.log("Players data:", playersData);
 
-        // Initialize rebuys and results state with current values
         const initialRebuys: Record<string, number> = {};
         const initialResults: Record<string, number> = {};
         playersData.forEach((player) => {
@@ -96,7 +86,6 @@ const GameDetails = () => {
           players: playersData,
         });
 
-        // Check balance when game is loaded
         if (gameData.status === 'completed') {
           checkBalance(playersData);
         }
@@ -175,7 +164,6 @@ const GameDetails = () => {
   const saveResults = async () => {
     setSavingResults(true);
     try {
-      // Check if results balance before saving
       const updatedPlayers = game!.players.map(player => ({
         ...player,
         final_result: results[player.id] || 0
@@ -217,7 +205,6 @@ const GameDetails = () => {
   const finalizeGame = async () => {
     setFinalizing(true);
     try {
-      // Check if results balance before finalizing
       if (checkBalance(game!.players)) {
         toast({
           title: "Error",
@@ -258,6 +245,24 @@ const GameDetails = () => {
     return finalSum - buyIn - (rebuys * buyIn);
   };
 
+  const calculateTotals = () => {
+    const totals = {
+      buyIns: 0,
+      rebuys: 0,
+      finalSum: 0,
+      finalResult: 0
+    };
+
+    game!.players.forEach(player => {
+      totals.buyIns += player.initial_buyin;
+      totals.rebuys += player.total_rebuys * player.initial_buyin;
+      totals.finalSum += player.final_result || 0;
+      totals.finalResult += calculateFinalResult(player);
+    });
+
+    return totals;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -280,146 +285,43 @@ const GameDetails = () => {
     );
   }
 
-  const calculateTotals = () => {
-    const totals = {
-      buyIns: 0,
-      rebuys: 0,
-      finalSum: 0,
-      finalResult: 0
-    };
-
-    game.players.forEach(player => {
-      totals.buyIns += player.initial_buyin;
-      totals.rebuys += player.total_rebuys * player.initial_buyin;
-      totals.finalSum += player.final_result || 0;
-      totals.finalResult += calculateFinalResult(player);
-    });
-
-    return totals;
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-white">Game Details</h1>
-          {game.status === "ongoing" && (
-            <Button 
-              onClick={finalizeGame} 
-              disabled={finalizing}
-              variant="destructive"
-            >
-              {finalizing ? "Finalizing..." : "Finalize Game"}
-            </Button>
-          )}
-        </div>
+        <GameHeader 
+          status={game.status}
+          onFinalize={finalizeGame}
+          finalizing={finalizing}
+        />
         
         <Card className="p-6 mb-6">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">Game Information</h2>
-            <p>Date: {new Date(game.date).toLocaleDateString()}</p>
-            <p>Status: {game.status}</p>
-          </div>
-
-          {hasBalanceError && game.status === 'completed' && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>
-                Warning: The sum of final results does not match the total buy-ins and rebuys. 
-                Please update the results to ensure they balance.
-              </AlertDescription>
-            </Alert>
-          )}
+          <GameInformation 
+            date={game.date}
+            status={game.status}
+            hasBalanceError={hasBalanceError}
+          />
 
           {game.status === "ongoing" && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Rebuys</h2>
-                <div className="grid gap-4 mb-4">
-                  {game.players.map((gamePlayer) => (
-                    <div key={gamePlayer.id} className="flex items-center gap-4">
-                      <span className="min-w-[150px]">{gamePlayer.player.name}</span>
-                      <Input
-                        type="number"
-                        value={rebuys[gamePlayer.id] || 0}
-                        onChange={(e) => handleRebuyChange(gamePlayer.id, e.target.value)}
-                        className="max-w-[120px]"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <Button 
-                  onClick={saveRebuys} 
-                  disabled={savingRebuys}
-                  className="w-full md:w-auto"
-                >
-                  {savingRebuys ? "Saving..." : "Save Rebuys"}
-                </Button>
-              </div>
-
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Final Results</h2>
-                <div className="grid gap-4 mb-4">
-                  {game.players.map((gamePlayer) => (
-                    <div key={gamePlayer.id} className="flex items-center gap-4">
-                      <span className="min-w-[150px]">{gamePlayer.player.name}</span>
-                      <Input
-                        type="number"
-                        value={results[gamePlayer.id] || 0}
-                        onChange={(e) => handleResultChange(gamePlayer.id, e.target.value)}
-                        className="max-w-[120px]"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <Button 
-                  onClick={saveResults} 
-                  disabled={savingResults}
-                  className="w-full md:w-auto"
-                >
-                  {savingResults ? "Saving..." : "Save Results"}
-                </Button>
-              </div>
-            </div>
+            <OngoingGameForm
+              players={game.players}
+              rebuys={rebuys}
+              results={results}
+              onRebuyChange={handleRebuyChange}
+              onResultChange={handleResultChange}
+              onSaveRebuys={saveRebuys}
+              onSaveResults={saveResults}
+              savingRebuys={savingRebuys}
+              savingResults={savingResults}
+            />
           )}
 
           {game.status === "completed" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Final Results</h2>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Player Name</TableHead>
-                    <TableHead className="text-right">Buy In</TableHead>
-                    <TableHead className="text-right">Rebuys</TableHead>
-                    <TableHead className="text-right">Final Sum</TableHead>
-                    <TableHead className="text-right">Final Result</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {game.players.map((gamePlayer) => (
-                    <TableRow key={gamePlayer.id}>
-                      <TableCell>{gamePlayer.player.name}</TableCell>
-                      <TableCell className="text-right">${gamePlayer.initial_buyin}</TableCell>
-                      <TableCell className="text-right">${gamePlayer.total_rebuys * gamePlayer.initial_buyin}</TableCell>
-                      <TableCell className="text-right">${gamePlayer.final_result || 0}</TableCell>
-                      <TableCell className={`text-right ${calculateFinalResult(gamePlayer) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        ${calculateFinalResult(gamePlayer)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow className="border-t-2">
-                    <TableCell>Totals</TableCell>
-                    <TableCell className="text-right">${calculateTotals().buyIns}</TableCell>
-                    <TableCell className="text-right">${calculateTotals().rebuys}</TableCell>
-                    <TableCell className="text-right">${calculateTotals().finalSum}</TableCell>
-                    <TableCell className="text-right">${calculateTotals().finalResult}</TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </div>
+            <CompletedGameTable
+              players={game.players}
+              calculateFinalResult={calculateFinalResult}
+              totals={calculateTotals()}
+            />
           )}
         </Card>
       </div>
