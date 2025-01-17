@@ -337,7 +337,11 @@ const GameDetails = () => {
 
   const totalBuyInsAndRebuys = calculateTotalBuyInsAndRebuys();
   const totalResults = calculateTotalResults();
-  const hasBalanceError = totalBuyInsAndRebuys !== totalResults;
+  
+  // Update hasBalanceError state whenever totals change
+  useEffect(() => {
+    setHasBalanceError(totalBuyInsAndRebuys !== totalResults);
+  }, [totalBuyInsAndRebuys, totalResults]);
 
   return (
     <div className="min-h-screen bg-background">
