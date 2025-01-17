@@ -1,50 +1,9 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Navigation = () => {
-  const [session, setSession] = useState(null);
-  const [userRole, setUserRole] = useState<'user' | 'manager' | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        fetchUserRole(session.user.id);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        fetchUserRole(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching user role:', error);
-      return;
-    }
-
-    setUserRole(data?.role || 'user');
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
+  const { session, handleSignOut } = useAuth();
 
   if (!session) return null;
 

@@ -8,17 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { AuthError, AuthApiError, Session } from '@supabase/supabase-js';
+import { AuthError, AuthApiError } from '@supabase/supabase-js';
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
-  const { toast } = useToast();
-  const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<'user' | 'manager' | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { session, userRole, handlePromoteToManager } = useAuth();
 
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
@@ -32,120 +27,6 @@ const Index = () => {
       }
     }
     return error.message;
-  };
-
-  async function fetchUserRole(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      return data?.role || 'user';
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-      return 'user';
-    }
-  }
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function initializeAuth() {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-
-        if (error) {
-          console.error('Error getting session:', error);
-          setAuthError(getErrorMessage(error));
-          return;
-        }
-
-        if (session?.user) {
-          const role = await fetchUserRole(session.user.id);
-          if (mounted) {
-            setSession(session);
-            setUserRole(role);
-          }
-        }
-      } catch (error) {
-        console.error('Error during auth initialization:', error);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      
-      console.log('Auth state changed:', event, session);
-
-      switch (event) {
-        case 'SIGNED_IN':
-          if (session?.user) {
-            const role = await fetchUserRole(session.user.id);
-            if (mounted) {
-              setAuthError(null);
-              setSession(session);
-              setUserRole(role);
-              toast({
-                title: "Welcome!",
-                description: "You've successfully signed in.",
-              });
-            }
-          }
-          break;
-        case 'SIGNED_OUT':
-          if (mounted) {
-            setAuthError(null);
-            setSession(null);
-            setUserRole(null);
-          }
-          break;
-        case 'USER_UPDATED':
-          if (session?.user.email_confirmed_at) {
-            setAuthError(null);
-          }
-          break;
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []); // Empty dependency array since all functions are now stable
-
-  const handlePromoteToManager = async () => {
-    try {
-      const { error } = await supabase.rpc('promote_to_manager', {
-        user_id: session?.user.id
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "You have been promoted to manager status!",
-      });
-      
-      setUserRole('manager');
-    } catch (error) {
-      console.error('Error promoting to manager:', error);
-      toast({
-        title: "Error",
-        description: "Failed to promote to manager status",
-        variant: "destructive",
-      });
-    }
   };
 
   const { data: stats } = useQuery({
@@ -202,14 +83,6 @@ const Index = () => {
     enabled: !!session
   });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   if (!session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -218,12 +91,6 @@ const Index = () => {
             <h1 className="text-3xl font-bold">Welcome to Poker Manager</h1>
             <p className="text-muted-foreground">Sign in to start managing your poker games</p>
           </div>
-          
-          {authError && (
-            <Alert variant="destructive">
-              <AlertDescription>{authError}</AlertDescription>
-            </Alert>
-          )}
 
           <Card>
             <CardContent className="pt-6">
