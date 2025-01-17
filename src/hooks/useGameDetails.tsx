@@ -9,68 +9,71 @@ export const useGameDetails = (gameId: string | undefined) => {
   const [hasBalanceError, setHasBalanceError] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchGame = async () => {
-      try {
-        console.log("Fetching game details for ID:", gameId);
-        const { data: gameData, error: gameError } = await supabase
-          .from("games")
-          .select("*")
-          .eq("id", gameId)
-          .single();
+  const fetchGame = async () => {
+    try {
+      console.log("Fetching game details for ID:", gameId);
+      const { data: gameData, error: gameError } = await supabase
+        .from("games")
+        .select("*")
+        .eq("id", gameId)
+        .single();
 
-        if (gameError) throw gameError;
+      if (gameError) throw gameError;
 
-        const { data: playersData, error: playersError } = await supabase
-          .from("game_players")
-          .select(`
+      const { data: playersData, error: playersError } = await supabase
+        .from("game_players")
+        .select(`
+          id,
+          game_id,
+          initial_buyin,
+          total_rebuys,
+          final_result,
+          payment_status,
+          payment_amount,
+          player:players (
             id,
-            initial_buyin,
-            total_rebuys,
-            final_result,
-            payment_status,
-            payment_amount,
-            player:players (
-              id,
-              name,
-              email
-            )
-          `)
-          .eq("game_id", gameId);
+            name,
+            email
+          )
+        `)
+        .eq("game_id", gameId);
 
-        if (playersError) throw playersError;
+      if (playersError) throw playersError;
 
-        console.log("Game data:", gameData);
-        console.log("Players data:", playersData);
+      console.log("Game data:", gameData);
+      console.log("Players data:", playersData);
 
-        setGame({
-          ...gameData,
-          players: playersData,
-        });
+      const gameWithPlayers: Game = {
+        ...gameData,
+        players: playersData as GamePlayer[],
+      };
 
-        // Check balance after setting game data
-        const totalBuyIns = playersData.reduce((acc, player) => 
-          acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
-        const totalResults = playersData.reduce((acc, player) => 
-          acc + (player.final_result || 0), 0);
-        setHasBalanceError(totalBuyIns !== totalResults);
+      setGame(gameWithPlayers);
 
-      } catch (error) {
-        console.error("Error fetching game:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load game details",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Check balance after setting game data
+      const totalBuyIns = playersData.reduce((acc, player) => 
+        acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
+      const totalResults = playersData.reduce((acc, player) => 
+        acc + (player.final_result || 0), 0);
+      setHasBalanceError(totalBuyIns !== totalResults);
 
+    } catch (error) {
+      console.error("Error fetching game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load game details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (gameId) {
       fetchGame();
     }
-  }, [gameId, toast]);
+  }, [gameId]);
 
   const updatePlayerResult = async (playerId: string, newResult: number) => {
     try {
@@ -152,6 +155,6 @@ export const useGameDetails = (gameId: string | undefined) => {
     hasBalanceError,
     updatePlayerResult,
     updatePaymentStatus,
-    setGame
+    refreshGame: fetchGame
   };
 };

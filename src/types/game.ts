@@ -1,11 +1,11 @@
 export interface GamePlayer {
   id: string;
+  game_id: string;
   player: {
     id: string;
     name: string;
     email: string;
   };
-  game_id: string;
   initial_buyin: number;
   total_rebuys: number;
   final_result: number | null;

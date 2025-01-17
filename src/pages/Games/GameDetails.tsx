@@ -10,6 +10,7 @@ import { CompletedGameTable } from "@/components/games/CompletedGameTable";
 import { PaymentManagement } from "@/components/games/PaymentManagement";
 import { GameHistory } from "@/components/games/GameHistory";
 import { TotalAmountsTable } from "@/components/games/TotalAmountsTable";
+import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
 import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult, calculateTotals } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +25,7 @@ const GameDetails = () => {
     hasBalanceError,
     updatePlayerResult,
     updatePaymentStatus,
+    refreshGame
   } = useGameDetails(id);
 
   const [savingRebuys, setSavingRebuys] = useState(false);
@@ -31,6 +33,7 @@ const GameDetails = () => {
   const [finalizing, setFinalizing] = useState(false);
   const [rebuys, setRebuys] = useState<Record<string, number>>({});
   const [results, setResults] = useState<Record<string, number>>({});
+  const [gameHistory, setGameHistory] = useState<any[]>([]);
 
   const handleRebuyChange = (playerId: string, value: string) => {
     setRebuys(prev => ({
@@ -191,9 +194,48 @@ const GameDetails = () => {
   const handleHistoryUpdate = () => {
     if (id) {
       console.log("Refreshing game details after history update");
-      fetchGame();
+      refreshGame();
     }
   };
+
+  // Fetch game history
+  const fetchGameHistory = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('game_history')
+        .select(`
+          id,
+          event_type,
+          amount,
+          created_at,
+          game_player_id,
+          game_players!fk_game_history_game_player (
+            player:players (
+              name
+            ),
+            total_rebuys
+          )
+        `)
+        .eq('game_id', id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setGameHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching game history:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load game history",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchGameHistory();
+  }, [id]);
 
   if (loading) {
     return (
@@ -279,6 +321,11 @@ const GameDetails = () => {
               onHistoryUpdate={handleHistoryUpdate}
             />
           </div>
+
+          <GameMoneyFlowChart 
+            players={game.players}
+            gameHistory={gameHistory}
+          />
         </Card>
       </div>
     </div>
