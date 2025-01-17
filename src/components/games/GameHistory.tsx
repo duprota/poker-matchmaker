@@ -41,7 +41,7 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
             amount,
             created_at,
             game_players!fk_game_history_game_player (
-              player!inner (
+              player:players (
                 name
               )
             )
