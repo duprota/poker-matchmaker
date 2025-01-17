@@ -4,9 +4,17 @@ interface GameInformationProps {
   date: string;
   status: string;
   hasBalanceError: boolean;
+  totalBuyInsAndRebuys: number;
+  totalResults: number;
 }
 
-export const GameInformation = ({ date, status, hasBalanceError }: GameInformationProps) => {
+export const GameInformation = ({ 
+  date, 
+  status, 
+  hasBalanceError,
+  totalBuyInsAndRebuys,
+  totalResults
+}: GameInformationProps) => {
   return (
     <>
       <div className="mb-4">
@@ -15,10 +23,11 @@ export const GameInformation = ({ date, status, hasBalanceError }: GameInformati
         <p>Status: {status}</p>
       </div>
 
-      {hasBalanceError && status === 'completed' && (
+      {hasBalanceError && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>
-            Warning: The sum of final results does not match the total buy-ins and rebuys. 
+            Warning: The sum of final results (${totalResults}) does not match the total buy-ins and rebuys (${totalBuyInsAndRebuys}). 
+            The difference is ${Math.abs(totalResults - totalBuyInsAndRebuys)}. 
             Please update the results to ensure they balance.
           </AlertDescription>
         </Alert>

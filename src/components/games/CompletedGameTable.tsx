@@ -7,6 +7,9 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface GamePlayer {
   id: string;
@@ -28,13 +31,37 @@ interface CompletedGameTableProps {
     finalSum: number;
     finalResult: number;
   };
+  onUpdateResults: (playerId: string, newResult: number) => Promise<void>;
 }
 
 export const CompletedGameTable = ({ 
   players, 
   calculateFinalResult,
-  totals 
+  totals,
+  onUpdateResults
 }: CompletedGameTableProps) => {
+  const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleEdit = (player: GamePlayer) => {
+    setEditingPlayer(player.id);
+    setEditValue(String(player.final_result || 0));
+  };
+
+  const handleSave = async (playerId: string) => {
+    setIsUpdating(true);
+    try {
+      const numericValue = parseFloat(editValue);
+      if (!isNaN(numericValue)) {
+        await onUpdateResults(playerId, numericValue);
+        setEditingPlayer(null);
+      }
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Final Results</h2>
@@ -46,6 +73,7 @@ export const CompletedGameTable = ({
             <TableHead className="text-right">Rebuys</TableHead>
             <TableHead className="text-right">Final Sum</TableHead>
             <TableHead className="text-right">Final Result</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -54,9 +82,40 @@ export const CompletedGameTable = ({
               <TableCell>{gamePlayer.player.name}</TableCell>
               <TableCell className="text-right">${gamePlayer.initial_buyin}</TableCell>
               <TableCell className="text-right">${gamePlayer.total_rebuys * gamePlayer.initial_buyin}</TableCell>
-              <TableCell className="text-right">${gamePlayer.final_result || 0}</TableCell>
+              <TableCell className="text-right">
+                {editingPlayer === gamePlayer.id ? (
+                  <Input
+                    type="number"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 inline-block"
+                  />
+                ) : (
+                  `$${gamePlayer.final_result || 0}`
+                )}
+              </TableCell>
               <TableCell className={`text-right ${calculateFinalResult(gamePlayer) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                 ${calculateFinalResult(gamePlayer)}
+              </TableCell>
+              <TableCell className="text-right">
+                {editingPlayer === gamePlayer.id ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleSave(gamePlayer.id)}
+                    disabled={isUpdating}
+                  >
+                    Save
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleEdit(gamePlayer)}
+                  >
+                    Edit
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}
@@ -68,6 +127,7 @@ export const CompletedGameTable = ({
             <TableCell className="text-right">${totals.rebuys}</TableCell>
             <TableCell className="text-right">${totals.finalSum}</TableCell>
             <TableCell className="text-right">${totals.finalResult}</TableCell>
+            <TableCell />
           </TableRow>
         </TableFooter>
       </Table>

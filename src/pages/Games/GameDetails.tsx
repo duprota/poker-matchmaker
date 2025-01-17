@@ -106,6 +106,56 @@ const GameDetails = () => {
     }
   }, [id, toast]);
 
+  const updatePlayerResult = async (playerId: string, newResult: number) => {
+    try {
+      console.log(`Updating result for player ${playerId} to ${newResult}`);
+      
+      const { error } = await supabase
+        .from("game_players")
+        .update({ final_result: newResult })
+        .eq("id", playerId);
+
+      if (error) throw error;
+
+      // Update local state
+      setGame(prevGame => {
+        if (!prevGame) return null;
+        return {
+          ...prevGame,
+          players: prevGame.players.map(player =>
+            player.id === playerId
+              ? { ...player, final_result: newResult }
+              : player
+          )
+        };
+      });
+
+      toast({
+        title: "Success",
+        description: "Result updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating result:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update result",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const calculateTotalBuyInsAndRebuys = () => {
+    return game?.players.reduce((acc, player) => {
+      return acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin);
+    }, 0) || 0;
+  };
+
+  const calculateTotalResults = () => {
+    return game?.players.reduce((acc, player) => {
+      return acc + (player.final_result || 0);
+    }, 0) || 0;
+  };
+
   const handleRebuyChange = (playerId: string, value: string) => {
     setRebuys(prev => ({
       ...prev,
@@ -285,6 +335,10 @@ const GameDetails = () => {
     );
   }
 
+  const totalBuyInsAndRebuys = calculateTotalBuyInsAndRebuys();
+  const totalResults = calculateTotalResults();
+  const hasBalanceError = totalBuyInsAndRebuys !== totalResults;
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -300,6 +354,8 @@ const GameDetails = () => {
             date={game.date}
             status={game.status}
             hasBalanceError={hasBalanceError}
+            totalBuyInsAndRebuys={totalBuyInsAndRebuys}
+            totalResults={totalResults}
           />
 
           {game.status === "ongoing" && (
@@ -321,6 +377,7 @@ const GameDetails = () => {
               players={game.players}
               calculateFinalResult={calculateFinalResult}
               totals={calculateTotals()}
+              onUpdateResults={updatePlayerResult}
             />
           )}
         </Card>
