@@ -79,6 +79,7 @@ export type Database = {
           id: string
           initial_buyin: number
           payment_amount: number | null
+          payment_date: string | null
           payment_status: string | null
           player_id: string | null
           total_rebuys: number
@@ -90,6 +91,7 @@ export type Database = {
           id?: string
           initial_buyin?: number
           payment_amount?: number | null
+          payment_date?: string | null
           payment_status?: string | null
           player_id?: string | null
           total_rebuys?: number
@@ -101,6 +103,7 @@ export type Database = {
           id?: string
           initial_buyin?: number
           payment_amount?: number | null
+          payment_date?: string | null
           payment_status?: string | null
           player_id?: string | null
           total_rebuys?: number
