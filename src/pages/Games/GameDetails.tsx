@@ -1,207 +1,33 @@
-import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { GameHeader } from "@/components/games/GameHeader";
 import { GameInformation } from "@/components/games/GameInformation";
 import { OngoingGameForm } from "@/components/games/OngoingGameForm";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
 import { PaymentManagement } from "@/components/games/PaymentManagement";
-
-interface GamePlayer {
-  id: string;
-  player: {
-    name: string;
-    email: string;
-  };
-  initial_buyin: number;
-  total_rebuys: number;
-  final_result: number | null;
-  payment_status: string;
-  payment_amount: number;
-}
-
-interface Game {
-  id: string;
-  date: string;
-  status: string;
-  players: GamePlayer[];
-}
+import { useGameDetails } from "@/hooks/useGameDetails";
+import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult, calculateTotals } from "@/components/games/GameCalculations";
+import { supabase } from "@/integrations/supabase/client";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [game, setGame] = useState<Game | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const {
+    game,
+    loading,
+    hasBalanceError,
+    updatePlayerResult,
+    updatePaymentStatus,
+  } = useGameDetails(id);
+
   const [savingRebuys, setSavingRebuys] = useState(false);
   const [savingResults, setSavingResults] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
-  const { toast } = useToast();
-
   const [rebuys, setRebuys] = useState<Record<string, number>>({});
   const [results, setResults] = useState<Record<string, number>>({});
-  const [hasBalanceError, setHasBalanceError] = useState(false);
-
-  useEffect(() => {
-    const fetchGame = async () => {
-      try {
-        console.log("Fetching game details for ID:", id);
-        const { data: gameData, error: gameError } = await supabase
-          .from("games")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (gameError) throw gameError;
-
-        const { data: playersData, error: playersError } = await supabase
-          .from("game_players")
-          .select(`
-            id,
-            initial_buyin,
-            total_rebuys,
-            final_result,
-            payment_status,
-            payment_amount,
-            player:players (
-              name,
-              email
-            )
-          `)
-          .eq("game_id", id);
-
-        if (playersError) throw playersError;
-
-        console.log("Game data:", gameData);
-        console.log("Players data:", playersData);
-
-        const initialRebuys: Record<string, number> = {};
-        const initialResults: Record<string, number> = {};
-        playersData.forEach((player) => {
-          initialRebuys[player.id] = player.total_rebuys || 0;
-          initialResults[player.id] = player.final_result || 0;
-        });
-        setRebuys(initialRebuys);
-        setResults(initialResults);
-
-        setGame({
-          ...gameData,
-          players: playersData,
-        });
-
-        // Check balance after setting game data
-        const totalBuyIns = playersData.reduce((acc, player) => 
-          acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
-        const totalResults = playersData.reduce((acc, player) => 
-          acc + (player.final_result || 0), 0);
-        setHasBalanceError(totalBuyIns !== totalResults);
-
-      } catch (error) {
-        console.error("Error fetching game:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load game details",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchGame();
-    }
-  }, [id, toast]);
-
-  const updatePlayerResult = async (playerId: string, newResult: number) => {
-    try {
-      console.log(`Updating result for player ${playerId} to ${newResult}`);
-      
-      const { error } = await supabase
-        .from("game_players")
-        .update({ final_result: newResult })
-        .eq("id", playerId);
-
-      if (error) throw error;
-
-      // Update local state
-      setGame(prevGame => {
-        if (!prevGame) return null;
-        return {
-          ...prevGame,
-          players: prevGame.players.map(player =>
-            player.id === playerId
-              ? { ...player, final_result: newResult }
-              : player
-          )
-        };
-      });
-
-      toast({
-        title: "Success",
-        description: "Result updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating result:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update result",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updatePaymentStatus = async (playerId: string, status: string) => {
-    try {
-      console.log(`Updating payment status for player ${playerId} to ${status}`);
-      
-      const { error } = await supabase
-        .from("game_players")
-        .update({ payment_status: status })
-        .eq("id", playerId);
-
-      if (error) throw error;
-
-      // Update local state
-      setGame(prevGame => {
-        if (!prevGame) return null;
-        return {
-          ...prevGame,
-          players: prevGame.players.map(player =>
-            player.id === playerId
-              ? { ...player, payment_status: status }
-              : player
-          )
-        };
-      });
-
-      toast({
-        title: "Success",
-        description: "Payment status updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update payment status",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const calculateTotalBuyInsAndRebuys = () => {
-    return game?.players.reduce((acc, player) => {
-      return acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin);
-    }, 0) || 0;
-  };
-
-  const calculateTotalResults = () => {
-    return game?.players.reduce((acc, player) => {
-      return acc + (player.final_result || 0);
-    }, 0) || 0;
-  };
 
   const handleRebuyChange = (playerId: string, value: string) => {
     setRebuys(prev => ({
@@ -215,20 +41,6 @@ const GameDetails = () => {
       ...prev,
       [playerId]: parseInt(value) || 0
     }));
-  };
-
-  const checkBalance = (players: GamePlayer[]) => {
-    const totalBuyInsAndRebuys = players.reduce((acc, player) => {
-      return acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin);
-    }, 0);
-
-    const totalResults = players.reduce((acc, player) => {
-      return acc + (player.final_result || 0);
-    }, 0);
-
-    const hasError = totalBuyInsAndRebuys !== totalResults;
-    setHasBalanceError(hasError);
-    return hasError;
   };
 
   const saveRebuys = async () => {
@@ -261,12 +73,17 @@ const GameDetails = () => {
   const saveResults = async () => {
     setSavingResults(true);
     try {
-      const updatedPlayers = game!.players.map(player => ({
+      if (!game) return;
+      
+      const updatedPlayers = game.players.map(player => ({
         ...player,
         final_result: results[player.id] || 0
       }));
       
-      if (checkBalance(updatedPlayers)) {
+      const totalBuyIns = calculateTotalBuyInsAndRebuys(updatedPlayers);
+      const totalResults = calculateTotalResults(updatedPlayers);
+      
+      if (totalBuyIns !== totalResults) {
         toast({
           title: "Error",
           description: "The sum of final results must equal the total buy-ins and rebuys",
@@ -300,9 +117,14 @@ const GameDetails = () => {
   };
 
   const finalizeGame = async () => {
+    if (!game) return;
+    
     setFinalizing(true);
     try {
-      if (checkBalance(game!.players)) {
+      const totalBuyIns = calculateTotalBuyInsAndRebuys(game.players);
+      const totalResults = calculateTotalResults(game.players);
+      
+      if (totalBuyIns !== totalResults) {
         toast({
           title: "Error",
           description: "Cannot finalize game: The sum of final results must equal the total buy-ins and rebuys",
@@ -335,31 +157,6 @@ const GameDetails = () => {
     }
   };
 
-  const calculateFinalResult = (player: GamePlayer) => {
-    const finalSum = player.final_result || 0;
-    const buyIn = player.initial_buyin || 0;
-    const rebuys = player.total_rebuys || 0;
-    return finalSum - buyIn - (rebuys * buyIn);
-  };
-
-  const calculateTotals = () => {
-    const totals = {
-      buyIns: 0,
-      rebuys: 0,
-      finalSum: 0,
-      finalResult: 0
-    };
-
-    game!.players.forEach(player => {
-      totals.buyIns += player.initial_buyin;
-      totals.rebuys += player.total_rebuys * player.initial_buyin;
-      totals.finalSum += player.final_result || 0;
-      totals.finalResult += calculateFinalResult(player);
-    });
-
-    return totals;
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -382,9 +179,6 @@ const GameDetails = () => {
     );
   }
 
-  const totalBuyInsAndRebuys = calculateTotalBuyInsAndRebuys();
-  const totalResults = calculateTotalResults();
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -400,8 +194,8 @@ const GameDetails = () => {
             date={game.date}
             status={game.status}
             hasBalanceError={hasBalanceError}
-            totalBuyInsAndRebuys={totalBuyInsAndRebuys}
-            totalResults={totalResults}
+            totalBuyInsAndRebuys={calculateTotalBuyInsAndRebuys(game.players)}
+            totalResults={calculateTotalResults(game.players)}
           />
 
           {game.status === "ongoing" && (
@@ -423,7 +217,7 @@ const GameDetails = () => {
               <CompletedGameTable
                 players={game.players}
                 calculateFinalResult={calculateFinalResult}
-                totals={calculateTotals()}
+                totals={calculateTotals(game.players)}
                 onUpdateResults={updatePlayerResult}
               />
               <PaymentManagement
