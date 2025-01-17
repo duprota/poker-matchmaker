@@ -86,9 +86,13 @@ const GameDetails = () => {
           players: playersData,
         });
 
-        if (gameData.status === 'completed') {
-          checkBalance(playersData);
-        }
+        // Check balance after setting game data
+        const totalBuyIns = playersData.reduce((acc, player) => 
+          acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
+        const totalResults = playersData.reduce((acc, player) => 
+          acc + (player.final_result || 0), 0);
+        setHasBalanceError(totalBuyIns !== totalResults);
+
       } catch (error) {
         console.error("Error fetching game:", error);
         toast({
@@ -337,11 +341,6 @@ const GameDetails = () => {
 
   const totalBuyInsAndRebuys = calculateTotalBuyInsAndRebuys();
   const totalResults = calculateTotalResults();
-  
-  // Update hasBalanceError state whenever totals change
-  useEffect(() => {
-    setHasBalanceError(totalBuyInsAndRebuys !== totalResults);
-  }, [totalBuyInsAndRebuys, totalResults]);
 
   return (
     <div className="min-h-screen bg-background">
