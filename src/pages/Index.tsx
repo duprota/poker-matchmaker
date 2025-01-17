@@ -20,38 +20,39 @@ const Index = () => {
   const [authError, setAuthError] = useState<string | null>(null);
 
   const getErrorMessage = (error: AuthError) => {
-    console.log('Auth error:', error);
+    console.log('Auth error details:', {
+      message: error.message,
+      name: error.name,
+      status: error instanceof AuthApiError ? error.status : 'N/A',
+      stack: error.stack
+    });
     
     if (error instanceof AuthApiError) {
-      // Get the error message from the error object directly
-      const errorMessage = error.message;
-      console.log('Auth API error message:', errorMessage);
-      
-      // Check for specific error patterns
-      if (errorMessage.includes('Invalid login credentials')) {
+      // For invalid credentials specifically
+      if (error.status === 400 && error.message.includes('Invalid login credentials')) {
         return 'Invalid email or password. Please check your credentials and try again.';
       }
-      if (errorMessage.includes('Email not confirmed')) {
-        return 'Please verify your email address before signing in.';
-      }
       
-      // Handle other status codes
+      // For other common cases
       switch (error.status) {
         case 400:
-          return 'Invalid credentials. Please try again.';
+          return 'Invalid request. Please check your input and try again.';
         case 422:
           return 'Invalid email format. Please check your email address.';
+        case 401:
+          return 'Please sign in to continue.';
         default:
-          return errorMessage;
+          return `Authentication error: ${error.message}`;
       }
     }
     
-    return error.message;
+    return error.message || 'An unexpected error occurred. Please try again.';
   };
 
   useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('Session check:', { session, error });
       if (error) {
         console.error('Error getting session:', error);
         setAuthError(getErrorMessage(error));
@@ -67,16 +68,23 @@ const Index = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('Auth state changed:', { event, session });
+      
       if (event === 'SIGNED_IN') {
         setAuthError(null);
+        toast({
+          title: "Success",
+          description: "Successfully signed in!",
+        });
+      }
+      if (event === 'SIGNED_OUT') {
+        setAuthError(null);
+        setUserRole(null);
       }
       if (event === 'USER_UPDATED' && session?.user.email_confirmed_at) {
         setAuthError(null);
       }
-      if (event === 'SIGNED_OUT') {
-        setAuthError(null);
-      }
+      
       setSession(session);
       if (session) {
         fetchUserRole(session.user.id);
@@ -84,7 +92,7 @@ const Index = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const fetchUserRole = async (userId: string) => {
     const { data, error } = await supabase
