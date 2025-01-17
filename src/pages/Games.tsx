@@ -10,6 +10,7 @@ interface Game {
   id: string;
   date: string;
   status: string;
+  name: string | null;
   players: {
     name: string;
     initial_buyin: number;
@@ -101,7 +102,7 @@ const Games = () => {
             <Card key={game.id} className="p-4">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold">Game Details</h3>
+                  <h3 className="text-xl font-semibold">{game.name || "Game Details"}</h3>
                   <p className="text-gray-600">{new Date(game.date).toLocaleDateString()}</p>
                 </div>
                 <span
