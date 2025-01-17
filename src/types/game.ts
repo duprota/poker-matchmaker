@@ -1,6 +1,7 @@
 export interface GamePlayer {
   id: string;
   player: {
+    id: string;
     name: string;
     email: string;
   };

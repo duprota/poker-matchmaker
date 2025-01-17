@@ -16,7 +16,7 @@ interface GameHistoryEntry {
   created_at: string;
   player: {
     name: string;
-  };
+  } | null;
 }
 
 interface GameHistoryProps {
@@ -78,7 +78,7 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
               <TableCell>
                 {new Date(entry.created_at).toLocaleString()}
               </TableCell>
-              <TableCell>{entry.player.name}</TableCell>
+              <TableCell>{entry.player?.name || 'Unknown Player'}</TableCell>
               <TableCell>
                 {entry.event_type === 'rebuy' ? 'Rebuy' : 'Result Update'}
               </TableCell>
