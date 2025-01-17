@@ -6,8 +6,80 @@ import { Trophy, Users, Calendar, TrendingUp, GamepadIcon, Award } from "lucide-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [session, setSession] = useState(null);
+  const [userRole, setUserRole] = useState<'user' | 'manager' | null>(null);
+
+  useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        fetchUserRole(session.user.id);
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        fetchUserRole(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserRole = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user role:', error);
+      return;
+    }
+
+    setUserRole(data?.role || 'user');
+  };
+
+  const handlePromoteToManager = async () => {
+    try {
+      const { error } = await supabase.rpc('promote_to_manager', {
+        user_id: session?.user.id
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "You have been promoted to manager status!",
+      });
+      
+      setUserRole('manager');
+    } catch (error) {
+      console.error('Error promoting to manager:', error);
+      toast({
+        title: "Error",
+        description: "Failed to promote to manager status",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Fetch statistics
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats'],
@@ -28,10 +100,11 @@ const Index = () => {
         lastGameDate: lastGame.data?.[0]?.date,
         topProfit: topProfit.data?.[0]?.final_result || 0
       };
-    }
+    },
+    enabled: !!session
   });
 
-  // Fetch recent games with nested player data
+  // Fetch recent games
   const { data: recentGames } = useQuery({
     queryKey: ['recent-games'],
     queryFn: async () => {
@@ -59,13 +132,42 @@ const Index = () => {
 
       console.log("Recent games data:", data);
       return data;
-    }
+    },
+    enabled: !!session
   });
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-full max-w-md p-8">
+          <h1 className="text-3xl font-bold text-center mb-8">Welcome to Poker Manager</h1>
+          <Auth
+            supabaseClient={supabase}
+            appearance={{ theme: ThemeSupa }}
+            theme="light"
+            providers={[]}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto py-12 px-4">
+        {/* Role Status and Promotion */}
+        {userRole === 'user' && (
+          <Alert className="mb-8">
+            <AlertDescription>
+              You are currently a regular user. To create and manage games, you need to become a manager.
+              <Button onClick={handlePromoteToManager} variant="outline" className="ml-4">
+                Become a Manager
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-6">Welcome to Poker Manager</h1>
@@ -73,12 +175,14 @@ const Index = () => {
             Track your poker games, manage players, and see who's leading the pack!
           </p>
           <div className="flex justify-center gap-4">
-            <Button asChild size="lg" className="gap-2">
-              <Link to="/games/new">
-                <GamepadIcon className="w-5 h-5" />
-                New Game
-              </Link>
-            </Button>
+            {userRole === 'manager' && (
+              <Button asChild size="lg" className="gap-2">
+                <Link to="/games/new">
+                  <GamepadIcon className="w-5 h-5" />
+                  New Game
+                </Link>
+              </Button>
+            )}
             <Button asChild variant="secondary" size="lg" className="gap-2">
               <Link to="/leaderboard">
                 <Trophy className="w-5 h-5" />

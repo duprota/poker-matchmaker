@@ -130,6 +130,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          manager_id: string | null
           name: string | null
           place: string | null
           status: string
@@ -138,6 +139,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          manager_id?: string | null
           name?: string | null
           place?: string | null
           status: string
@@ -146,6 +148,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          manager_id?: string | null
           name?: string | null
           place?: string | null
           status?: string
@@ -158,18 +161,39 @@ export type Database = {
           email: string
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
           name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"] | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
         }
         Relationships: []
       }
@@ -178,10 +202,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      promote_to_manager: {
+        Args: {
+          user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       game_event_type: "rebuy" | "result_update"
+      user_role: "user" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
