@@ -11,7 +11,7 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { AuthError } from '@supabase/supabase-js';
+import { AuthError, AuthApiError } from '@supabase/supabase-js';
 
 const Index = () => {
   const { toast } = useToast();
@@ -19,12 +19,34 @@ const Index = () => {
   const [userRole, setUserRole] = useState<'user' | 'manager' | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  const getErrorMessage = (error: AuthError) => {
+    console.log('Auth error:', error);
+    
+    if (error instanceof AuthApiError) {
+      switch (error.status) {
+        case 400:
+          if (error.message.includes('Invalid login credentials')) {
+            return 'Invalid email or password. Please check your credentials and try again.';
+          }
+          if (error.message.includes('Email not confirmed')) {
+            return 'Please verify your email address before signing in.';
+          }
+          return 'Invalid credentials. Please try again.';
+        case 422:
+          return 'Invalid email format. Please check your email address.';
+        default:
+          return error.message;
+      }
+    }
+    return error.message;
+  };
+
   useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Error getting session:', error);
-        setAuthError(error.message);
+        setAuthError(getErrorMessage(error));
         return;
       }
       setSession(session);
@@ -42,6 +64,9 @@ const Index = () => {
         setAuthError(null);
       }
       if (event === 'USER_UPDATED' && session?.user.email_confirmed_at) {
+        setAuthError(null);
+      }
+      if (event === 'SIGNED_OUT') {
         setAuthError(null);
       }
       setSession(session);
