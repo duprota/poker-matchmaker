@@ -10,6 +10,14 @@ import {
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState } from "react";
 
 interface LeaderboardEntry {
   player_name: string;
@@ -18,17 +26,43 @@ interface LeaderboardEntry {
   biggest_win: number;
 }
 
-const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
-  console.log("Fetching leaderboard data...");
-  
+interface Group {
+  id: string;
+  name: string;
+}
+
+const fetchGroups = async (): Promise<Group[]> => {
+  console.log("Fetching groups...");
   const { data, error } = await supabase
+    .from('groups')
+    .select('id, name');
+
+  if (error) {
+    console.error("Error fetching groups:", error);
+    throw error;
+  }
+
+  console.log("Groups data:", data);
+  return data;
+};
+
+const fetchLeaderboardData = async (groupId?: string): Promise<LeaderboardEntry[]> => {
+  console.log("Fetching leaderboard data for group:", groupId);
+  
+  let query = supabase
     .from('game_players')
     .select(`
       player:players(name),
-      game:games(id),
+      game:games(id, group_id),
       final_result
     `)
     .not('final_result', 'is', null);
+
+  if (groupId) {
+    query = query.eq('game.group_id', groupId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching leaderboard data:", error);
@@ -66,12 +100,19 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
 };
 
 const Leaderboard = () => {
-  const { data: leaderboard, isLoading, error } = useQuery({
-    queryKey: ['leaderboard'],
-    queryFn: fetchLeaderboardData,
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>();
+
+  const { data: groups, isLoading: isLoadingGroups } = useQuery({
+    queryKey: ['groups'],
+    queryFn: fetchGroups,
   });
 
-  if (isLoading) {
+  const { data: leaderboard, isLoading, error } = useQuery({
+    queryKey: ['leaderboard', selectedGroupId],
+    queryFn: () => fetchLeaderboardData(selectedGroupId),
+  });
+
+  if (isLoading || isLoadingGroups) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
@@ -105,7 +146,25 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold text-white mb-6">2024 Leaderboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-white">2024 Leaderboard</h1>
+          <Select
+            value={selectedGroupId}
+            onValueChange={(value) => setSelectedGroupId(value)}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Groups" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={undefined}>All Groups</SelectItem>
+              {groups?.map((group) => (
+                <SelectItem key={group.id} value={group.id}>
+                  {group.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         
         <Card className="p-4">
           <Table>
