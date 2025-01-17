@@ -11,11 +11,11 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { AuthError, AuthApiError } from '@supabase/supabase-js';
+import { AuthError, AuthApiError, Session } from '@supabase/supabase-js';
 
 const Index = () => {
   const { toast } = useToast();
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<'user' | 'manager' | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,29 +35,21 @@ const Index = () => {
   };
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          setAuthError(getErrorMessage(error));
-          return;
-        }
-
-        setSession(session);
-        if (session?.user) {
-          await fetchUserRole(session.user.id);
-        }
-      } catch (error) {
-        console.error('Error during auth initialization:', error);
-      } finally {
-        setIsLoading(false);
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        setAuthError(getErrorMessage(error));
+        return;
       }
-    };
+      setSession(session);
+      if (session?.user) {
+        fetchUserRole(session.user.id);
+      }
+      setIsLoading(false);
+    });
 
-    initializeAuth();
-
+    // Subscribe to auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -88,8 +80,10 @@ const Index = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [toast]);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [toast]); // Only re-run if toast changes
 
   const fetchUserRole = async (userId: string) => {
     try {
