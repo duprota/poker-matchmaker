@@ -9,6 +9,7 @@ import NewGame from "./pages/Games/NewGame";
 import GameDetails from "./pages/Games/GameDetails";
 import Players from "./pages/Players";
 import Leaderboard from "./pages/Leaderboard";
+import Financials from "./pages/Financials";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/games/:id" element={<GameDetails />} />
           <Route path="/players" element={<Players />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/financials" element={<Financials />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

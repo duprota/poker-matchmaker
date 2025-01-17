@@ -9,6 +9,7 @@ export const Navigation = () => {
           <Link to="/games" className="text-white hover:text-secondary">Games</Link>
           <Link to="/players" className="text-white hover:text-secondary">Players</Link>
           <Link to="/leaderboard" className="text-white hover:text-secondary">Leaderboard</Link>
+          <Link to="/financials" className="text-white hover:text-secondary">Financials</Link>
         </div>
       </div>
     </nav>
