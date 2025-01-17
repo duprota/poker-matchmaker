@@ -17,8 +17,8 @@ interface GameHistoryEntry {
   game_player: {
     player: {
       name: string;
-    } | null;
-  } | null;
+    };
+  };
 }
 
 interface GameHistoryProps {
@@ -40,8 +40,8 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
             event_type,
             amount,
             created_at,
-            game_player:game_players (
-              player:players (
+            game_player (
+              player (
                 name
               )
             )

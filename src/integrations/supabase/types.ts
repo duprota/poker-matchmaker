@@ -15,6 +15,7 @@ export type Database = {
           created_at: string | null
           event_type: Database["public"]["Enums"]["game_event_type"]
           game_id: string | null
+          game_player_id: string | null
           id: string
           metadata: Json | null
           player_id: string | null
@@ -24,6 +25,7 @@ export type Database = {
           created_at?: string | null
           event_type: Database["public"]["Enums"]["game_event_type"]
           game_id?: string | null
+          game_player_id?: string | null
           id?: string
           metadata?: Json | null
           player_id?: string | null
@@ -33,16 +35,31 @@ export type Database = {
           created_at?: string | null
           event_type?: Database["public"]["Enums"]["game_event_type"]
           game_id?: string | null
+          game_player_id?: string | null
           id?: string
           metadata?: Json | null
           player_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "fk_game_history_game_player"
+            columns: ["game_player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "game_history_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_history_game_player_id_fkey"
+            columns: ["game_player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
             referencedColumns: ["id"]
           },
           {
