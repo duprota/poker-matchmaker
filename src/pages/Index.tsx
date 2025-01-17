@@ -9,19 +9,24 @@ import { format } from "date-fns";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { AuthError } from '@supabase/supabase-js';
 
 const Index = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState<'user' | 'manager' | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        setAuthError(error.message);
+        return;
+      }
       setSession(session);
       if (session) {
         fetchUserRole(session.user.id);
@@ -31,7 +36,11 @@ const Index = () => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'SIGNED_IN') {
+        setAuthError(null);
+      }
       setSession(session);
       if (session) {
         fetchUserRole(session.user.id);
@@ -50,6 +59,11 @@ const Index = () => {
 
     if (error) {
       console.error('Error fetching user role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch user role",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -141,11 +155,30 @@ const Index = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-full max-w-md p-8">
           <h1 className="text-3xl font-bold text-center mb-8">Welcome to Poker Manager</h1>
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
           <Auth
             supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
+            appearance={{ 
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: 'rgb(var(--primary))',
+                    brandAccent: 'rgb(var(--primary-foreground))'
+                  }
+                }
+              }
+            }}
             theme="light"
             providers={[]}
+            onError={(error: AuthError) => {
+              console.error('Auth error:', error);
+              setAuthError(error.message);
+            }}
           />
         </div>
       </div>
