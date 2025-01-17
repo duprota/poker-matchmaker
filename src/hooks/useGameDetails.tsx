@@ -1,28 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-interface GamePlayer {
-  id: string;
-  player: {
-    name: string;
-    email: string;
-  };
-  initial_buyin: number;
-  total_rebuys: number;
-  final_result: number | null;
-  payment_status: string;
-  payment_amount: number;
-}
-
-interface Game {
-  id: string;
-  date: string;
-  status: string;
-  players: GamePlayer[];
-  name?: string;
-  place?: string;
-}
+import type { Game, GamePlayer } from "@/types/game";
 
 export const useGameDetails = (gameId: string | undefined) => {
   const [game, setGame] = useState<Game | null>(null);
@@ -52,6 +31,7 @@ export const useGameDetails = (gameId: string | undefined) => {
             payment_status,
             payment_amount,
             player:players (
+              id,
               name,
               email
             )

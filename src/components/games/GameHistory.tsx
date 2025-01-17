@@ -40,8 +40,8 @@ export const GameHistory = ({ gameId }: GameHistoryProps) => {
             event_type,
             amount,
             created_at,
-            game_player (
-              player (
+            game_player!inner (
+              player!inner (
                 name
               )
             )
