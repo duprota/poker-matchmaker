@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -6,7 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
 
 interface Transaction {
   from: string;
@@ -14,38 +14,49 @@ interface Transaction {
   amount: number;
 }
 
-interface Player {
+interface GamePlayer {
   id: string;
   player: {
     name: string;
   };
+  payment_status: string;
 }
 
 interface TransactionsListProps {
   transactions: Transaction[];
-  players: Player[];
+  players: GamePlayer[];
   onUpdatePaymentStatus: (playerId: string, status: string) => Promise<void>;
 }
 
-export const TransactionsList = ({
-  transactions,
+export const TransactionsList = ({ 
+  transactions, 
   players,
-  onUpdatePaymentStatus,
+  onUpdatePaymentStatus 
 }: TransactionsListProps) => {
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.id === playerId);
     return player?.player.name || 'Unknown Player';
   };
 
+  const getPaymentStatus = (fromPlayerId: string) => {
+    const player = players.find(p => p.id === fromPlayerId);
+    return player?.payment_status || 'pending';
+  };
+
+  if (transactions.length === 0) {
+    return null;
+  }
+
   return (
-    <Card className="mt-6 p-6">
-      <h2 className="text-xl font-semibold mb-4">Payment Transactions</h2>
+    <div className="mt-8">
+      <h2 className="text-xl font-semibold mb-4">Required Transactions</h2>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>From</TableHead>
             <TableHead>To</TableHead>
             <TableHead className="text-right">Amount</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -54,19 +65,26 @@ export const TransactionsList = ({
             <TableRow key={index}>
               <TableCell>{getPlayerName(transaction.from)}</TableCell>
               <TableCell>{getPlayerName(transaction.to)}</TableCell>
-              <TableCell className="text-right">${transaction.amount.toFixed(2)}</TableCell>
+              <TableCell className="text-right">${transaction.amount}</TableCell>
+              <TableCell className="capitalize">{getPaymentStatus(transaction.from)}</TableCell>
               <TableCell className="text-right">
-                <button
-                  onClick={() => onUpdatePaymentStatus(transaction.from, 'paid')}
-                  className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onUpdatePaymentStatus(
+                    transaction.from,
+                    getPaymentStatus(transaction.from) === 'pending' ? 'paid' : 'pending'
+                  )}
                 >
-                  Mark as Paid
-                </button>
+                  {getPaymentStatus(transaction.from) === 'pending' 
+                    ? 'Mark as Paid' 
+                    : 'Mark as Pending'}
+                </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    </Card>
+    </div>
   );
 };
