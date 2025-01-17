@@ -254,17 +254,19 @@ const GameDetails = () => {
                 totals={calculateTotals(game.players)}
                 onUpdateResults={updatePlayerResult}
               />
-              
-              <div className="mt-8">
-                <TotalAmountsTable players={game.players} />
-              </div>
-
-              <PaymentManagement
-                players={game.players}
-                calculateFinalResult={calculateFinalResult}
-                onUpdatePaymentStatus={updatePaymentStatus}
-              />
             </>
+          )}
+
+          <div className="mt-8">
+            <TotalAmountsTable players={game.players} />
+          </div>
+
+          {game.status === "completed" && (
+            <PaymentManagement
+              players={game.players}
+              calculateFinalResult={calculateFinalResult}
+              onUpdatePaymentStatus={updatePaymentStatus}
+            />
           )}
 
           <div className="mt-8">
