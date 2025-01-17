@@ -22,6 +22,25 @@ const Index = () => {
   const getErrorMessage = (error: AuthError) => {
     console.log('Auth error:', error);
     
+    // Try to parse the error body if it exists
+    let errorBody;
+    try {
+      if (error.message.includes('body')) {
+        const match = error.message.match(/body": "(.+?)"/);
+        if (match) {
+          errorBody = JSON.parse(match[1]);
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing error body:', e);
+    }
+    
+    // If we have a parsed error body, use its code
+    if (errorBody?.code === 'invalid_credentials') {
+      return 'Invalid email or password. Please check your credentials and try again.';
+    }
+    
+    // Otherwise fall back to status code checking
     if (error instanceof AuthApiError) {
       switch (error.status) {
         case 400:
