@@ -1,6 +1,5 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GamePlayer } from "@/types/game";
-import { TotalAmountsTable } from "./TotalAmountsTable";
 
 interface GameInformationProps {
   date: string;
@@ -17,7 +16,6 @@ export const GameInformation = ({
   hasBalanceError,
   totalBuyInsAndRebuys,
   totalResults,
-  players
 }: GameInformationProps) => {
   return (
     <>
@@ -36,8 +34,6 @@ export const GameInformation = ({
           </AlertDescription>
         </Alert>
       )}
-
-      <TotalAmountsTable players={players} />
     </>
   );
 };

@@ -9,6 +9,7 @@ import { OngoingGameForm } from "@/components/games/OngoingGameForm";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
 import { PaymentManagement } from "@/components/games/PaymentManagement";
 import { GameHistory } from "@/components/games/GameHistory";
+import { TotalAmountsTable } from "@/components/games/TotalAmountsTable";
 import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult, calculateTotals } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
@@ -253,6 +254,11 @@ const GameDetails = () => {
                 totals={calculateTotals(game.players)}
                 onUpdateResults={updatePlayerResult}
               />
+              
+              <div className="mt-8">
+                <TotalAmountsTable players={game.players} />
+              </div>
+
               <PaymentManagement
                 players={game.players}
                 calculateFinalResult={calculateFinalResult}
