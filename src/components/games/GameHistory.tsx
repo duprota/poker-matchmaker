@@ -34,6 +34,7 @@ interface GameHistoryEntry {
     player: {
       name: string;
     };
+    initial_buyin: number;
     total_rebuys: number;
   };
 }
@@ -65,6 +66,7 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
             player:players (
               name
             ),
+            initial_buyin,
             total_rebuys
           )
         `)
@@ -202,6 +204,13 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
     }
   };
 
+  const getDisplayAmount = (entry: GameHistoryEntry) => {
+    if (entry.event_type === 'rebuy') {
+      return entry.amount * (entry.game_players?.initial_buyin || 0);
+    }
+    return entry.amount || 0;
+  };
+
   if (loading) {
     return <div>Loading history...</div>;
   }
@@ -240,7 +249,7 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
                     className="w-20 ml-auto"
                   />
                 ) : (
-                  `$${entry.amount || 0}`
+                  `$${getDisplayAmount(entry)}`
                 )}
               </TableCell>
               <TableCell>
