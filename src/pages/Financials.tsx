@@ -12,6 +12,14 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
+
+interface GameDebtDetail {
+  gameId: string;
+  date: string;
+  amount: number;
+  gamePlayerId: string;
+}
 
 interface TransactionSummary {
   from: string;
@@ -19,6 +27,9 @@ interface TransactionSummary {
   to: string;
   toId: string;
   amount: number;
+  gamePlayerIds: string[];
+  paymentStatus: string;
+  gameDetails: GameDebtDetail[];
 }
 
 const fetchHistoricalTransactions = async () => {
@@ -29,7 +40,7 @@ const fetchHistoricalTransactions = async () => {
     .select(`
       id,
       player:players(id, name),
-      game:games(status),
+      game:games(id, status, date),
       final_result,
       payment_status,
       initial_buyin,
@@ -64,7 +75,9 @@ const fetchHistoricalTransactions = async () => {
         playerName: entry.player.name,
         balance: balance,
         gamePlayerId: entry.id,
-        paymentStatus: entry.payment_status
+        paymentStatus: entry.payment_status,
+        gameId: entry.game.id,
+        gameDate: entry.game.date
       });
     }
   });
@@ -93,7 +106,8 @@ const fetchHistoricalTransactions = async () => {
               toId: '',
               amount: 0,
               gamePlayerIds: [] as string[],
-              paymentStatus: 'pending'
+              paymentStatus: 'pending',
+              gameDetails: [] as GameDebtDetail[]
             };
 
             if (currentDebt.amount === 0) {
@@ -106,6 +120,12 @@ const fetchHistoricalTransactions = async () => {
             currentDebt.amount += amount;
             currentDebt.gamePlayerIds.push(payer.gamePlayerId);
             currentDebt.paymentStatus = payer.paymentStatus;
+            currentDebt.gameDetails.push({
+              gameId: payer.gameId,
+              date: payer.gameDate,
+              amount: amount,
+              gamePlayerId: payer.gamePlayerId
+            });
             consolidatedDebts.set(key, currentDebt);
           }
         });
@@ -132,11 +152,13 @@ const fetchHistoricalTransactions = async () => {
             finalTransactions.push({
               ...debt,
               amount: netAmount,
+              gameDetails: debt.gameDetails
             });
           } else {
             finalTransactions.push({
               ...reverseDebt,
               amount: netAmount,
+              gameDetails: reverseDebt.gameDetails
             });
           }
         }
@@ -233,7 +255,8 @@ const Financials = () => {
                 <TableRow>
                   <TableHead>From</TableHead>
                   <TableHead>To</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Total Amount</TableHead>
+                  <TableHead>Game Details</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -244,6 +267,15 @@ const Financials = () => {
                     <TableCell>{transaction.from}</TableCell>
                     <TableCell>{transaction.to}</TableCell>
                     <TableCell className="text-right">${transaction.amount.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {transaction.gameDetails.map((detail, idx) => (
+                          <div key={idx} className="text-sm">
+                            {format(new Date(detail.date), 'MMM d, yyyy')} - ${detail.amount.toFixed(2)}
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
                     <TableCell>{transaction.paymentStatus}</TableCell>
                     <TableCell>
                       {transaction.paymentStatus === 'pending' && (
