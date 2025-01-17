@@ -120,12 +120,11 @@ const GameDetails = () => {
 
         if (error) throw error;
 
-        // Record the result update in game history using the game_player ID
         const { error: historyError } = await supabase
           .from("game_history")
           .insert({
             game_id: id,
-            game_player_id: playerId, // Link to game_player instead of player
+            game_player_id: playerId,
             event_type: 'result_update',
             amount: result
           });
@@ -189,6 +188,13 @@ const GameDetails = () => {
     }
   };
 
+  const handleHistoryUpdate = () => {
+    if (id) {
+      console.log("Refreshing game details after history update");
+      fetchGame();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -247,14 +253,12 @@ const GameDetails = () => {
           )}
 
           {game.status === "completed" && (
-            <>
-              <CompletedGameTable
-                players={game.players}
-                calculateFinalResult={calculateFinalResult}
-                totals={calculateTotals(game.players)}
-                onUpdateResults={updatePlayerResult}
-              />
-            </>
+            <CompletedGameTable
+              players={game.players}
+              calculateFinalResult={calculateFinalResult}
+              totals={calculateTotals(game.players)}
+              onUpdateResults={updatePlayerResult}
+            />
           )}
 
           <div className="mt-8">
@@ -270,7 +274,10 @@ const GameDetails = () => {
           )}
 
           <div className="mt-8">
-            <GameHistory gameId={id || ''} />
+            <GameHistory 
+              gameId={id || ''} 
+              onHistoryUpdate={handleHistoryUpdate}
+            />
           </div>
         </Card>
       </div>
