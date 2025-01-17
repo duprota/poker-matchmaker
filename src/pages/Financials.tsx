@@ -29,7 +29,9 @@ const fetchHistoricalTransactions = async () => {
       player:players(id, name),
       game:games(status),
       final_result,
-      payment_status
+      payment_status,
+      initial_buyin,
+      total_rebuys
     `)
     .eq('games.status', 'completed');
 
@@ -40,79 +42,116 @@ const fetchHistoricalTransactions = async () => {
 
   console.log("Raw game players data:", gamePlayersData);
 
-  // Create a map to store debts between players
-  const debtsMap = new Map<string, Map<string, number>>();
+  // Group transactions by game
+  const gameTransactions = new Map();
 
   // Process each game result
   gamePlayersData.forEach((entry) => {
-    if (entry.final_result === null) return;
+    const gameId = entry.game.id;
+    if (!gameTransactions.has(gameId)) {
+      gameTransactions.set(gameId, []);
+    }
 
-    const playerId = entry.player.id;
-    const playerName = entry.player.name;
-    const finalResult = entry.final_result;
+    const totalBuyIn = entry.initial_buyin + (entry.total_rebuys * entry.initial_buyin);
+    const finalResult = entry.final_result || 0;
+    const balance = finalResult - totalBuyIn;
 
-    // If player lost money (negative result), they owe others
-    if (finalResult < 0) {
-      gamePlayersData.forEach((otherEntry) => {
-        if (otherEntry.player.id !== playerId && otherEntry.final_result > 0) {
-          // Calculate proportion of debt
-          const proportion = Math.abs(otherEntry.final_result) / 
-            gamePlayersData
-              .filter(p => p.final_result > 0)
-              .reduce((sum, p) => sum + p.final_result, 0);
-          
-          const amount = Math.abs(finalResult) * proportion;
-
-          // Update debts map
-          if (!debtsMap.has(playerId)) {
-            debtsMap.set(playerId, new Map());
-          }
-          const playerDebts = debtsMap.get(playerId)!;
-          const currentDebt = playerDebts.get(otherEntry.player.id) || 0;
-          playerDebts.set(otherEntry.player.id, currentDebt + amount);
-        }
+    if (balance !== 0) {
+      gameTransactions.get(gameId).push({
+        playerId: entry.player.id,
+        playerName: entry.player.name,
+        balance: balance
       });
     }
   });
 
-  // Convert debts map to consolidated transactions
-  const transactions: TransactionSummary[] = [];
-  debtsMap.forEach((debts, fromId) => {
-    debts.forEach((amount, toId) => {
-      // Find the reverse debt if it exists
-      const reverseDebt = debtsMap.get(toId)?.get(fromId) || 0;
-      
-      // Only process each pair once and calculate net amount
-      if (fromId < toId) {
-        const netAmount = amount - reverseDebt;
-        if (Math.abs(netAmount) >= 0.01) { // Only include non-zero transactions
-          const fromPlayer = gamePlayersData.find(p => p.player.id === fromId)?.player;
-          const toPlayer = gamePlayersData.find(p => p.player.id === toId)?.player;
-          
-          if (netAmount > 0) {
-            transactions.push({
-              from: fromPlayer.name,
-              fromId: fromId,
-              to: toPlayer.name,
-              toId: toId,
-              amount: netAmount
-            });
-          } else {
-            transactions.push({
-              from: toPlayer.name,
-              fromId: toId,
-              to: fromPlayer.name,
-              toId: fromId,
-              amount: Math.abs(netAmount)
-            });
+  // Process transactions for each game and consolidate
+  const consolidatedDebts = new Map();
+
+  gameTransactions.forEach((players) => {
+    // Calculate transactions for this game
+    players.forEach((payer) => {
+      if (payer.balance < 0) {
+        players.forEach((receiver) => {
+          if (receiver.balance > 0) {
+            const proportion = Math.abs(receiver.balance) / 
+              players.filter(p => p.balance > 0)
+                .reduce((sum, p) => sum + p.balance, 0);
+            
+            const amount = Math.abs(payer.balance) * proportion;
+
+            // Create a unique key for this pair of players
+            const key = [payer.playerId, receiver.playerId].sort().join('-');
+            const currentDebt = consolidatedDebts.get(key) || {
+              from: '',
+              fromId: '',
+              to: '',
+              toId: '',
+              amount: 0
+            };
+
+            if (currentDebt.amount === 0) {
+              currentDebt.from = payer.playerName;
+              currentDebt.fromId = payer.playerId;
+              currentDebt.to = receiver.playerName;
+              currentDebt.toId = receiver.playerId;
+            }
+
+            currentDebt.amount += amount;
+            consolidatedDebts.set(key, currentDebt);
           }
-        }
+        });
       }
     });
   });
 
-  console.log("Processed transactions:", transactions);
-  return transactions;
+  // Convert consolidated debts to array and handle offsetting debts
+  const finalTransactions: TransactionSummary[] = [];
+  const processedPairs = new Set();
+
+  consolidatedDebts.forEach((debt, key) => {
+    const [player1, player2] = key.split('-');
+    const reversePair = [player2, player1].join('-');
+
+    if (!processedPairs.has(key) && !processedPairs.has(reversePair)) {
+      const reverseDebt = consolidatedDebts.get(reversePair);
+      
+      if (reverseDebt) {
+        // Both players owe each other, calculate net amount
+        const netAmount = Math.abs(debt.amount - reverseDebt.amount);
+        if (netAmount > 0.01) { // Only include non-zero transactions
+          if (debt.amount > reverseDebt.amount) {
+            finalTransactions.push({
+              from: debt.from,
+              fromId: debt.fromId,
+              to: debt.to,
+              toId: debt.toId,
+              amount: netAmount
+            });
+          } else {
+            finalTransactions.push({
+              from: reverseDebt.from,
+              fromId: reverseDebt.fromId,
+              to: reverseDebt.to,
+              toId: reverseDebt.toId,
+              amount: netAmount
+            });
+          }
+        }
+      } else {
+        // Only one player owes money
+        if (debt.amount > 0.01) { // Only include non-zero transactions
+          finalTransactions.push(debt);
+        }
+      }
+      
+      processedPairs.add(key);
+      processedPairs.add(reversePair);
+    }
+  });
+
+  console.log("Final consolidated transactions:", finalTransactions);
+  return finalTransactions;
 };
 
 const Financials = () => {
