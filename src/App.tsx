@@ -23,25 +23,23 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => (
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/games" element={<Games />} />
-            <Route path="/games/new" element={<NewGame />} />
-            <Route path="/games/:id" element={<GameDetails />} />
-            <Route path="/players" element={<Players />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/financials" element={<Financials />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/games" element={<Games />} />
+          <Route path="/games/new" element={<NewGame />} />
+          <Route path="/games/:id" element={<GameDetails />} />
+          <Route path="/players" element={<Players />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/financials" element={<Financials />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
