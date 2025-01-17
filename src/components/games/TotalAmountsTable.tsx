@@ -24,6 +24,7 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead>Player Name</TableHead>
+            <TableHead className="text-right">Rebuys</TableHead>
             <TableHead className="text-right">Total Amount</TableHead>
           </TableRow>
         </TableHeader>
@@ -32,12 +33,18 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
             <TableRow key={player.id}>
               <TableCell>{player.player.name}</TableCell>
               <TableCell className="text-right">
+                {player.total_rebuys}
+              </TableCell>
+              <TableCell className="text-right">
                 ${calculateTotalAmount(player)}
               </TableCell>
             </TableRow>
           ))}
           <TableRow>
             <TableCell className="font-semibold">Total</TableCell>
+            <TableCell className="text-right font-semibold">
+              {players.reduce((acc, player) => acc + player.total_rebuys, 0)}
+            </TableCell>
             <TableCell className="text-right font-semibold">
               ${players.reduce((acc, player) => acc + calculateTotalAmount(player), 0)}
             </TableCell>
