@@ -10,7 +10,7 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { AuthError } from '@supabase/supabase-js';
 
 const Index = () => {
@@ -39,6 +39,9 @@ const Index = () => {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
       if (event === 'SIGNED_IN') {
+        setAuthError(null);
+      }
+      if (event === 'USER_UPDATED' && session?.user.email_confirmed_at) {
         setAuthError(null);
       }
       setSession(session);
@@ -94,7 +97,6 @@ const Index = () => {
     }
   };
 
-  // Fetch statistics
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
@@ -175,10 +177,6 @@ const Index = () => {
             }}
             theme="light"
             providers={[]}
-            onError={(error: AuthError) => {
-              console.error('Auth error:', error);
-              setAuthError(error.message);
-            }}
           />
         </div>
       </div>
