@@ -227,6 +227,7 @@ const GameDetails = () => {
             hasBalanceError={hasBalanceError}
             totalBuyInsAndRebuys={calculateTotalBuyInsAndRebuys(game.players)}
             totalResults={calculateTotalResults(game.players)}
+            players={game.players}
           />
 
           {game.status === "ongoing" && (

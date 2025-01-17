@@ -1,4 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { GamePlayer } from "@/types/game";
+import { TotalAmountsTable } from "./TotalAmountsTable";
 
 interface GameInformationProps {
   date: string;
@@ -6,6 +8,7 @@ interface GameInformationProps {
   hasBalanceError: boolean;
   totalBuyInsAndRebuys: number;
   totalResults: number;
+  players: GamePlayer[];
 }
 
 export const GameInformation = ({ 
@@ -13,7 +16,8 @@ export const GameInformation = ({
   status, 
   hasBalanceError,
   totalBuyInsAndRebuys,
-  totalResults
+  totalResults,
+  players
 }: GameInformationProps) => {
   return (
     <>
@@ -32,6 +36,8 @@ export const GameInformation = ({
           </AlertDescription>
         </Alert>
       )}
+
+      <TotalAmountsTable players={players} />
     </>
   );
 };
