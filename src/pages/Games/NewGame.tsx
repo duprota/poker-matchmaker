@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/popover";
 
 type Player = Tables<"players">;
-type GamePlayer = Tables<"game_players">;
 
 const NewGame = () => {
   const navigate = useNavigate();
@@ -31,6 +30,24 @@ const NewGame = () => {
   const [date, setDate] = useState<Date>(new Date());
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("No session found, redirecting to login");
+        navigate("/");
+        return;
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        console.log("Auth state changed: signed out, redirecting to login");
+        navigate("/");
+      }
+    });
+
     const fetchPlayers = async () => {
       const { data, error } = await supabase.from("players").select("*");
       if (error) {
@@ -46,7 +63,11 @@ const NewGame = () => {
     };
 
     fetchPlayers();
-  }, [toast]);
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
 
   const handleCreateGame = async () => {
     if (selectedPlayers.length === 0) {
