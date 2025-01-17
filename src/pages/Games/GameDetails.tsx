@@ -59,12 +59,12 @@ const GameDetails = () => {
 
         if (error) throw error;
 
-        // Record the rebuy in game history using the player's ID from the player object
+        // Record the rebuy in game history using the game_player ID
         const { error: historyError } = await supabase
           .from("game_history")
           .insert({
             game_id: id,
-            player_id: gamePlayer.player.id, // Fixed: Using player.id instead of player_id
+            game_player_id: playerId, // Link to game_player instead of player
             event_type: 'rebuy',
             amount: rebuyAmount
           });
@@ -120,12 +120,12 @@ const GameDetails = () => {
 
         if (error) throw error;
 
-        // Record the result update in game history using the player's ID from the player object
+        // Record the result update in game history using the game_player ID
         const { error: historyError } = await supabase
           .from("game_history")
           .insert({
             game_id: id,
-            player_id: gamePlayer.player.id, // Fixed: Using player.id instead of player_id
+            game_player_id: playerId, // Link to game_player instead of player
             event_type: 'result_update',
             amount: result
           });
