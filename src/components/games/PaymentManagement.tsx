@@ -7,6 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
+import { TransactionsList } from "./TransactionsList";
 
 interface GamePlayer {
   id: string;
@@ -38,9 +40,19 @@ export const PaymentManagement = ({
     return "No Payment Needed";
   };
 
+  // Calculate player balances for transaction calculation
+  const playerBalances = players.map(player => ({
+    playerId: player.id,
+    playerName: player.player.name,
+    balance: calculateFinalResult(player)
+  }));
+
+  // Calculate minimum transactions
+  const transactions = calculateMinimumTransactions(playerBalances);
+
   return (
     <div className="mt-6">
-      <h2 className="text-xl font-semibold mb-4">Payment Management</h2>
+      <h2 className="text-xl font-semibold mb-4">Payment Summary</h2>
       <Table>
         <TableHeader>
           <TableRow>
@@ -81,10 +93,16 @@ export const PaymentManagement = ({
                   )}
                 </TableCell>
               </TableRow>
-            )
+            );
           })}
         </TableBody>
       </Table>
+
+      <TransactionsList 
+        transactions={transactions}
+        players={players}
+        onUpdatePaymentStatus={onUpdatePaymentStatus}
+      />
     </div>
   );
 };
