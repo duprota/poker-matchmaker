@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { AuthError, AuthApiError, Session } from '@supabase/supabase-js';
@@ -34,27 +34,65 @@ const Index = () => {
     return error.message;
   };
 
+  const fetchUserRole = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      setUserRole(data?.role || 'user');
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch user role",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
   useEffect(() => {
+    let mounted = true;
+
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Error getting session:', error);
-        setAuthError(getErrorMessage(error));
-        return;
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (error) {
+          console.error('Error getting session:', error);
+          setAuthError(getErrorMessage(error));
+          return;
+        }
+
+        setSession(session);
+        if (session?.user) {
+          await fetchUserRole(session.user.id);
+        }
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Error during auth initialization:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      setSession(session);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      }
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Subscribe to auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', { event, session });
       
+      if (!mounted) return;
+
       switch (event) {
         case 'SIGNED_IN':
           setAuthError(null);
@@ -81,30 +119,10 @@ const Index = () => {
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, [toast]); // Only re-run if toast changes
-
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-
-      setUserRole(data?.role || 'user');
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch user role",
-        variant: "destructive",
-      });
-    }
-  };
+  }, [fetchUserRole]); // Add fetchUserRole to dependencies
 
   const handlePromoteToManager = async () => {
     try {
