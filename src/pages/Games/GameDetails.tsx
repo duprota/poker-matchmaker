@@ -49,6 +49,9 @@ const GameDetails = () => {
     setSavingRebuys(true);
     try {
       for (const [playerId, rebuyAmount] of Object.entries(rebuys)) {
+        const gamePlayer = game?.players.find(p => p.id === playerId);
+        if (!gamePlayer) continue;
+
         const { error } = await supabase
           .from("game_players")
           .update({ total_rebuys: rebuyAmount })
@@ -56,12 +59,12 @@ const GameDetails = () => {
 
         if (error) throw error;
 
-        // Record the rebuy in game history
+        // Record the rebuy in game history using the player's ID from the player object
         const { error: historyError } = await supabase
           .from("game_history")
           .insert({
             game_id: id,
-            player_id: playerId,
+            player_id: gamePlayer.player_id,
             event_type: 'rebuy',
             amount: rebuyAmount
           });
@@ -107,6 +110,9 @@ const GameDetails = () => {
       }
 
       for (const [playerId, result] of Object.entries(results)) {
+        const gamePlayer = game.players.find(p => p.id === playerId);
+        if (!gamePlayer) continue;
+
         const { error } = await supabase
           .from("game_players")
           .update({ final_result: result })
@@ -114,12 +120,12 @@ const GameDetails = () => {
 
         if (error) throw error;
 
-        // Record the result update in game history
+        // Record the result update in game history using the player's ID from the player object
         const { error: historyError } = await supabase
           .from("game_history")
           .insert({
             game_id: id,
-            player_id: playerId,
+            player_id: gamePlayer.player_id,
             event_type: 'result_update',
             amount: result
           });
