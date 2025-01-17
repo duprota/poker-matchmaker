@@ -8,6 +8,7 @@ import { GameInformation } from "@/components/games/GameInformation";
 import { OngoingGameForm } from "@/components/games/OngoingGameForm";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
 import { PaymentManagement } from "@/components/games/PaymentManagement";
+import { GameHistory } from "@/components/games/GameHistory";
 import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult, calculateTotals } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,18 @@ const GameDetails = () => {
           .eq("id", playerId);
 
         if (error) throw error;
+
+        // Record the rebuy in game history
+        const { error: historyError } = await supabase
+          .from("game_history")
+          .insert({
+            game_id: id,
+            player_id: playerId,
+            event_type: 'rebuy',
+            amount: rebuyAmount
+          });
+
+        if (historyError) throw historyError;
       }
       toast({
         title: "Success",
@@ -100,6 +113,18 @@ const GameDetails = () => {
           .eq("id", playerId);
 
         if (error) throw error;
+
+        // Record the result update in game history
+        const { error: historyError } = await supabase
+          .from("game_history")
+          .insert({
+            game_id: id,
+            player_id: playerId,
+            event_type: 'result_update',
+            amount: result
+          });
+
+        if (historyError) throw historyError;
       }
       toast({
         title: "Success",
@@ -228,6 +253,10 @@ const GameDetails = () => {
               />
             </>
           )}
+
+          <div className="mt-8">
+            <GameHistory gameId={id || ''} />
+          </div>
         </Card>
       </div>
     </div>

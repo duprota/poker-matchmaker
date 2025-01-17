@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      game_history: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          event_type: Database["public"]["Enums"]["game_event_type"]
+          game_id: string | null
+          id: string
+          metadata: Json | null
+          player_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          event_type: Database["public"]["Enums"]["game_event_type"]
+          game_id?: string | null
+          id?: string
+          metadata?: Json | null
+          player_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          event_type?: Database["public"]["Enums"]["game_event_type"]
+          game_id?: string | null
+          id?: string
+          metadata?: Json | null
+          player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_history_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_players: {
         Row: {
           created_at: string
@@ -116,7 +161,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      game_event_type: "rebuy" | "result_update"
     }
     CompositeTypes: {
       [_ in never]: never
