@@ -198,7 +198,6 @@ const GameDetails = () => {
     }
   };
 
-  // Fetch game history
   const fetchGameHistory = async () => {
     if (!id) return;
     
@@ -228,6 +227,32 @@ const GameDetails = () => {
       toast({
         title: "Error",
         description: "Failed to load game history",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteGame = async () => {
+    try {
+      console.log("Deleting game:", id);
+      const { error } = await supabase
+        .from("games")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Game deleted successfully",
+      });
+      
+      navigate("/games");
+    } catch (error) {
+      console.error("Error deleting game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete game",
         variant: "destructive",
       });
     }
@@ -266,6 +291,7 @@ const GameDetails = () => {
         <GameHeader 
           status={game.status}
           onFinalize={finalizeGame}
+          onDelete={handleDeleteGame}
           finalizing={finalizing}
         />
         
