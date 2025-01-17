@@ -1,5 +1,6 @@
 import { Navigation } from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -8,8 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 interface TransactionSummary {
   from: string;
@@ -60,7 +62,9 @@ const fetchHistoricalTransactions = async () => {
       gameTransactions.get(gameId).push({
         playerId: entry.player.id,
         playerName: entry.player.name,
-        balance: balance
+        balance: balance,
+        gamePlayerId: entry.id,
+        paymentStatus: entry.payment_status
       });
     }
   });
@@ -87,7 +91,9 @@ const fetchHistoricalTransactions = async () => {
               fromId: '',
               to: '',
               toId: '',
-              amount: 0
+              amount: 0,
+              gamePlayerIds: [] as string[],
+              paymentStatus: 'pending'
             };
 
             if (currentDebt.amount === 0) {
@@ -98,6 +104,8 @@ const fetchHistoricalTransactions = async () => {
             }
 
             currentDebt.amount += amount;
+            currentDebt.gamePlayerIds.push(payer.gamePlayerId);
+            currentDebt.paymentStatus = payer.paymentStatus;
             consolidatedDebts.set(key, currentDebt);
           }
         });
@@ -122,19 +130,13 @@ const fetchHistoricalTransactions = async () => {
         if (netAmount > 0.01) { // Only include non-zero transactions
           if (debt.amount > reverseDebt.amount) {
             finalTransactions.push({
-              from: debt.from,
-              fromId: debt.fromId,
-              to: debt.to,
-              toId: debt.toId,
-              amount: netAmount
+              ...debt,
+              amount: netAmount,
             });
           } else {
             finalTransactions.push({
-              from: reverseDebt.from,
-              fromId: reverseDebt.fromId,
-              to: reverseDebt.to,
-              toId: reverseDebt.toId,
-              amount: netAmount
+              ...reverseDebt,
+              amount: netAmount,
             });
           }
         }
@@ -155,10 +157,37 @@ const fetchHistoricalTransactions = async () => {
 };
 
 const Financials = () => {
+  const queryClient = useQueryClient();
   const { data: transactions, isLoading, error } = useQuery({
     queryKey: ['historical-transactions'],
     queryFn: fetchHistoricalTransactions,
   });
+
+  const handleMarkAsPaid = async (gamePlayerIds: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('game_players')
+        .update({ payment_status: 'paid' })
+        .in('id', gamePlayerIds);
+
+      if (error) throw error;
+
+      toast({
+        title: "Payment marked as paid",
+        description: "The payment has been marked as paid successfully.",
+      });
+
+      // Refresh the data
+      queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
+    } catch (error) {
+      console.error('Error marking payment as paid:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark payment as paid. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -205,6 +234,8 @@ const Financials = () => {
                   <TableHead>From</TableHead>
                   <TableHead>To</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -213,6 +244,18 @@ const Financials = () => {
                     <TableCell>{transaction.from}</TableCell>
                     <TableCell>{transaction.to}</TableCell>
                     <TableCell className="text-right">${transaction.amount.toFixed(2)}</TableCell>
+                    <TableCell>{transaction.paymentStatus}</TableCell>
+                    <TableCell>
+                      {transaction.paymentStatus === 'pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleMarkAsPaid(transaction.gamePlayerIds)}
+                        >
+                          Mark as Paid
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
