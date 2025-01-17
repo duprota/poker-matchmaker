@@ -5,16 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type Player = Tables<"players">;
 type GamePlayer = Tables<"game_players">;
@@ -26,6 +26,9 @@ const NewGame = () => {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [buyIn, setBuyIn] = useState<number>(100);
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState<string>("");
+  const [place, setPlace] = useState<string>("");
+  const [date, setDate] = useState<Date>(new Date());
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -60,7 +63,12 @@ const NewGame = () => {
       // Create new game
       const { data: gameData, error: gameError } = await supabase
         .from("games")
-        .insert([{ status: "ongoing" }])
+        .insert([{ 
+          status: "ongoing",
+          name,
+          place,
+          date: date.toISOString(),
+        }])
         .select()
         .single();
 
@@ -114,50 +122,96 @@ const NewGame = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold text-white mb-6">New Game</h1>
+        <h1 className="text-3xl font-bold mb-6">New Game</h1>
 
         <Card className="p-6 mb-6">
-          <div className="mb-4">
-            <Label htmlFor="buyIn">Buy-in Amount</Label>
-            <Input
-              id="buyIn"
-              type="number"
-              value={buyIn}
-              onChange={(e) => setBuyIn(Number(e.target.value))}
-              className="max-w-xs"
-            />
-          </div>
-
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">Select Players</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {players.map((player) => (
-                <div
-                  key={player.id}
-                  className={`p-4 rounded-lg cursor-pointer ${
-                    selectedPlayers.includes(player.id)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card hover:bg-accent"
-                  }`}
-                  onClick={() => handlePlayerSelect(player.id)}
-                >
-                  <h3 className="font-medium">{player.name}</h3>
-                  <p className="text-sm opacity-80">{player.email}</p>
-                </div>
-              ))}
+          <div className="space-y-6">
+            <div>
+              <Label htmlFor="name">Game Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter game name"
+                className="max-w-xs"
+              />
             </div>
-          </div>
 
-          <div className="flex justify-end gap-4">
-            <Button variant="outline" onClick={() => navigate("/games")}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateGame}
-              disabled={selectedPlayers.length === 0 || loading}
-            >
-              {loading ? "Creating..." : "Create Game"}
-            </Button>
+            <div>
+              <Label htmlFor="place">Place</Label>
+              <Input
+                id="place"
+                value={place}
+                onChange={(e) => setPlace(e.target.value)}
+                placeholder="Enter game location"
+                className="max-w-xs"
+              />
+            </div>
+
+            <div>
+              <Label>Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-[280px] justify-start text-left font-normal"
+                  >
+                    {format(date, "PPP")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(newDate) => newDate && setDate(newDate)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <Label htmlFor="buyIn">Buy-in Amount</Label>
+              <Input
+                id="buyIn"
+                type="number"
+                value={buyIn}
+                onChange={(e) => setBuyIn(Number(e.target.value))}
+                className="max-w-xs"
+              />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Select Players</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {players.map((player) => (
+                  <div
+                    key={player.id}
+                    className={`p-4 rounded-lg cursor-pointer ${
+                      selectedPlayers.includes(player.id)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card hover:bg-accent"
+                    }`}
+                    onClick={() => handlePlayerSelect(player.id)}
+                  >
+                    <h3 className="font-medium">{player.name}</h3>
+                    <p className="text-sm opacity-80">{player.email}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <Button variant="outline" onClick={() => navigate("/games")}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateGame}
+                disabled={selectedPlayers.length === 0 || loading}
+              >
+                {loading ? "Creating..." : "Create Game"}
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
