@@ -18,76 +18,73 @@ const Index = () => {
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState<'user' | 'manager' | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const getErrorMessage = (error: AuthError) => {
-    console.log('Auth error details:', {
-      message: error.message,
-      name: error.name,
-      status: error instanceof AuthApiError ? error.status : 'N/A',
-      stack: error.stack
-    });
-    
     if (error instanceof AuthApiError) {
-      // For invalid credentials specifically
-      if (error.status === 400 && error.message.includes('Invalid login credentials')) {
-        return 'Invalid email or password. Please check your credentials and try again.';
-      }
-      
-      // For other common cases
       switch (error.status) {
         case 400:
-          return 'Invalid request. Please check your input and try again.';
+          return 'Invalid email or password. Please check your credentials and try again.';
         case 422:
           return 'Invalid email format. Please check your email address.';
-        case 401:
-          return 'Please sign in to continue.';
         default:
-          return `Authentication error: ${error.message}`;
+          return 'Authentication error. Please try again.';
       }
     }
-    
-    return error.message || 'An unexpected error occurred. Please try again.';
+    return error.message;
   };
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('Session check:', { session, error });
-      if (error) {
-        console.error('Error getting session:', error);
-        setAuthError(getErrorMessage(error));
-        return;
-      }
-      setSession(session);
-      if (session) {
-        fetchUserRole(session.user.id);
-      }
-    });
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setAuthError(getErrorMessage(error));
+          return;
+        }
 
-    // Listen for auth changes
+        setSession(session);
+        if (session?.user) {
+          await fetchUserRole(session.user.id);
+        }
+      } catch (error) {
+        console.error('Error during auth initialization:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', { event, session });
       
-      if (event === 'SIGNED_IN') {
-        setAuthError(null);
-        toast({
-          title: "Success",
-          description: "Successfully signed in!",
-        });
-      }
-      if (event === 'SIGNED_OUT') {
-        setAuthError(null);
-        setUserRole(null);
-      }
-      if (event === 'USER_UPDATED' && session?.user.email_confirmed_at) {
-        setAuthError(null);
-      }
-      
-      setSession(session);
-      if (session) {
-        fetchUserRole(session.user.id);
+      switch (event) {
+        case 'SIGNED_IN':
+          setAuthError(null);
+          setSession(session);
+          if (session?.user) {
+            await fetchUserRole(session.user.id);
+          }
+          toast({
+            title: "Welcome!",
+            description: "You've successfully signed in.",
+          });
+          break;
+        case 'SIGNED_OUT':
+          setAuthError(null);
+          setSession(null);
+          setUserRole(null);
+          break;
+        case 'USER_UPDATED':
+          if (session?.user.email_confirmed_at) {
+            setAuthError(null);
+          }
+          break;
       }
     });
 
@@ -95,23 +92,24 @@ const Index = () => {
   }, [toast]);
 
   const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
 
-    if (error) {
+      if (error) throw error;
+
+      setUserRole(data?.role || 'user');
+    } catch (error) {
       console.error('Error fetching user role:', error);
       toast({
         title: "Error",
         description: "Failed to fetch user role",
         variant: "destructive",
       });
-      return;
     }
-
-    setUserRole(data?.role || 'user');
   };
 
   const handlePromoteToManager = async () => {
@@ -192,32 +190,49 @@ const Index = () => {
     enabled: !!session
   });
 
-  if (!session) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-full max-w-md p-8">
-          <h1 className="text-3xl font-bold text-center mb-8">Welcome to Poker Manager</h1>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold">Welcome to Poker Manager</h1>
+            <p className="text-muted-foreground">Sign in to start managing your poker games</p>
+          </div>
+          
           {authError && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive">
               <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
-          <Auth
-            supabaseClient={supabase}
-            appearance={{ 
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: 'rgb(var(--primary))',
-                    brandAccent: 'rgb(var(--primary-foreground))'
+
+          <Card>
+            <CardContent className="pt-6">
+              <Auth
+                supabaseClient={supabase}
+                appearance={{ 
+                  theme: ThemeSupa,
+                  variables: {
+                    default: {
+                      colors: {
+                        brand: 'rgb(var(--primary))',
+                        brandAccent: 'rgb(var(--primary-foreground))'
+                      }
+                    }
                   }
-                }
-              }
-            }}
-            theme="light"
-            providers={[]}
-          />
+                }}
+                theme="light"
+                providers={[]}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
