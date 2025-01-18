@@ -1,11 +1,34 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export const Navigation = () => {
   const { session, handleSignOut } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   if (!session) return null;
+
+  const onSignOut = async () => {
+    try {
+      console.log("Attempting to sign out...");
+      await handleSignOut();
+      console.log("Sign out successful");
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <nav className="bg-primary p-4">
@@ -29,7 +52,7 @@ export const Navigation = () => {
           <Button
             variant="secondary"
             className="ml-4"
-            onClick={handleSignOut}
+            onClick={onSignOut}
           >
             Sign Out
           </Button>
