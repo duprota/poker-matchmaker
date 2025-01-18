@@ -12,21 +12,13 @@ export const Navigation = () => {
 
   const onSignOut = async () => {
     try {
-      console.log("Attempting to sign out...");
+      console.log("Navigation: Attempting to sign out...");
       await handleSignOut();
-      console.log("Sign out successful");
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out.",
-      });
+      console.log("Navigation: Sign out successful");
       navigate("/");
     } catch (error) {
-      console.error("Error signing out:", error);
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Navigation: Error signing out:", error);
+      // Error toast is already handled in AuthContext
     }
   };
 
