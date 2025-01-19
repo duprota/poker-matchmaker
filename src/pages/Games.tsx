@@ -8,16 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Game } from "@/types/game";
+import { Game, GamePlayer } from "@/types/game";
 
-interface GameWithPlayers extends Game {
-  players: {
-    name: string;
-    initial_buyin: number;
-  }[];
-}
-
-const fetchGames = async (): Promise<GameWithPlayers[]> => {
+const fetchGames = async (): Promise<Game[]> => {
   console.log("Fetching games...");
   const { data: gamesData, error: gamesError } = await supabase
     .from("games")
@@ -40,9 +33,17 @@ const fetchGames = async (): Promise<GameWithPlayers[]> => {
       const { data: playersData, error: playersError } = await supabase
         .from("game_players")
         .select(`
+          id,
+          game_id,
           initial_buyin,
+          total_rebuys,
+          final_result,
+          payment_status,
+          payment_amount,
           player:players (
-            name
+            id,
+            name,
+            email
           )
         `)
         .eq("game_id", game.id);
@@ -54,10 +55,7 @@ const fetchGames = async (): Promise<GameWithPlayers[]> => {
 
       return {
         ...game,
-        players: playersData.map((p) => ({
-          name: p.player.name,
-          initial_buyin: p.initial_buyin,
-        })),
+        players: playersData as GamePlayer[],
       };
     })
   );
@@ -160,7 +158,7 @@ const Games = () => {
                   </span>
                 </div>
                 <p className="text-muted-foreground mb-4">
-                  Players: {game.players.map((p) => p.name).join(", ")}
+                  Players: {game.players.map((p) => p.player.name).join(", ")}
                 </p>
                 <Button asChild variant="secondary" className="w-full">
                   <Link to={`/games/${game.id}`}>View Details</Link>
