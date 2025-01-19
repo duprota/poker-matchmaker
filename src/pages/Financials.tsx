@@ -40,7 +40,11 @@ const fetchHistoricalTransactions = async () => {
     .select(`
       id,
       player:players(id, name),
-      game:games(id, status, date),
+      game:games(
+        id,
+        status,
+        date
+      ),
       final_result,
       payment_status,
       initial_buyin,
@@ -60,6 +64,8 @@ const fetchHistoricalTransactions = async () => {
 
   // Process each game result
   gamePlayersData.forEach((entry) => {
+    if (!entry.game) return; // Skip if game is null
+    
     const gameId = entry.game.id;
     if (!gameTransactions.has(gameId)) {
       gameTransactions.set(gameId, []);
