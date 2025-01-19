@@ -25,7 +25,7 @@ export const useLeaderboardData = (selectedGroupId: string | undefined) => {
 
     if (error) {
       console.error("Error fetching groups:", error);
-      throw new Error(`Failed to fetch groups: ${error.message}`);
+      throw error;
     }
 
     if (!data) {
@@ -58,7 +58,7 @@ export const useLeaderboardData = (selectedGroupId: string | undefined) => {
 
       if (error) {
         console.error("Error fetching leaderboard data:", error);
-        throw new Error(`Failed to fetch leaderboard data: ${error.message}`);
+        throw error;
       }
 
       if (!data) {
