@@ -128,13 +128,15 @@ const Leaderboard = () => {
     queryKey: ['groups'],
     queryFn: fetchGroups,
     retry: 3,
-    onError: (error) => {
-      console.error("Error fetching groups:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load groups. Please try again.",
-        variant: "destructive",
-      });
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error fetching groups:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load groups. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -146,13 +148,15 @@ const Leaderboard = () => {
     queryKey: ['leaderboard', selectedGroupId],
     queryFn: () => fetchLeaderboardData(selectedGroupId),
     retry: 3,
-    onError: (error) => {
-      console.error("Error fetching leaderboard:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load leaderboard data. Please try again.",
-        variant: "destructive",
-      });
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error fetching leaderboard:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load leaderboard data. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
