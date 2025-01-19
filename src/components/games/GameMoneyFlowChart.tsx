@@ -34,7 +34,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       amount: initialTotal
     }];
 
-    // Sort history by timestamp
+    // Sort history by timestamp and filter only rebuy events
     const sortedHistory = [...gameHistory]
       .filter(entry => entry.event_type === 'rebuy')
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -45,7 +45,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     sortedHistory.forEach(entry => {
       const gamePlayer = players.find(p => p.id === entry.game_player_id);
       if (gamePlayer) {
-        const rebuyAmount = gamePlayer.initial_buyin;
+        // Each rebuy adds the initial buy-in amount for that player
+        const rebuyAmount = gamePlayer.initial_buyin * entry.amount; // Multiply by amount since it represents number of rebuys
         runningTotal += rebuyAmount;
         
         // Calculate minutes since game start
