@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { GameHeader } from "@/components/games/GameHeader";
 import { GameInformation } from "@/components/games/GameInformation";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
-import { GameHistory } from "@/components/games/GameHistory";
 import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
 import { GameSummary } from "@/components/games/GameSummary";
 import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
@@ -237,13 +236,6 @@ const GameDetails = () => {
                     onRebuyChange={handleRebuyChange}
                   />
                 ))}
-              </div>
-
-              <div className="mt-8">
-                <GameHistory 
-                  gameId={id || ''} 
-                  onHistoryUpdate={refreshGame}
-                />
               </div>
 
               <GameMoneyFlowChart 
