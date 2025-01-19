@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Home, Cards, Users, Trophy, DollarSign } from "lucide-react";
+import { Home, LayoutGrid, Users, Trophy, DollarSign } from "lucide-react";
 
 export const Navigation = () => {
   const location = useLocation();
@@ -11,7 +11,7 @@ export const Navigation = () => {
 
   const navItems = [
     { path: "/", label: "Home", icon: Home },
-    { path: "/games", label: "Games", icon: Cards },
+    { path: "/games", label: "Games", icon: LayoutGrid },
     { path: "/players", label: "Players", icon: Users },
     { path: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { path: "/financials", label: "Financials", icon: DollarSign },
