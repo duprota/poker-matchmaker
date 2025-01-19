@@ -53,9 +53,28 @@
   * {
     @apply border-border;
   }
+  
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+
+  /* Increase touch target sizes on mobile */
+  @media (max-width: 640px) {
+    button, 
+    [role="button"],
+    input,
+    select,
+    a {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
 
@@ -75,9 +94,25 @@
 }
 
 .hover-scale {
-  @apply transition-transform duration-200 hover:scale-105;
+  @apply transition-transform duration-200;
+}
+
+/* Only apply hover effects on non-touch devices */
+@media (hover: hover) {
+  .hover-scale:hover {
+    @apply scale-105;
+  }
 }
 
 .card-gradient {
   background: linear-gradient(225deg, #8B5CF6 0%, #0EA5E9 100%);
+}
+
+/* Improve scrolling on mobile */
+@supports (-webkit-overflow-scrolling: touch) {
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
 }

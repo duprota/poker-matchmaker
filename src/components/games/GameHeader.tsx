@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface GameHeaderProps {
   status: string;
@@ -19,33 +20,46 @@ interface GameHeaderProps {
 }
 
 export const GameHeader = ({ status, onFinalize, onDelete, finalizing }: GameHeaderProps) => {
+  const isMobile = useIsMobile();
+
   return (
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-3xl font-bold text-white">Game Details</h1>
-      <div className="flex gap-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-white">Game Details</h1>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
         {status === "ongoing" && (
           <Button 
             onClick={onFinalize} 
             disabled={finalizing}
             variant="destructive"
+            className="w-full sm:w-auto"
           >
             {finalizing ? "Finalizing..." : "Finalize Game"}
           </Button>
         )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive">Delete Game</Button>
+            <Button 
+              variant="destructive"
+              className="w-full sm:w-auto"
+            >
+              Delete Game
+            </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className={isMobile ? "w-[95vw]" : ""}>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure you want to delete this game?</AlertDialogTitle>
               <AlertDialogDescription>
                 This action cannot be undone. This will permanently delete the game and all associated data.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+            <AlertDialogFooter className={isMobile ? "flex-col gap-2" : ""}>
+              <AlertDialogCancel className={isMobile ? "w-full" : ""}>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={onDelete}
+                className={isMobile ? "w-full" : ""}
+              >
+                Delete
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
