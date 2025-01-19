@@ -32,7 +32,7 @@ interface TransactionSummary {
   gameDetails: GameDebtDetail[];
 }
 
-const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
+const fetchHistoricalTransactions = async () => {
   console.log("Fetching historical transactions...");
   
   const { data: gamePlayersData, error } = await supabase
@@ -51,11 +51,6 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
   if (error) {
     console.error("Error fetching game players data:", error);
     throw error;
-  }
-
-  if (!gamePlayersData) {
-    console.warn("No game players data returned");
-    return [];
   }
 
   console.log("Raw game players data:", gamePlayersData);
@@ -91,6 +86,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
   const consolidatedDebts = new Map();
 
   gameTransactions.forEach((players) => {
+    // Calculate transactions for this game
     players.forEach((payer) => {
       if (payer.balance < 0) {
         players.forEach((receiver) => {
@@ -101,6 +97,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
             
             const amount = Math.abs(payer.balance) * proportion;
 
+            // Create a unique key for this pair of players
             const key = [payer.playerId, receiver.playerId].sort().join('-');
             const currentDebt = consolidatedDebts.get(key) || {
               from: '',
@@ -136,6 +133,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     });
   });
 
+  // Convert consolidated debts to array and handle offsetting debts
   const finalTransactions: TransactionSummary[] = [];
   const processedPairs = new Set();
 
@@ -147,8 +145,9 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
       const reverseDebt = consolidatedDebts.get(reversePair);
       
       if (reverseDebt) {
+        // Both players owe each other, calculate net amount
         const netAmount = Math.abs(debt.amount - reverseDebt.amount);
-        if (netAmount > 0.01) {
+        if (netAmount > 0.01) { // Only include non-zero transactions
           if (debt.amount > reverseDebt.amount) {
             finalTransactions.push({
               ...debt,
@@ -164,7 +163,8 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
           }
         }
       } else {
-        if (debt.amount > 0.01) {
+        // Only one player owes money
+        if (debt.amount > 0.01) { // Only include non-zero transactions
           finalTransactions.push(debt);
         }
       }
@@ -183,16 +183,6 @@ const Financials = () => {
   const { data: transactions, isLoading, error } = useQuery({
     queryKey: ['historical-transactions'],
     queryFn: fetchHistoricalTransactions,
-    meta: {
-      onError: (error: Error) => {
-        console.error("Error fetching transactions:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load transaction history. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
   });
 
   const handleMarkAsPaid = async (gamePlayerIds: string[]) => {

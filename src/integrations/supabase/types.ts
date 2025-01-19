@@ -129,9 +129,7 @@ export type Database = {
         Row: {
           created_at: string
           date: string
-          group_id: string | null
           id: string
-          manager_id: string | null
           name: string | null
           place: string | null
           status: string
@@ -139,9 +137,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date?: string
-          group_id?: string | null
           id?: string
-          manager_id?: string | null
           name?: string | null
           place?: string | null
           status: string
@@ -149,86 +145,10 @@ export type Database = {
         Update: {
           created_at?: string
           date?: string
-          group_id?: string | null
           id?: string
-          manager_id?: string | null
           name?: string | null
           place?: string | null
           status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "games_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_members: {
-        Row: {
-          created_at: string
-          group_id: string | null
-          id: string
-          permissions: Json | null
-          player_id: string | null
-          role: Database["public"]["Enums"]["group_member_role"]
-        }
-        Insert: {
-          created_at?: string
-          group_id?: string | null
-          id?: string
-          permissions?: Json | null
-          player_id?: string | null
-          role?: Database["public"]["Enums"]["group_member_role"]
-        }
-        Update: {
-          created_at?: string
-          group_id?: string | null
-          id?: string
-          permissions?: Json | null
-          player_id?: string | null
-          role?: Database["public"]["Enums"]["group_member_role"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_members_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      groups: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          manager_id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          manager_id: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          manager_id?: string
-          name?: string
         }
         Relationships: []
       }
@@ -238,39 +158,18 @@ export type Database = {
           email: string
           id: string
           name: string
-          user_id: string | null
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
           name: string
-          user_id?: string | null
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
           name?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["user_role"] | null
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          role?: Database["public"]["Enums"]["user_role"] | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["user_role"] | null
         }
         Relationships: []
       }
@@ -279,17 +178,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      promote_to_manager: {
-        Args: {
-          user_id: string
-        }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       game_event_type: "rebuy" | "result_update"
-      group_member_role: "admin" | "member"
-      user_role: "user" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
