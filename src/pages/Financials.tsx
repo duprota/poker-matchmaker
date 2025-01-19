@@ -61,7 +61,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
   const transactions: TransactionSummary[] = gamePlayers.map((gp: any) => ({
     from: gp.players.name,
     fromId: gp.player_id,
-    to: "House", // Placeholder, modify as needed
+    to: "House",
     toId: "house",
     amount: gp.payment_amount || 0,
     gamePlayerIds: [gp.id],
@@ -88,6 +88,7 @@ const Financials = () => {
 
   // Subscribe to real-time updates
   useEffect(() => {
+    console.log('Setting up real-time subscription for game_players table...');
     const channel = supabase
       .channel('game-players-changes')
       .on(
@@ -97,14 +98,16 @@ const Financials = () => {
           schema: 'public',
           table: 'game_players'
         },
-        () => {
-          console.log('Received update on game_players table, refreshing data...');
+        (payload) => {
+          console.log('Received update on game_players table:', payload);
+          // Invalidate and refetch the transactions query
           queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up real-time subscription...');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
