@@ -3,7 +3,7 @@ import { GamePlayer } from "@/types/game";
 import { Card } from "@/components/ui/card";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowTrendingUpIcon } from "lucide-react";
+import { TrendingUpIcon } from "lucide-react";
 
 interface ChartDataPoint {
   time: string;
@@ -113,7 +113,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
                   </div>
                   
                   <div className="flex items-center space-x-2 text-lg font-semibold">
-                    <ArrowTrendingUpIcon className="w-5 h-5 text-primary" />
+                    <TrendingUpIcon className="w-5 h-5 text-primary" />
                     <span>${point.amount}</span>
                   </div>
 
