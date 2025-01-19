@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { GameHeader } from "@/components/games/GameHeader";
 import { GameInformation } from "@/components/games/GameInformation";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
-import { PaymentManagement } from "@/components/games/PaymentManagement";
 import { GameHistory } from "@/components/games/GameHistory";
 import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
 import { GameSummary } from "@/components/games/GameSummary";
@@ -239,12 +238,6 @@ const GameDetails = () => {
                   />
                 ))}
               </div>
-
-              <PaymentManagement
-                players={game.players}
-                calculateFinalResult={calculateFinalResult}
-                onUpdatePaymentStatus={updatePaymentStatus}
-              />
 
               <div className="mt-8">
                 <GameHistory 
