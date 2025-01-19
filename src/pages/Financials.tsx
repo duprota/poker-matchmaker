@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
+import { useEffect } from "react";
 
 interface GameDebtDetail {
   gameId: string;
@@ -191,6 +192,29 @@ const Financials = () => {
     queryFn: fetchHistoricalTransactions,
   });
 
+  // Subscribe to real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('game-players-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_players'
+        },
+        () => {
+          console.log('Received update on game_players table, refreshing data...');
+          queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const handleMarkAsPaid = async (gamePlayerIds: string[]) => {
     try {
       const { error } = await supabase
@@ -205,7 +229,7 @@ const Financials = () => {
         description: "The payment has been marked as paid successfully.",
       });
 
-      queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
+      // No need to manually invalidate query here as the real-time subscription will handle it
     } catch (error) {
       console.error('Error marking payment as paid:', error);
       toast({
