@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface Game {
   id: string;
@@ -19,96 +20,95 @@ interface Game {
   }[];
 }
 
-const Games = () => {
-  const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+const fetchGames = async () => {
+  console.log("Fetching games...");
+  const { data: gamesData, error: gamesError } = await supabase
+    .from("games")
+    .select("*")
+    .order("date", { ascending: false });
 
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        console.log("Fetching games...");
-        const { data: gamesData, error: gamesError } = await supabase
-          .from("games")
-          .select("*")
-          .order("date", { ascending: false });
+  if (gamesError) {
+    console.error("Error fetching games:", gamesError);
+    throw gamesError;
+  }
 
-        if (gamesError) {
-          console.error("Error fetching games:", gamesError);
-          throw gamesError;
-        }
+  // For each game, fetch its players
+  const gamesWithPlayers = await Promise.all(
+    gamesData.map(async (game) => {
+      const { data: playersData, error: playersError } = await supabase
+        .from("game_players")
+        .select(`
+          initial_buyin,
+          player:players (
+            name
+          )
+        `)
+        .eq("game_id", game.id);
 
-        console.log("Games data:", gamesData);
-
-        // For each game, fetch its players
-        const gamesWithPlayers = await Promise.all(
-          gamesData.map(async (game) => {
-            const { data: playersData, error: playersError } = await supabase
-              .from("game_players")
-              .select(`
-                initial_buyin,
-                player:players (
-                  name
-                )
-              `)
-              .eq("game_id", game.id);
-
-            if (playersError) {
-              console.error("Error fetching players for game:", game.id, playersError);
-              throw playersError;
-            }
-
-            return {
-              ...game,
-              players: playersData.map((p) => ({
-                name: p.player.name,
-                initial_buyin: p.initial_buyin,
-              })),
-            };
-          })
-        );
-
-        console.log("Games with players:", gamesWithPlayers);
-        setGames(gamesWithPlayers);
-        setError(null);
-      } catch (error) {
-        console.error("Error in fetchGames:", error);
-        setError("Failed to load games. Please try again later.");
-        toast({
-          title: "Error",
-          description: "Failed to load games",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (playersError) {
+        console.error("Error fetching players for game:", game.id, playersError);
+        throw playersError;
       }
-    };
 
-    fetchGames();
-  }, [toast]);
+      return {
+        ...game,
+        players: playersData.map((p) => ({
+          name: p.player.name,
+          initial_buyin: p.initial_buyin,
+        })),
+      };
+    })
+  );
 
-  if (loading) {
+  console.log("Games with players:", gamesWithPlayers);
+  return gamesWithPlayers;
+};
+
+const Games = () => {
+  const { toast } = useToast();
+  
+  const { 
+    data: games, 
+    isLoading, 
+    error,
+    isError
+  } = useQuery({
+    queryKey: ['games'],
+    queryFn: fetchGames,
+    retry: 2,
+    onError: (error) => {
+      console.error("Error in games query:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load games. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto py-8">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="ml-2 text-muted-foreground">Loading games...</p>
+            <p className="text-muted-foreground">Loading games...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto py-8">
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              Failed to load games. Please try refreshing the page.
+            </AlertDescription>
           </Alert>
         </div>
       </div>
@@ -126,9 +126,11 @@ const Games = () => {
           </Button>
         </div>
 
-        {games.length === 0 ? (
+        {!games?.length ? (
           <Card className="p-6">
-            <p className="text-center text-muted-foreground">No games found. Create your first game!</p>
+            <p className="text-center text-muted-foreground">
+              No games found. Create your first game!
+            </p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -136,8 +138,12 @@ const Games = () => {
               <Card key={game.id} className="p-4">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold">{game.name || "Game Details"}</h3>
-                    <p className="text-muted-foreground">{new Date(game.date).toLocaleDateString()}</p>
+                    <h3 className="text-xl font-semibold">
+                      {game.name || "Game Details"}
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {new Date(game.date).toLocaleDateString()}
+                    </p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded text-sm ${
