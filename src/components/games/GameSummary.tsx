@@ -38,19 +38,13 @@ export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) =>
 
   const transactions = calculateMinimumTransactions(playerBalances);
 
-  // Find player with most rebuys
-  const mostRebuys = players.reduce((max, player) => 
-    player.total_rebuys > max.total_rebuys ? player : max
-  , players[0]);
-
   const handleShareWhatsApp = () => {
     const summaryText = `🏆 Game Summary (${new Date(date).toLocaleDateString()})\n\n` +
       `Winner: ${winner.player.name} (+$${winnerProfit}) - ROI: ${winnerROI}%\n\n` +
       `Rankings:\n${sortedPlayers.map((p, i) => 
         `${i + 1}. ${p.player.name}: ${calculateFinalResult(p) >= 0 ? '+' : ''}$${calculateFinalResult(p)}`
       ).join('\n')}\n\n` +
-      `Total Money in Play: $${totalMoneyInPlay}\n` +
-      `Most Rebuys: ${mostRebuys.player.name} (${mostRebuys.total_rebuys})\n\n` +
+      `Total Money in Play: $${totalMoneyInPlay}\n\n` +
       `Required Payments:\n${transactions.map(t => 
         `${players.find(p => p.id === t.from)?.player.name} → ${players.find(p => p.id === t.to)?.player.name}: $${t.amount}`
       ).join('\n')}`;
@@ -86,23 +80,20 @@ export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) =>
             const roi = ((result / (player.initial_buyin + (player.total_rebuys * player.initial_buyin))) * 100).toFixed(2);
             
             return (
-              <Card key={player.id} className="p-4">
+              <Card key={player.id} className="p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <span className="text-lg font-semibold">{index + 1}</span>
                     <div>
                       <p className="font-medium">{player.player.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {player.total_rebuys} rebuys
+                        ROI: {roi}%
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-semibold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {result >= 0 ? '+' : ''}{result}
-                    </p>
-                    <p className="text-sm text-muted-foreground">ROI: {roi}%</p>
-                  </div>
+                  <p className={`font-semibold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {result >= 0 ? '+' : ''}{result}
+                  </p>
                 </div>
               </Card>
             );
@@ -113,27 +104,19 @@ export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) =>
       {/* Game Statistics */}
       <div>
         <h3 className="text-xl font-semibold mb-4">Game Statistics</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Total Money in Play</p>
-            <p className="text-2xl font-semibold">${totalMoneyInPlay}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Most Rebuys</p>
-            <p className="text-2xl font-semibold">{mostRebuys.player.name} ({mostRebuys.total_rebuys})</p>
-          </Card>
-        </div>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Total Money in Play</p>
+          <p className="text-2xl font-semibold">${totalMoneyInPlay}</p>
+        </Card>
       </div>
 
       {/* Money Flow Chart */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Money Flow During Game</h3>
-        <Card className="p-4">
-          <div className="h-[300px]">
-            <GameMoneyFlowChart players={players} gameHistory={gameHistory} />
-          </div>
-        </Card>
-      </div>
+      <Card className="p-6">
+        <h3 className="text-xl font-semibold mb-6">Money Flow During Game</h3>
+        <div className="h-[400px]">
+          <GameMoneyFlowChart players={players} gameHistory={gameHistory} />
+        </div>
+      </Card>
 
       {/* Payment Instructions */}
       <div>
@@ -144,7 +127,7 @@ export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) =>
             const toPlayer = players.find(p => p.id === transaction.to);
             
             return (
-              <Card key={index} className="p-4">
+              <Card key={index} className="p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{fromPlayer?.player.name}</span>

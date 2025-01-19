@@ -62,37 +62,43 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
   }, [players, gameHistory]);
 
   return (
-    <div className="w-full h-[400px] mt-8">
-      <h2 className="text-xl font-semibold mb-4">Money Flow During Game</h2>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="time" 
-            label={{ 
-              value: 'Minutes into game', 
-              position: 'insideBottom', 
-              offset: -5 
-            }}
-          />
-          <YAxis 
-            label={{ 
-              value: 'Amount in play ($)', 
-              angle: -90, 
-              position: 'insideLeft'
-            }}
-          />
-          <Tooltip />
-          <Bar 
-            dataKey="amount" 
-            fill="#4f46e5"
-            label={{ 
-              position: 'top',
-              formatter: (value: number) => `$${value}`
-            }}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+        <XAxis 
+          dataKey="time" 
+          label={{ 
+            value: 'Minutes into game', 
+            position: 'insideBottom', 
+            offset: -10,
+            fill: '#888'
+          }}
+          tick={{ fill: '#888' }}
+        />
+        <YAxis 
+          label={{ 
+            value: 'Amount in play ($)', 
+            angle: -90, 
+            position: 'insideLeft',
+            offset: 10,
+            fill: '#888'
+          }}
+          tick={{ fill: '#888' }}
+        />
+        <Tooltip 
+          contentStyle={{ 
+            backgroundColor: '#222',
+            border: '1px solid #333',
+            borderRadius: '8px'
+          }}
+          labelStyle={{ color: '#888' }}
+        />
+        <Bar 
+          dataKey="amount" 
+          fill="#8B5CF6"
+          radius={[4, 4, 0, 0]}
+        />
+      </BarChart>
+    </ResponsiveContainer>
   );
 };
