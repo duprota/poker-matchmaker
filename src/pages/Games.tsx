@@ -76,7 +76,11 @@ const Games = () => {
     queryKey: ['games'],
     queryFn: fetchGames,
     retry: 2,
-    onError: (error) => {
+  });
+
+  // Handle errors outside of the query configuration
+  useEffect(() => {
+    if (isError && error) {
       console.error("Error in games query:", error);
       toast({
         title: "Error",
@@ -84,7 +88,7 @@ const Games = () => {
         variant: "destructive",
       });
     }
-  });
+  }, [isError, error, toast]);
 
   if (isLoading) {
     return (
