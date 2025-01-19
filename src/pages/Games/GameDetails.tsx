@@ -36,6 +36,41 @@ const GameDetails = () => {
   const [rebuys, setRebuys] = useState<Record<string, number>>({});
   const [gameHistory, setGameHistory] = useState<any[]>([]);
 
+  const fetchGameHistory = async () => {
+    try {
+      console.log("Fetching game history for game:", id);
+      const { data, error } = await supabase
+        .from('game_history')
+        .select(`
+          id,
+          event_type,
+          amount,
+          created_at,
+          game_player_id,
+          game_players (
+            player (
+              name
+            ),
+            initial_buyin,
+            total_rebuys
+          )
+        `)
+        .eq('game_id', id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      console.log("Game history data:", data);
+      setGameHistory(data || []);
+    } catch (error) {
+      console.error("Error fetching game history:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load game history",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleRebuyChange = (playerId: string, value: string) => {
     setRebuys(prev => ({
       ...prev,
