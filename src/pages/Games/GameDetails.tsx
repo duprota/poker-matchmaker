@@ -48,7 +48,7 @@ const GameDetails = () => {
           created_at,
           game_player_id,
           game_players!fk_game_history_game_player (
-            player (
+            players (
               name
             ),
             initial_buyin,
