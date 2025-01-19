@@ -2,10 +2,18 @@ import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
+import { Pencil, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type Player = Tables<"players">;
 
@@ -13,10 +21,10 @@ const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerEmail, setNewPlayerEmail] = useState("");
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Fetch players on component mount
   useEffect(() => {
     fetchPlayers();
   }, []);
@@ -90,6 +98,75 @@ const Players = () => {
     }
   };
 
+  const updatePlayer = async () => {
+    if (!editingPlayer || !editingPlayer.name.trim() || !editingPlayer.email.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide both name and email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log("Updating player:", editingPlayer);
+      const { error } = await supabase
+        .from("players")
+        .update({
+          name: editingPlayer.name.trim(),
+          email: editingPlayer.email.trim(),
+        })
+        .eq("id", editingPlayer.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setPlayers(players.map(p => 
+        p.id === editingPlayer.id ? editingPlayer : p
+      ));
+      setEditingPlayer(null);
+      toast({
+        title: "Success",
+        description: "Player updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update player",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deletePlayer = async (playerId: string) => {
+    try {
+      console.log("Deleting player:", playerId);
+      const { error } = await supabase
+        .from("players")
+        .delete()
+        .eq("id", playerId);
+
+      if (error) {
+        throw error;
+      }
+
+      setPlayers(players.filter(p => p.id !== playerId));
+      toast({
+        title: "Success",
+        description: "Player deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete player",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -125,8 +202,57 @@ const Players = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {players.map((player) => (
             <Card key={player.id} className="p-4">
-              <h3 className="text-xl font-semibold mb-2">{player.name}</h3>
-              <p className="text-gray-500 dark:text-gray-400">{player.email}</p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{player.name}</h3>
+                  <p className="text-gray-500 dark:text-gray-400">{player.email}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingPlayer(player)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Player</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <Input
+                          placeholder="Player name"
+                          value={editingPlayer?.name || ""}
+                          onChange={(e) => setEditingPlayer(prev => 
+                            prev ? { ...prev, name: e.target.value } : null
+                          )}
+                        />
+                        <Input
+                          placeholder="Player email"
+                          type="email"
+                          value={editingPlayer?.email || ""}
+                          onChange={(e) => setEditingPlayer(prev => 
+                            prev ? { ...prev, email: e.target.value } : null
+                          )}
+                        />
+                        <Button onClick={updatePlayer} className="w-full">
+                          Update Player
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deletePlayer(player.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </Card>
           ))}
         </div>
