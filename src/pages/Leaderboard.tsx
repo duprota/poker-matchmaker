@@ -3,17 +3,28 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Medal, Star, TrendingUp } from "lucide-react";
+import { Trophy, Medal, Star, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface LeaderboardEntry {
   player_name: string;
   games_played: number;
   total_winnings: number;
   biggest_win: number;
+  total_spent: number;
+  roi_percentage: number;
+  average_roi: number;
+  best_game_roi: number;
+  worst_game_roi: number;
 }
+
+const calculateROI = (winnings: number, spent: number) => {
+  if (spent === 0) return 0;
+  return ((winnings - spent) / spent) * 100;
+};
 
 const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   console.log("Fetching leaderboard data...");
@@ -22,8 +33,10 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     .from('game_players')
     .select(`
       player:players(name),
-      game:games(id),
-      final_result
+      game:games(id, date),
+      final_result,
+      initial_buyin,
+      total_rebuys
     `)
     .not('final_result', 'is', null);
 
@@ -34,22 +47,39 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
 
   const playerStats = data.reduce((acc: { [key: string]: LeaderboardEntry }, entry) => {
     const playerName = entry.player.name;
+    const spent = entry.initial_buyin * (1 + entry.total_rebuys);
+    const result = entry.final_result || 0;
+    const gameRoi = calculateROI(result, spent);
     
     if (!acc[playerName]) {
       acc[playerName] = {
         player_name: playerName,
         games_played: 0,
         total_winnings: 0,
-        biggest_win: 0
+        total_spent: 0,
+        biggest_win: 0,
+        roi_percentage: 0,
+        average_roi: 0,
+        best_game_roi: -Infinity,
+        worst_game_roi: Infinity
       };
     }
 
     acc[playerName].games_played += 1;
-    acc[playerName].total_winnings += entry.final_result || 0;
-    acc[playerName].biggest_win = Math.max(acc[playerName].biggest_win, entry.final_result || 0);
+    acc[playerName].total_winnings += result;
+    acc[playerName].total_spent += spent;
+    acc[playerName].biggest_win = Math.max(acc[playerName].biggest_win, result);
+    acc[playerName].best_game_roi = Math.max(acc[playerName].best_game_roi, gameRoi);
+    acc[playerName].worst_game_roi = Math.min(acc[playerName].worst_game_roi, gameRoi);
 
     return acc;
   }, {});
+
+  // Calculate final ROI percentages
+  Object.values(playerStats).forEach(player => {
+    player.roi_percentage = calculateROI(player.total_winnings, player.total_spent);
+    player.average_roi = player.roi_percentage / player.games_played;
+  });
 
   return Object.values(playerStats).sort((a, b) => b.total_winnings - a.total_winnings);
 };
@@ -85,6 +115,19 @@ const RankIcon = ({ position }: { position: number }) => {
   return <Star className="w-6 h-6 text-muted-foreground" />;
 };
 
+const ROIIndicator = ({ value }: { value: number }) => {
+  const isPositive = value >= 0;
+  return (
+    <div className={cn(
+      "flex items-center gap-1",
+      isPositive ? "text-green-500" : "text-red-500"
+    )}>
+      {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+      <span>{value.toFixed(1)}%</span>
+    </div>
+  );
+};
+
 const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: number }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useIsMobile();
@@ -105,9 +148,7 @@ const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: nu
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="font-semibold">{entry.player_name}</span>
-            {entry.total_winnings > 1000 && (
-              <TrendingUp className="w-4 h-4 text-green-500" />
-            )}
+            <ROIIndicator value={entry.roi_percentage} />
           </div>
           <div className="text-sm text-muted-foreground">
             {entry.games_played} games played
@@ -119,11 +160,10 @@ const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: nu
           entry.total_winnings >= 0 ? "text-green-500" : "text-red-500"
         )}>
           <div className="font-bold">${entry.total_winnings}</div>
-          {isExpanded && (
-            <div className="text-sm animate-fade-in">
-              Best: ${entry.biggest_win}
-            </div>
-          )}
+          <div className="text-sm text-muted-foreground">
+            <DollarSign className="w-3 h-3 inline" />
+            {entry.total_spent} spent
+          </div>
         </div>
       </div>
       
@@ -131,14 +171,26 @@ const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: nu
         <div className="mt-4 pt-4 border-t animate-fade-in">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-muted-foreground">Average per Game</div>
+              <div className="text-sm text-muted-foreground">Average ROI per Game</div>
               <div className="font-semibold">
-                ${Math.round(entry.total_winnings / entry.games_played)}
+                <ROIIndicator value={entry.average_roi} />
               </div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Biggest Win</div>
-              <div className="font-semibold">${entry.biggest_win}</div>
+              <div className="text-sm text-muted-foreground">Best Game ROI</div>
+              <div className="font-semibold">
+                <ROIIndicator value={entry.best_game_roi} />
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Worst Game ROI</div>
+              <div className="font-semibold">
+                <ROIIndicator value={entry.worst_game_roi} />
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Total Investment</div>
+              <div className="font-semibold">${entry.total_spent}</div>
             </div>
           </div>
         </div>
