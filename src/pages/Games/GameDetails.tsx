@@ -11,6 +11,7 @@ import { PaymentManagement } from "@/components/games/PaymentManagement";
 import { GameHistory } from "@/components/games/GameHistory";
 import { TotalAmountsTable } from "@/components/games/TotalAmountsTable";
 import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
+import { GameSummary } from "@/components/games/GameSummary";
 import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult, calculateTotals } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
@@ -296,62 +297,59 @@ const GameDetails = () => {
         />
         
         <Card className="p-6 mb-6">
-          <GameInformation 
-            date={game.date}
-            status={game.status}
-            hasBalanceError={hasBalanceError}
-            totalBuyInsAndRebuys={calculateTotalBuyInsAndRebuys(game.players)}
-            totalResults={calculateTotalResults(game.players)}
-            players={game.players}
-          />
-
-          {game.status === "ongoing" && (
-            <OngoingGameForm
+          {game.status === "completed" ? (
+            <GameSummary 
               players={game.players}
-              rebuys={rebuys}
-              results={results}
-              onRebuyChange={handleRebuyChange}
-              onResultChange={handleResultChange}
-              onSaveRebuys={saveRebuys}
-              onSaveResults={saveResults}
-              savingRebuys={savingRebuys}
-              savingResults={savingResults}
-              setRebuys={setRebuys}
+              gameHistory={gameHistory}
+              date={game.date}
             />
+          ) : (
+            <>
+              <GameInformation 
+                date={game.date}
+                status={game.status}
+                hasBalanceError={hasBalanceError}
+                totalBuyInsAndRebuys={calculateTotalBuyInsAndRebuys(game.players)}
+                totalResults={calculateTotalResults(game.players)}
+                players={game.players}
+              />
+
+              <OngoingGameForm
+                players={game.players}
+                rebuys={rebuys}
+                results={results}
+                onRebuyChange={handleRebuyChange}
+                onResultChange={handleResultChange}
+                onSaveRebuys={saveRebuys}
+                onSaveResults={saveResults}
+                savingRebuys={savingRebuys}
+                savingResults={savingResults}
+                setRebuys={setRebuys}
+              />
+
+              <div className="mt-8">
+                <TotalAmountsTable players={game.players} />
+              </div>
+
+              <PaymentManagement
+                players={game.players}
+                calculateFinalResult={calculateFinalResult}
+                onUpdatePaymentStatus={updatePaymentStatus}
+              />
+
+              <div className="mt-8">
+                <GameHistory 
+                  gameId={id || ''} 
+                  onHistoryUpdate={handleHistoryUpdate}
+                />
+              </div>
+
+              <GameMoneyFlowChart 
+                players={game.players}
+                gameHistory={gameHistory}
+              />
+            </>
           )}
-
-          {game.status === "completed" && (
-            <CompletedGameTable
-              players={game.players}
-              calculateFinalResult={calculateFinalResult}
-              totals={calculateTotals(game.players)}
-              onUpdateResults={updatePlayerResult}
-            />
-          )}
-
-          <div className="mt-8">
-            <TotalAmountsTable players={game.players} />
-          </div>
-
-          {game.status === "completed" && (
-            <PaymentManagement
-              players={game.players}
-              calculateFinalResult={calculateFinalResult}
-              onUpdatePaymentStatus={updatePaymentStatus}
-            />
-          )}
-
-          <div className="mt-8">
-            <GameHistory 
-              gameId={id || ''} 
-              onHistoryUpdate={handleHistoryUpdate}
-            />
-          </div>
-
-          <GameMoneyFlowChart 
-            players={game.players}
-            gameHistory={gameHistory}
-          />
         </Card>
       </div>
     </div>
