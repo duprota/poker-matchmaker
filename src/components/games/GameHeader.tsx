@@ -39,8 +39,8 @@ export const GameHeader = ({ status, onFinalize, onDelete, finalizing }: GameHea
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
-              variant="destructive"
-              className="w-full sm:w-auto"
+              variant="outline"
+              className="w-full sm:w-auto text-muted-foreground hover:text-destructive transition-colors"
             >
               Delete Game
             </Button>
