@@ -5,17 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-
-interface Game {
-  id: string;
-  date: string;
-  status: string;
-  name: string | null;
-  players: {
-    name: string;
-    initial_buyin: number;
-  }[];
-}
+import type { Game } from "@/types/game";
 
 const Games = () => {
   const [games, setGames] = useState<Game[]>([]);
@@ -31,7 +21,10 @@ const Games = () => {
           .select("*")
           .order("date", { ascending: false });
 
-        if (gamesError) throw gamesError;
+        if (gamesError) {
+          console.error("Error fetching games:", gamesError);
+          throw gamesError;
+        }
 
         // For each game, fetch its players
         const gamesWithPlayers = await Promise.all(
@@ -39,21 +32,29 @@ const Games = () => {
             const { data: playersData, error: playersError } = await supabase
               .from("game_players")
               .select(`
+                id,
+                game_id,
                 initial_buyin,
+                total_rebuys,
+                final_result,
+                payment_status,
+                payment_amount,
                 player:players (
-                  name
+                  id,
+                  name,
+                  email
                 )
               `)
               .eq("game_id", game.id);
 
-            if (playersError) throw playersError;
+            if (playersError) {
+              console.error("Error fetching players for game:", playersError);
+              throw playersError;
+            }
 
             return {
               ...game,
-              players: playersData.map((p) => ({
-                name: p.player.name,
-                initial_buyin: p.initial_buyin,
-              })),
+              players: playersData,
             };
           })
         );
@@ -102,8 +103,12 @@ const Games = () => {
             <Card key={game.id} className="p-4">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold">{game.name || "Game Details"}</h3>
-                  <p className="text-gray-600">{new Date(game.date).toLocaleDateString()}</p>
+                  <h3 className="text-xl font-semibold">
+                    {game.name || "Game Details"}
+                  </h3>
+                  <p className="text-gray-600">
+                    {new Date(game.date).toLocaleDateString()}
+                  </p>
                 </div>
                 <span
                   className={`px-2 py-1 rounded text-sm ${
@@ -116,7 +121,7 @@ const Games = () => {
                 </span>
               </div>
               <p className="text-gray-600 mb-4">
-                Players: {game.players.map((p) => p.name).join(", ")}
+                Players: {game.players.map((p) => p.player.name).join(", ")}
               </p>
               <Button asChild variant="secondary" className="w-full">
                 <Link to={`/games/${game.id}`}>View Details</Link>
