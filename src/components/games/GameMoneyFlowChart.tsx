@@ -1,18 +1,15 @@
 import { useEffect, useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { GamePlayer } from "@/types/game";
+import { Card } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { formatDistanceToNow } from "date-fns";
+import { ArrowTrendingUpIcon } from "lucide-react";
 
 interface ChartDataPoint {
   time: string;
   amount: number;
+  playerName?: string;
+  timestamp: Date;
 }
 
 interface GameMoneyFlowChartProps {
@@ -22,6 +19,7 @@ interface GameMoneyFlowChartProps {
 
 export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartProps) => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Calculate initial total from all players' initial buy-ins
@@ -31,7 +29,9 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     // Initialize data points array with initial buy-ins
     const dataPoints: ChartDataPoint[] = [{
       time: "0",
-      amount: initialTotal
+      amount: initialTotal,
+      playerName: "Initial Buy-ins",
+      timestamp: new Date(gameHistory[0]?.created_at || new Date())
     }];
 
     // Get only rebuy events and sort them by timestamp
@@ -48,11 +48,9 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     rebuyEvents.forEach(event => {
       const player = players.find(p => p.id === event.game_player_id);
       if (player) {
-        // For each rebuy, add the player's initial buy-in amount
         const rebuyAmount = player.initial_buyin;
         runningTotal += rebuyAmount;
         
-        // Calculate minutes since game start
         const eventTime = new Date(event.created_at);
         const gameStartTime = new Date(rebuyEvents[0]?.created_at || event.created_at);
         const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
@@ -65,57 +63,71 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
 
         dataPoints.push({
           time: minutesSinceStart.toString(),
-          amount: runningTotal
+          amount: runningTotal,
+          playerName: player.player.name,
+          timestamp: eventTime
         });
       }
     });
-
-    // No need to add a final data point with a different calculation
-    // The chart will show the progression based on actual rebuy events
 
     console.log("Final chart data points:", dataPoints);
     setChartData(dataPoints);
   }, [players, gameHistory]);
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-        <XAxis 
-          dataKey="time" 
-          label={{ 
-            value: 'Minutes into game', 
-            position: 'insideBottom', 
-            offset: -10,
-            fill: '#888'
-          }}
-          tick={{ fill: '#888' }}
-        />
-        <YAxis 
-          label={{ 
-            value: 'Amount in play ($)', 
-            angle: -90, 
-            position: 'insideLeft',
-            offset: 10,
-            fill: '#888'
-          }}
-          tick={{ fill: '#888' }}
-        />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: '#222',
-            border: '1px solid #333',
-            borderRadius: '8px'
-          }}
-          labelStyle={{ color: '#888' }}
-          formatter={(value: number) => [`$${value}`, 'Amount']}
-        />
-        <Bar 
-          dataKey="amount" 
-          fill="#8B5CF6"
-          radius={[4, 4, 0, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Money Flow Timeline</h3>
+        <div className="text-sm text-muted-foreground">
+          Total in play: ${chartData[chartData.length - 1]?.amount || 0}
+        </div>
+      </div>
+
+      <div className="relative">
+        {/* Timeline line */}
+        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-muted" />
+
+        {/* Timeline events */}
+        <div className="space-y-4">
+          {chartData.map((point, index) => (
+            <div
+              key={index}
+              className={`
+                relative pl-12 py-4 hover-scale
+                ${index === 0 ? 'animate-fade-in' : 'animate-fade-in'}
+              `}
+              style={{ animationDelay: `${index * 150}ms` }}
+            >
+              {/* Timeline dot */}
+              <div className="absolute left-2.5 top-6 w-3 h-3 rounded-full bg-primary" />
+              
+              <Card className="p-4 bg-card">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">
+                      {point.playerName}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDistanceToNow(point.timestamp, { addSuffix: true })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 text-lg font-semibold">
+                    <ArrowTrendingUpIcon className="w-5 h-5 text-primary" />
+                    <span>${point.amount}</span>
+                  </div>
+
+                  {index > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      +${point.amount - chartData[index - 1].amount} from previous
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
