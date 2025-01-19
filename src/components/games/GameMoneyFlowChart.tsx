@@ -26,6 +26,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
   useEffect(() => {
     // Calculate initial buy-ins total
     const initialTotal = players.reduce((acc, player) => acc + player.initial_buyin, 0);
+    console.log("Initial total:", initialTotal);
 
     // Create data point for initial buy-ins
     const dataPoints: ChartDataPoint[] = [{
@@ -44,7 +45,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     sortedHistory.forEach(entry => {
       const gamePlayer = players.find(p => p.id === entry.game_player_id);
       if (gamePlayer) {
-        runningTotal += (gamePlayer.initial_buyin * entry.amount);
+        const rebuyAmount = gamePlayer.initial_buyin;
+        runningTotal += rebuyAmount;
         
         // Calculate minutes since game start
         const entryTime = new Date(entry.created_at);
@@ -61,6 +63,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     // Calculate final total including all rebuys
     const finalTotal = players.reduce((acc, player) => 
       acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
+    console.log("Final total:", finalTotal);
 
     // Add final data point if it's different from the last one
     if (!dataPoints.length || dataPoints[dataPoints.length - 1].amount !== finalTotal) {
@@ -74,11 +77,12 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       });
     }
 
+    console.log("Chart data points:", dataPoints);
     setChartData(dataPoints);
   }, [players, gameHistory]);
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height={400}>
       <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#333" />
         <XAxis 
@@ -108,6 +112,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
             borderRadius: '8px'
           }}
           labelStyle={{ color: '#888' }}
+          formatter={(value: number) => [`$${value}`, 'Amount']}
         />
         <Bar 
           dataKey="amount" 
