@@ -24,35 +24,44 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 
   useEffect(() => {
-    // Calculate initial buy-ins total
-    const initialTotal = players.reduce((acc, player) => acc + player.initial_buyin, 0);
-    console.log("Initial total:", initialTotal);
+    // Calculate initial total from all players' initial buy-ins
+    const initialTotal = players.reduce((acc, player) => acc + (player.initial_buyin || 0), 0);
+    console.log("Initial total from buy-ins:", initialTotal);
 
-    // Create data point for initial buy-ins
+    // Initialize data points array with initial buy-ins
     const dataPoints: ChartDataPoint[] = [{
       time: "0",
       amount: initialTotal
     }];
 
-    // Sort history by timestamp and filter only rebuy events
-    const sortedHistory = [...gameHistory]
+    // Get only rebuy events and sort them by timestamp
+    const rebuyEvents = [...gameHistory]
       .filter(entry => entry.event_type === 'rebuy')
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
+    console.log("Sorted rebuy events:", rebuyEvents);
+
+    // Track running total starting from initial buy-ins
     let runningTotal = initialTotal;
 
-    // Add data points for each rebuy
-    sortedHistory.forEach(entry => {
-      const gamePlayer = players.find(p => p.id === entry.game_player_id);
-      if (gamePlayer) {
-        // Each rebuy adds the initial buy-in amount for that player
-        const rebuyAmount = gamePlayer.initial_buyin * entry.amount; // Multiply by amount since it represents number of rebuys
+    // Process each rebuy event
+    rebuyEvents.forEach(event => {
+      const player = players.find(p => p.id === event.game_player_id);
+      if (player) {
+        // For each rebuy, add the player's initial buy-in amount
+        const rebuyAmount = player.initial_buyin;
         runningTotal += rebuyAmount;
         
         // Calculate minutes since game start
-        const entryTime = new Date(entry.created_at);
-        const gameStartTime = new Date(sortedHistory[0]?.created_at || entry.created_at);
-        const minutesSinceStart = Math.floor((entryTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
+        const eventTime = new Date(event.created_at);
+        const gameStartTime = new Date(rebuyEvents[0]?.created_at || event.created_at);
+        const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
+
+        console.log(`Rebuy at ${minutesSinceStart} minutes:`, {
+          player: player.player.name,
+          rebuyAmount,
+          newTotal: runningTotal
+        });
 
         dataPoints.push({
           time: minutesSinceStart.toString(),
@@ -61,16 +70,17 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       }
     });
 
-    // Calculate final total including all rebuys
+    // Calculate final total (should match total money in play)
     const finalTotal = players.reduce((acc, player) => 
-      acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
+      acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0
+    );
     console.log("Final total:", finalTotal);
 
     // Add final data point if it's different from the last one
-    if (!dataPoints.length || dataPoints[dataPoints.length - 1].amount !== finalTotal) {
-      const lastTime = dataPoints.length ? 
+    if (dataPoints.length === 1 || dataPoints[dataPoints.length - 1].amount !== finalTotal) {
+      const lastTime = dataPoints.length > 1 ? 
         parseInt(dataPoints[dataPoints.length - 1].time) + 30 : // Add 30 minutes after last point
-        0; // Or start at 0 if no previous points
+        60; // Or default to 60 minutes if only initial point exists
 
       dataPoints.push({
         time: lastTime.toString(),
@@ -78,7 +88,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       });
     }
 
-    console.log("Chart data points:", dataPoints);
+    console.log("Final chart data points:", dataPoints);
     setChartData(dataPoints);
   }, [players, gameHistory]);
 
