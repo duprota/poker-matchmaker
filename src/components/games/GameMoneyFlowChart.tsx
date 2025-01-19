@@ -58,6 +58,22 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       }
     });
 
+    // Calculate final total including all rebuys
+    const finalTotal = players.reduce((acc, player) => 
+      acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
+
+    // Add final data point if it's different from the last one
+    if (!dataPoints.length || dataPoints[dataPoints.length - 1].amount !== finalTotal) {
+      const lastTime = dataPoints.length ? 
+        parseInt(dataPoints[dataPoints.length - 1].time) + 30 : // Add 30 minutes after last point
+        0; // Or start at 0 if no previous points
+
+      dataPoints.push({
+        time: lastTime.toString(),
+        amount: finalTotal
+      });
+    }
+
     setChartData(dataPoints);
   }, [players, gameHistory]);
 
