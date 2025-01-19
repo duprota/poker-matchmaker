@@ -1,15 +1,12 @@
 import { Navigation } from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Trophy, Medal, Star, TrendingUp } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface LeaderboardEntry {
   player_name: string;
@@ -35,9 +32,6 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     throw error;
   }
 
-  console.log("Raw game data:", data);
-
-  // Process the data to calculate leaderboard statistics
   const playerStats = data.reduce((acc: { [key: string]: LeaderboardEntry }, entry) => {
     const playerName = entry.player.name;
     
@@ -57,17 +51,106 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     return acc;
   }, {});
 
-  // Convert to array and sort by total winnings
-  const leaderboard = Object.values(playerStats)
-    .sort((a, b) => b.total_winnings - a.total_winnings);
+  return Object.values(playerStats).sort((a, b) => b.total_winnings - a.total_winnings);
+};
 
-  console.log("Processed leaderboard data:", leaderboard);
-  return leaderboard;
+const TimeFilter = ({ active, onChange }: { active: string, onChange: (period: string) => void }) => {
+  const filters = ["All Time", "This Month", "This Week"];
+  const isMobile = useIsMobile();
+  
+  return (
+    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+      {filters.map((filter) => (
+        <button
+          key={filter}
+          onClick={() => onChange(filter)}
+          className={cn(
+            "px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all",
+            active === filter 
+              ? "bg-primary text-white" 
+              : "bg-card hover:bg-muted"
+          )}
+        >
+          {filter}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const RankIcon = ({ position }: { position: number }) => {
+  if (position === 1) return <Trophy className="w-6 h-6 text-yellow-500" />;
+  if (position === 2) return <Medal className="w-6 h-6 text-gray-400" />;
+  if (position === 3) return <Medal className="w-6 h-6 text-amber-600" />;
+  return <Star className="w-6 h-6 text-muted-foreground" />;
+};
+
+const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: number }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isMobile = useIsMobile();
+  
+  return (
+    <Card 
+      className={cn(
+        "p-4 mb-3 transition-all cursor-pointer hover:scale-[1.02] animate-fade-in",
+        isExpanded && "bg-card/50"
+      )}
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center w-8 h-8">
+          <RankIcon position={position} />
+        </div>
+        
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">{entry.player_name}</span>
+            {entry.total_winnings > 1000 && (
+              <TrendingUp className="w-4 h-4 text-green-500" />
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {entry.games_played} games played
+          </div>
+        </div>
+        
+        <div className={cn(
+          "text-right",
+          entry.total_winnings >= 0 ? "text-green-500" : "text-red-500"
+        )}>
+          <div className="font-bold">${entry.total_winnings}</div>
+          {isExpanded && (
+            <div className="text-sm animate-fade-in">
+              Best: ${entry.biggest_win}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {isExpanded && (
+        <div className="mt-4 pt-4 border-t animate-fade-in">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">Average per Game</div>
+              <div className="font-semibold">
+                ${Math.round(entry.total_winnings / entry.games_played)}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Biggest Win</div>
+              <div className="font-semibold">${entry.biggest_win}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
 };
 
 const Leaderboard = () => {
+  const [timeFilter, setTimeFilter] = useState("All Time");
   const { data: leaderboard, isLoading, error } = useQuery({
-    queryKey: ['leaderboard'],
+    queryKey: ['leaderboard', timeFilter],
     queryFn: fetchLeaderboardData,
   });
 
@@ -107,32 +190,17 @@ const Leaderboard = () => {
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold text-white mb-6">2024 Leaderboard</h1>
         
-        <Card className="p-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Position</TableHead>
-                <TableHead>Player</TableHead>
-                <TableHead>Games Played</TableHead>
-                <TableHead>Total Winnings</TableHead>
-                <TableHead>Biggest Win</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leaderboard?.map((entry, index) => (
-                <TableRow key={entry.player_name}>
-                  <TableCell className="font-medium">{index + 1}</TableCell>
-                  <TableCell>{entry.player_name}</TableCell>
-                  <TableCell>{entry.games_played}</TableCell>
-                  <TableCell className={entry.total_winnings >= 0 ? 'text-green-500' : 'text-red-500'}>
-                    ${entry.total_winnings}
-                  </TableCell>
-                  <TableCell>${entry.biggest_win}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+        <TimeFilter active={timeFilter} onChange={setTimeFilter} />
+        
+        <ScrollArea className="h-[calc(100vh-220px)]">
+          {leaderboard?.map((entry, index) => (
+            <PlayerCard 
+              key={entry.player_name} 
+              entry={entry} 
+              position={index + 1}
+            />
+          ))}
+        </ScrollArea>
       </div>
     </div>
   );
