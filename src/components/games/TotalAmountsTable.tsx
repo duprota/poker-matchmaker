@@ -83,7 +83,7 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead>Player Name</TableHead>
-            <TableHead className="text-right">Rebuys</TableHead>
+            <TableHead className="text-right">Number of Rebuys</TableHead>
             <TableHead className="text-right">Total Amount</TableHead>
             <TableHead className="w-[100px]"></TableHead>
           </TableRow>

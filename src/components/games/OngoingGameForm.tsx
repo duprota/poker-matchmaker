@@ -51,12 +51,17 @@ export const OngoingGameForm = ({
           {players.map((gamePlayer) => (
             <div key={gamePlayer.id} className="flex items-center gap-4">
               <span className="min-w-[150px]">{gamePlayer.player.name}</span>
-              <Input
-                type="number"
-                value={rebuys[gamePlayer.id] || 0}
-                onChange={(e) => onRebuyChange(gamePlayer.id, e.target.value)}
-                className="max-w-[120px]"
-              />
+              <div className="flex-1 max-w-[200px]">
+                <Input
+                  type="number"
+                  value={rebuys[gamePlayer.id] || 0}
+                  onChange={(e) => onRebuyChange(gamePlayer.id, e.target.value)}
+                  className="max-w-[120px]"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Total: ${(rebuys[gamePlayer.id] || 0) * gamePlayer.initial_buyin}
+                </p>
+              </div>
             </div>
           ))}
         </div>
