@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 interface Game {
   id: string;
@@ -20,6 +22,7 @@ interface Game {
 const Games = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,7 +34,12 @@ const Games = () => {
           .select("*")
           .order("date", { ascending: false });
 
-        if (gamesError) throw gamesError;
+        if (gamesError) {
+          console.error("Error fetching games:", gamesError);
+          throw gamesError;
+        }
+
+        console.log("Games data:", gamesData);
 
         // For each game, fetch its players
         const gamesWithPlayers = await Promise.all(
@@ -46,7 +54,10 @@ const Games = () => {
               `)
               .eq("game_id", game.id);
 
-            if (playersError) throw playersError;
+            if (playersError) {
+              console.error("Error fetching players for game:", game.id, playersError);
+              throw playersError;
+            }
 
             return {
               ...game,
@@ -60,8 +71,10 @@ const Games = () => {
 
         console.log("Games with players:", gamesWithPlayers);
         setGames(gamesWithPlayers);
+        setError(null);
       } catch (error) {
-        console.error("Error fetching games:", error);
+        console.error("Error in fetchGames:", error);
+        setError("Failed to load games. Please try again later.");
         toast({
           title: "Error",
           description: "Failed to load games",
@@ -80,7 +93,23 @@ const Games = () => {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto py-8">
-          <p className="text-white">Loading games...</p>
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="ml-2 text-muted-foreground">Loading games...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto py-8">
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         </div>
       </div>
     );
@@ -97,33 +126,39 @@ const Games = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {games.map((game) => (
-            <Card key={game.id} className="p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold">{game.name || "Game Details"}</h3>
-                  <p className="text-gray-600">{new Date(game.date).toLocaleDateString()}</p>
+        {games.length === 0 ? (
+          <Card className="p-6">
+            <p className="text-center text-muted-foreground">No games found. Create your first game!</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {games.map((game) => (
+              <Card key={game.id} className="p-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold">{game.name || "Game Details"}</h3>
+                    <p className="text-muted-foreground">{new Date(game.date).toLocaleDateString()}</p>
+                  </div>
+                  <span
+                    className={`px-2 py-1 rounded text-sm ${
+                      game.status === "ongoing"
+                        ? "bg-yellow-200 text-yellow-800"
+                        : "bg-green-200 text-green-800"
+                    }`}
+                  >
+                    {game.status}
+                  </span>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded text-sm ${
-                    game.status === "ongoing"
-                      ? "bg-yellow-200 text-yellow-800"
-                      : "bg-green-200 text-green-800"
-                  }`}
-                >
-                  {game.status}
-                </span>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Players: {game.players.map((p) => p.name).join(", ")}
-              </p>
-              <Button asChild variant="secondary" className="w-full">
-                <Link to={`/games/${game.id}`}>View Details</Link>
-              </Button>
-            </Card>
-          ))}
-        </div>
+                <p className="text-muted-foreground mb-4">
+                  Players: {game.players.map((p) => p.name).join(", ")}
+                </p>
+                <Button asChild variant="secondary" className="w-full">
+                  <Link to={`/games/${game.id}`}>View Details</Link>
+                </Button>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
