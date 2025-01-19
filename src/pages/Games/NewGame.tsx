@@ -121,7 +121,7 @@ const NewGame = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-6">New Game</h1>
 
         <Card className="p-6 mb-6">
@@ -159,12 +159,13 @@ const NewGame = () => {
                     {format(date, "PPP")}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 bg-popover border shadow-md">
                   <Calendar
                     mode="single"
                     selected={date}
                     onSelect={(newDate) => newDate && setDate(newDate)}
                     initialFocus
+                    className="bg-background rounded-md"
                   />
                 </PopoverContent>
               </Popover>
