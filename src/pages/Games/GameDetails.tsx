@@ -14,6 +14,7 @@ import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,12 +26,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  
   const {
     game,
     loading,

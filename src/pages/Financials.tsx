@@ -3,11 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Check, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -32,6 +32,51 @@ interface TransactionSummary {
   paymentStatus: string;
   gameDetails: GameDebtDetail[];
 }
+
+const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
+  console.log('Fetching historical transactions...');
+  const { data: gamePlayers, error } = await supabase
+    .from('game_players')
+    .select(`
+      id,
+      payment_status,
+      payment_amount,
+      game_id,
+      player_id,
+      games (
+        date
+      ),
+      players!game_players_player_id_fkey (
+        name
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching transactions:', error);
+    throw error;
+  }
+
+  // Transform the data into TransactionSummary format
+  const transactions: TransactionSummary[] = gamePlayers.map((gp: any) => ({
+    from: gp.players.name,
+    fromId: gp.player_id,
+    to: "House", // Placeholder, modify as needed
+    toId: "house",
+    amount: gp.payment_amount || 0,
+    gamePlayerIds: [gp.id],
+    paymentStatus: gp.payment_status || 'pending',
+    gameDetails: [{
+      gameId: gp.game_id,
+      date: gp.games.date,
+      amount: gp.payment_amount || 0,
+      gamePlayerId: gp.id
+    }]
+  }));
+
+  console.log('Processed transactions:', transactions);
+  return transactions;
+};
 
 const Financials = () => {
   const queryClient = useQueryClient();
