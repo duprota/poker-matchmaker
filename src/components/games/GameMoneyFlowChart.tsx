@@ -70,23 +70,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       }
     });
 
-    // Calculate final total (should match total money in play)
-    const finalTotal = players.reduce((acc, player) => 
-      acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0
-    );
-    console.log("Final total:", finalTotal);
-
-    // Add final data point if it's different from the last one
-    if (dataPoints.length === 1 || dataPoints[dataPoints.length - 1].amount !== finalTotal) {
-      const lastTime = dataPoints.length > 1 ? 
-        parseInt(dataPoints[dataPoints.length - 1].time) + 30 : // Add 30 minutes after last point
-        60; // Or default to 60 minutes if only initial point exists
-
-      dataPoints.push({
-        time: lastTime.toString(),
-        amount: finalTotal
-      });
-    }
+    // No need to add a final data point with a different calculation
+    // The chart will show the progression based on actual rebuy events
 
     console.log("Final chart data points:", dataPoints);
     setChartData(dataPoints);
