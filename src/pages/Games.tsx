@@ -8,19 +8,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Game } from "@/types/game";
 
-interface Game {
-  id: string;
-  date: string;
-  status: string;
-  name: string | null;
+interface GameWithPlayers extends Game {
   players: {
     name: string;
     initial_buyin: number;
   }[];
 }
 
-const fetchGames = async () => {
+const fetchGames = async (): Promise<GameWithPlayers[]> => {
   console.log("Fetching games...");
   const { data: gamesData, error: gamesError } = await supabase
     .from("games")
@@ -30,6 +27,11 @@ const fetchGames = async () => {
   if (gamesError) {
     console.error("Error fetching games:", gamesError);
     throw gamesError;
+  }
+
+  if (!gamesData) {
+    console.warn("No games data returned");
+    return [];
   }
 
   // For each game, fetch its players
@@ -76,19 +78,17 @@ const Games = () => {
     queryKey: ['games'],
     queryFn: fetchGames,
     retry: 2,
-  });
-
-  // Handle errors outside of the query configuration
-  useEffect(() => {
-    if (isError && error) {
-      console.error("Error in games query:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load games. Please try again.",
-        variant: "destructive",
-      });
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error in games query:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load games. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
-  }, [isError, error, toast]);
+  });
 
   if (isLoading) {
     return (
