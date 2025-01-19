@@ -5,14 +5,13 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { GameHeader } from "@/components/games/GameHeader";
 import { GameInformation } from "@/components/games/GameInformation";
-import { OngoingGameForm } from "@/components/games/OngoingGameForm";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
 import { PaymentManagement } from "@/components/games/PaymentManagement";
 import { GameHistory } from "@/components/games/GameHistory";
-import { TotalAmountsTable } from "@/components/games/TotalAmountsTable";
 import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
 import { GameSummary } from "@/components/games/GameSummary";
 import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
+import { PlayerRebuysCard } from "@/components/games/PlayerRebuysCard";
 import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,10 +29,8 @@ const GameDetails = () => {
     refreshGame
   } = useGameDetails(id);
 
-  const [savingRebuys, setSavingRebuys] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
-  const [rebuys, setRebuys] = useState<Record<string, number>>({});
   const [gameHistory, setGameHistory] = useState<any[]>([]);
 
   const fetchGameHistory = async () => {
@@ -71,51 +68,31 @@ const GameDetails = () => {
     }
   };
 
-  const handleRebuyChange = (playerId: string, value: string) => {
-    setRebuys(prev => ({
-      ...prev,
-      [playerId]: parseInt(value) || 0
-    }));
-  };
-
-  const saveRebuys = async () => {
-    setSavingRebuys(true);
+  const handleRebuyChange = async (playerId: string, newRebuys: number) => {
     try {
-      for (const [playerId, rebuyAmount] of Object.entries(rebuys)) {
-        const gamePlayer = game?.players.find(p => p.id === playerId);
-        if (!gamePlayer) continue;
+      const { error } = await supabase
+        .from("game_players")
+        .update({ total_rebuys: newRebuys })
+        .eq("id", playerId);
 
-        const { error } = await supabase
-          .from("game_players")
-          .update({ total_rebuys: rebuyAmount })
-          .eq("id", playerId);
+      if (error) throw error;
 
-        if (error) throw error;
+      const { error: historyError } = await supabase
+        .from("game_history")
+        .insert({
+          game_id: id,
+          game_player_id: playerId,
+          event_type: 'rebuy',
+          amount: newRebuys
+        });
 
-        const { error: historyError } = await supabase
-          .from("game_history")
-          .insert({
-            game_id: id,
-            game_player_id: playerId,
-            event_type: 'rebuy',
-            amount: rebuyAmount
-          });
+      if (historyError) throw historyError;
 
-        if (historyError) throw historyError;
-      }
-      toast({
-        title: "Success",
-        description: "Rebuys updated successfully",
-      });
+      refreshGame();
+      fetchGameHistory();
     } catch (error) {
-      console.error("Error saving rebuys:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save rebuys",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingRebuys(false);
+      console.error("Error updating rebuys:", error);
+      throw error;
     }
   };
 
@@ -253,17 +230,14 @@ const GameDetails = () => {
                 players={game.players}
               />
 
-              <OngoingGameForm
-                players={game.players}
-                rebuys={rebuys}
-                onRebuyChange={handleRebuyChange}
-                onSaveRebuys={saveRebuys}
-                savingRebuys={savingRebuys}
-                setRebuys={setRebuys}
-              />
-
-              <div className="mt-8">
-                <TotalAmountsTable players={game.players} />
+              <div className="grid gap-4 mt-8">
+                {game.players.map((player) => (
+                  <PlayerRebuysCard
+                    key={player.id}
+                    player={player}
+                    onRebuyChange={handleRebuyChange}
+                  />
+                ))}
               </div>
 
               <PaymentManagement
