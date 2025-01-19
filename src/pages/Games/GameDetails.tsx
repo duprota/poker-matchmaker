@@ -12,8 +12,9 @@ import { GameHistory } from "@/components/games/GameHistory";
 import { TotalAmountsTable } from "@/components/games/TotalAmountsTable";
 import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
 import { GameSummary } from "@/components/games/GameSummary";
+import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
 import { useGameDetails } from "@/hooks/useGameDetails";
-import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult, calculateTotals } from "@/components/games/GameCalculations";
+import { calculateTotalBuyInsAndRebuys, calculateTotalResults, calculateFinalResult } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
 
 const GameDetails = () => {
@@ -30,21 +31,13 @@ const GameDetails = () => {
   } = useGameDetails(id);
 
   const [savingRebuys, setSavingRebuys] = useState(false);
-  const [savingResults, setSavingResults] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
+  const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const [rebuys, setRebuys] = useState<Record<string, number>>({});
-  const [results, setResults] = useState<Record<string, number>>({});
   const [gameHistory, setGameHistory] = useState<any[]>([]);
 
   const handleRebuyChange = (playerId: string, value: string) => {
     setRebuys(prev => ({
-      ...prev,
-      [playerId]: parseInt(value) || 0
-    }));
-  };
-
-  const handleResultChange = (playerId: string, value: string) => {
-    setResults(prev => ({
       ...prev,
       [playerId]: parseInt(value) || 0
     }));
@@ -91,32 +84,13 @@ const GameDetails = () => {
     }
   };
 
-  const saveResults = async () => {
-    setSavingResults(true);
+  const handleFinalize = async (results: Record<string, number>) => {
+    if (!game) return;
+    
+    setFinalizing(true);
     try {
-      if (!game) return;
-      
-      const updatedPlayers = game.players.map(player => ({
-        ...player,
-        final_result: results[player.id] || 0
-      }));
-      
-      const totalBuyIns = calculateTotalBuyInsAndRebuys(updatedPlayers);
-      const totalResults = calculateTotalResults(updatedPlayers);
-      
-      if (totalBuyIns !== totalResults) {
-        toast({
-          title: "Error",
-          description: "The sum of final results must equal the total buy-ins and rebuys",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      // Save all final results
       for (const [playerId, result] of Object.entries(results)) {
-        const gamePlayer = game.players.find(p => p.id === playerId);
-        if (!gamePlayer) continue;
-
         const { error } = await supabase
           .from("game_players")
           .update({ final_result: result })
@@ -135,39 +109,8 @@ const GameDetails = () => {
 
         if (historyError) throw historyError;
       }
-      toast({
-        title: "Success",
-        description: "Results saved successfully",
-      });
-    } catch (error) {
-      console.error("Error saving results:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save results",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingResults(false);
-    }
-  };
 
-  const finalizeGame = async () => {
-    if (!game) return;
-    
-    setFinalizing(true);
-    try {
-      const totalBuyIns = calculateTotalBuyInsAndRebuys(game.players);
-      const totalResults = calculateTotalResults(game.players);
-      
-      if (totalBuyIns !== totalResults) {
-        toast({
-          title: "Error",
-          description: "Cannot finalize game: The sum of final results must equal the total buy-ins and rebuys",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      // Update game status to completed
       const { error } = await supabase
         .from("games")
         .update({ status: "completed" })
@@ -179,7 +122,9 @@ const GameDetails = () => {
         title: "Success",
         description: "Game finalized successfully",
       });
-      navigate("/games");
+      
+      refreshGame();
+      setShowFinalizeForm(false);
     } catch (error) {
       console.error("Error finalizing game:", error);
       toast({
@@ -189,47 +134,6 @@ const GameDetails = () => {
       });
     } finally {
       setFinalizing(false);
-    }
-  };
-
-  const handleHistoryUpdate = () => {
-    if (id) {
-      console.log("Refreshing game details after history update");
-      refreshGame();
-    }
-  };
-
-  const fetchGameHistory = async () => {
-    if (!id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('game_history')
-        .select(`
-          id,
-          event_type,
-          amount,
-          created_at,
-          game_player_id,
-          game_players!fk_game_history_game_player (
-            player:players (
-              name
-            ),
-            total_rebuys
-          )
-        `)
-        .eq('game_id', id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setGameHistory(data || []);
-    } catch (error) {
-      console.error('Error fetching game history:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load game history",
-        variant: "destructive",
-      });
     }
   };
 
@@ -291,7 +195,7 @@ const GameDetails = () => {
       <div className="container mx-auto py-8">
         <GameHeader 
           status={game.status}
-          onFinalize={finalizeGame}
+          onFinalize={() => setShowFinalizeForm(true)}
           onDelete={handleDeleteGame}
           finalizing={finalizing}
         />
@@ -317,13 +221,9 @@ const GameDetails = () => {
               <OngoingGameForm
                 players={game.players}
                 rebuys={rebuys}
-                results={results}
                 onRebuyChange={handleRebuyChange}
-                onResultChange={handleResultChange}
                 onSaveRebuys={saveRebuys}
-                onSaveResults={saveResults}
                 savingRebuys={savingRebuys}
-                savingResults={savingResults}
                 setRebuys={setRebuys}
               />
 
@@ -340,7 +240,7 @@ const GameDetails = () => {
               <div className="mt-8">
                 <GameHistory 
                   gameId={id || ''} 
-                  onHistoryUpdate={handleHistoryUpdate}
+                  onHistoryUpdate={refreshGame}
                 />
               </div>
 
@@ -351,6 +251,13 @@ const GameDetails = () => {
             </>
           )}
         </Card>
+
+        <FinalizeGameForm 
+          isOpen={showFinalizeForm}
+          onClose={() => setShowFinalizeForm(false)}
+          players={game.players}
+          onFinalize={handleFinalize}
+        />
       </div>
     </div>
   );
