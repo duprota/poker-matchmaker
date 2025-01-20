@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 interface LeaderboardEntry {
   player_name: string;
@@ -82,6 +83,107 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   });
 
   return Object.values(playerStats).sort((a, b) => b.total_winnings - a.total_winnings);
+};
+
+const Leaderboard = () => {
+  const [timeFilter, setTimeFilter] = useState("All Time");
+  const { data: leaderboard, isLoading, error } = useQuery({
+    queryKey: ['leaderboard', timeFilter],
+    queryFn: fetchLeaderboardData,
+  });
+
+  const handleShareWhatsApp = () => {
+    if (!leaderboard) return;
+
+    const totalMoneyWon = leaderboard.reduce((acc, player) => acc + Math.max(0, player.total_winnings), 0);
+    const totalGamesPlayed = leaderboard.reduce((acc, player) => acc + player.games_played, 0);
+
+    const summaryText = `🏆 Poker Leaderboard ${timeFilter}\n\n` +
+      `📊 Total Money Won: $${totalMoneyWon}\n` +
+      `🎮 Total Games Played: ${totalGamesPlayed}\n\n` +
+      `🎯 Top Players:\n${leaderboard.slice(0, 5).map((player, index) => {
+        const position = index + 1;
+        const emoji = position === 1 ? '👑' : position === 2 ? '🥈' : position === 3 ? '🥉' : '⭐';
+        const roi = ((player.total_winnings / player.total_spent) * 100).toFixed(1);
+        return `${emoji} ${player.player_name}\n` +
+          `   💰 $${player.total_winnings} (${roi}% ROI)\n` +
+          `   🎲 ${player.games_played} games\n` +
+          `   💫 Best Game ROI: ${player.best_game_roi.toFixed(1)}%\n`;
+      }).join('\n')}` +
+      `\n🔥 Most Profitable Players:\n${leaderboard
+        .filter(p => p.roi_percentage > 0)
+        .sort((a, b) => b.roi_percentage - a.roi_percentage)
+        .slice(0, 3)
+        .map(player => `📈 ${player.player_name}: ${player.roi_percentage.toFixed(1)}% ROI`).join('\n')}`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(summaryText)}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
+        <Navigation />
+        <div className="container mx-auto py-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+            2024 Leaderboard
+          </h1>
+          <Card className="p-4 bg-card/80 backdrop-blur-sm">
+            <div className="text-center py-8">Loading leaderboard data...</div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
+        <Navigation />
+        <div className="container mx-auto py-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+            2024 Leaderboard
+          </h1>
+          <Card className="p-4 bg-card/80 backdrop-blur-sm">
+            <div className="text-center py-8 text-destructive">
+              Error loading leaderboard data. Please try again later.
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
+      <Navigation />
+      <div className="container mx-auto py-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            2024 Leaderboard
+          </h1>
+          <Button
+            size="lg"
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity animate-fade-in"
+            onClick={handleShareWhatsApp}
+          >
+            Share on WhatsApp
+          </Button>
+        </div>
+        
+        <TimeFilter active={timeFilter} onChange={setTimeFilter} />
+        
+        <ScrollArea className="h-[calc(100vh-220px)]">
+          {leaderboard?.map((entry, index) => (
+            <PlayerCard 
+              key={entry.player_name} 
+              entry={entry} 
+              position={index + 1}
+            />
+          ))}
+        </ScrollArea>
+      </div>
+    </div>
+  );
 };
 
 const TimeFilter = ({ active, onChange }: { active: string, onChange: (period: string) => void }) => {
@@ -196,71 +298,6 @@ const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: nu
         </div>
       )}
     </Card>
-  );
-};
-
-const Leaderboard = () => {
-  const [timeFilter, setTimeFilter] = useState("All Time");
-  const { data: leaderboard, isLoading, error } = useQuery({
-    queryKey: ['leaderboard', timeFilter],
-    queryFn: fetchLeaderboardData,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
-        <Navigation />
-        <div className="container mx-auto py-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-            2024 Leaderboard
-          </h1>
-          <Card className="p-4 bg-card/80 backdrop-blur-sm">
-            <div className="text-center py-8">Loading leaderboard data...</div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
-        <Navigation />
-        <div className="container mx-auto py-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-            2024 Leaderboard
-          </h1>
-          <Card className="p-4 bg-card/80 backdrop-blur-sm">
-            <div className="text-center py-8 text-destructive">
-              Error loading leaderboard data. Please try again later.
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
-      <Navigation />
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-          2024 Leaderboard
-        </h1>
-        
-        <TimeFilter active={timeFilter} onChange={setTimeFilter} />
-        
-        <ScrollArea className="h-[calc(100vh-220px)]">
-          {leaderboard?.map((entry, index) => (
-            <PlayerCard 
-              key={entry.player_name} 
-              entry={entry} 
-              position={index + 1}
-            />
-          ))}
-        </ScrollArea>
-      </div>
-    </div>
   );
 };
 
