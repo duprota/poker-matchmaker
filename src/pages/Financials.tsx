@@ -51,11 +51,13 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
       game_id,
       player_id,
       games (
-        date
+        date,
+        manager_id
       ),
       players!game_players_player_id_fkey (
         name,
-        pix_key
+        pix_key,
+        id
       )
     `)
     .order('created_at', { ascending: false });
@@ -65,23 +67,40 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     throw error;
   }
 
+  // Get manager PIX keys
+  const managerIds = [...new Set(gamePlayers.map(gp => gp.games.manager_id))];
+  const { data: managers, error: managersError } = await supabase
+    .from('players')
+    .select('id, user_id, pix_key')
+    .filter('user_id', 'in', `(${managerIds.join(',')})`);
+
+  if (managersError) {
+    console.error('Error fetching managers:', managersError);
+    throw managersError;
+  }
+
   // Transform the data into TransactionSummary format
-  const transactions: TransactionSummary[] = gamePlayers.map((gp: any) => ({
-    from: gp.players.name,
-    fromId: gp.player_id,
-    to: "House",
-    toId: "house",
-    amount: gp.payment_amount || 0,
-    gamePlayerIds: [gp.id],
-    paymentStatus: gp.payment_status || 'pending',
-    toPixKey: gp.players.pix_key,
-    gameDetails: [{
-      gameId: gp.game_id,
-      date: gp.games.date,
+  const transactions: TransactionSummary[] = gamePlayers.map((gp: any) => {
+    // Find the manager's PIX key
+    const manager = managers?.find(m => m.user_id === gp.games.manager_id);
+    
+    return {
+      from: gp.players.name,
+      fromId: gp.player_id,
+      to: "House",
+      toId: "house",
       amount: gp.payment_amount || 0,
-      gamePlayerId: gp.id
-    }]
-  }));
+      gamePlayerIds: [gp.id],
+      paymentStatus: gp.payment_status || 'pending',
+      toPixKey: manager?.pix_key || null,
+      gameDetails: [{
+        gameId: gp.game_id,
+        date: gp.games.date,
+        amount: gp.payment_amount || 0,
+        gamePlayerId: gp.id
+      }]
+    };
+  });
 
   console.log('Processed transactions:', transactions);
   return transactions;
@@ -178,7 +197,16 @@ const Financials = () => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1 cursor-pointer hover:text-primary">
+                      <div 
+                        className="flex items-center gap-1 text-sm text-muted-foreground mt-1 cursor-pointer hover:text-primary"
+                        onClick={() => {
+                          navigator.clipboard.writeText(transaction.toPixKey || '');
+                          toast({
+                            title: "PIX key copied",
+                            description: "The PIX key has been copied to your clipboard.",
+                          });
+                        }}
+                      >
                         <QrCode className="h-4 w-4" />
                         <span className="truncate max-w-[200px]">{transaction.toPixKey}</span>
                       </div>
