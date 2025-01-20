@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Users, Calendar, TrendingUp, GamepadIcon, Award } from "lucide-react";
+import { Trophy, Users, Calendar, TrendingUp, GamepadIcon, Award, Rocket, Star, Heart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { motion } from "framer-motion";
 
 const Index = () => {
   // Fetch statistics
@@ -63,109 +64,163 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-card to-muted">
       <Navigation />
-      <div className="container mx-auto py-12 px-4">
+      <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-6">Welcome to Poker Manager</h1>
-          <p className="text-lg text-muted-foreground mb-8">
-            Track your poker games, manage players, and see who's leading the pack!
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8"
+        >
+          <h1 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            Welcome to Poker Manager
+          </h1>
+          <p className="text-base md:text-lg text-muted-foreground mb-6">
+            Track your games, manage players, and climb the leaderboard!
           </p>
-          <div className="flex justify-center gap-4">
-            <Button asChild size="lg" className="gap-2">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button asChild size="lg" className="gap-2 animate-pulse">
               <Link to="/games/new">
                 <GamepadIcon className="w-5 h-5" />
                 New Game
               </Link>
             </Button>
-            <Button asChild variant="secondary" size="lg" className="gap-2">
+            <Button asChild variant="secondary" size="lg" className="gap-2 hover:scale-105 transition-transform">
               <Link to="/leaderboard">
                 <Trophy className="w-5 h-5" />
                 View Leaderboard
               </Link>
             </Button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Statistics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Games</CardTitle>
-              <GamepadIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.gamesCount || 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Players</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.playersCount || 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Last Game</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats?.lastGameDate ? format(new Date(stats.lastGameDate), 'MMM d') : '-'}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Highest Profit</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats?.topProfit || 0}</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="hover:scale-105 transition-transform">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Games</CardTitle>
+                <GamepadIcon className="h-4 w-4 text-primary animate-bounce" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.gamesCount || 0}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="hover:scale-105 transition-transform">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Players</CardTitle>
+                <Users className="h-4 w-4 text-secondary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.playersCount || 0}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="hover:scale-105 transition-transform">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Last Game</CardTitle>
+                <Calendar className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats?.lastGameDate ? format(new Date(stats.lastGameDate), 'MMM d') : '-'}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="hover:scale-105 transition-transform">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Highest Profit</CardTitle>
+                <TrendingUp className="h-4 w-4 text-destructive" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${stats?.topProfit || 0}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
         {/* Recent Games Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Recent Games</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {recentGames?.map((game) => (
-              <Card key={game.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {game.name || format(new Date(game.date), 'MMMM d, yyyy')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">
-                    {format(new Date(game.date), 'PPp')}
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    Players: {game.game_players.map(gp => gp.player.name).join(', ')}
-                  </div>
-                  <Link 
-                    to={`/games/${game.id}`}
-                    className="mt-2 inline-flex items-center text-sm text-primary hover:underline"
-                  >
-                    View Details →
-                  </Link>
-                </CardContent>
-              </Card>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mb-8"
+        >
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <Star className="h-5 w-5 text-primary" />
+            Recent Games
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {recentGames?.map((game, index) => (
+              <motion.div
+                key={game.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 * index }}
+              >
+                <Card className="hover:scale-105 transition-transform bg-gradient-to-br from-card to-muted">
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {game.name || format(new Date(game.date), 'MMMM d, yyyy')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground">
+                      {format(new Date(game.date), 'PPp')}
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Players: {game.game_players.map(gp => gp.player.name).join(', ')}
+                    </div>
+                    <Link 
+                      to={`/games/${game.id}`}
+                      className="mt-4 inline-flex items-center text-sm text-primary hover:underline gap-1"
+                    >
+                      View Details <Rocket className="h-4 w-4" />
+                    </Link>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Quick Access Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          <Card className="hover:scale-105 transition-transform">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+                <Users className="h-5 w-5 text-primary" />
                 Player Management
               </CardTitle>
             </CardHeader>
@@ -175,10 +230,10 @@ const Index = () => {
               </Button>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="hover:scale-105 transition-transform">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
+                <Heart className="h-5 w-5 text-destructive" />
                 Statistics
               </CardTitle>
             </CardHeader>
@@ -188,7 +243,7 @@ const Index = () => {
               </Button>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
