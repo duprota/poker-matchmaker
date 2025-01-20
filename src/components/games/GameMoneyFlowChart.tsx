@@ -86,7 +86,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
   const currentTotal = chartData[chartData.length - 1]?.amount || 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative z-0">
       <div className="mt-8">
         <h3 className="text-lg font-semibold mb-4">Game Stats</h3>
         {/* Summary Card */}
