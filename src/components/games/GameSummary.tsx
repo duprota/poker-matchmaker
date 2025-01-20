@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "./GameCalculations";
 import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
-import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
 
 interface GameSummaryProps {
   players: GamePlayer[];
@@ -109,14 +108,6 @@ export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) =>
           <p className="text-2xl font-semibold">${totalMoneyInPlay}</p>
         </Card>
       </div>
-
-      {/* Money Flow Chart */}
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-6">Money Flow During Game</h3>
-        <div className="h-[400px]">
-          <GameMoneyFlowChart players={players} gameHistory={gameHistory} />
-        </div>
-      </Card>
 
       {/* Payment Instructions */}
       <div>
