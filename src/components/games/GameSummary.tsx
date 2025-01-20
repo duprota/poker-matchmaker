@@ -118,7 +118,7 @@ export const GameSummary = ({
       {/* Payment Instructions */}
       <div>
         <h3 className="text-xl font-semibold mb-4">Payment Instructions</h3>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {transactions.map((transaction, index) => {
             const fromPlayer = players.find(p => p.id === transaction.from);
             const toPlayer = players.find(p => p.id === transaction.to);
@@ -126,38 +126,40 @@ export const GameSummary = ({
             
             return (
               <Card key={index} className="p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{fromPlayer?.player.name}</span>
-                    <ArrowRight className="w-4 h-4" />
-                    <span className="font-medium">{toPlayer?.player.name}</span>
+                    <span className="font-medium whitespace-nowrap">{fromPlayer?.player.name}</span>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium whitespace-nowrap">{toPlayer?.player.name}</span>
+                    <span className="font-semibold text-lg ml-2">${transaction.amount}</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <p className="font-semibold">${transaction.amount}</p>
-                    {onUpdatePaymentStatus && fromPlayer && (
-                      <Button
-                        variant={isPaid ? "outline" : "default"}
-                        size="sm"
-                        onClick={() => onUpdatePaymentStatus(
-                          fromPlayer.id,
-                          isPaid ? 'pending' : 'paid'
-                        )}
-                        className="flex items-center gap-2"
-                      >
-                        {isPaid ? (
-                          <>
-                            <X className="w-4 h-4" />
-                            Mark as Pending
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4" />
-                            Mark as Paid
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
+                  {onUpdatePaymentStatus && fromPlayer && (
+                    <Button
+                      variant={isPaid ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => onUpdatePaymentStatus(
+                        fromPlayer.id,
+                        isPaid ? 'pending' : 'paid'
+                      )}
+                      className={`w-full sm:w-auto transition-all duration-200 ${
+                        isPaid 
+                          ? 'hover:bg-red-500/10 hover:text-red-500 hover:border-red-500' 
+                          : 'hover:bg-green-500/90'
+                      }`}
+                    >
+                      {isPaid ? (
+                        <>
+                          <X className="w-4 h-4" />
+                          <span>Mark as Pending</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Mark as Paid</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </Card>
             );
