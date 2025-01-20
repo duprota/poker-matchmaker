@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/popover";
 
 type Player = Tables<"players">;
-type GamePlayer = Tables<"game_players">;
 
 const NewGame = () => {
   const navigate = useNavigate();
@@ -60,7 +59,16 @@ const NewGame = () => {
 
     setLoading(true);
     try {
-      // Create new game
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
+
+      console.log("Creating game with manager_id:", user.id);
+
+      // Create new game with manager_id
       const { data: gameData, error: gameError } = await supabase
         .from("games")
         .insert([{ 
@@ -68,13 +76,17 @@ const NewGame = () => {
           name,
           place,
           date: date.toISOString(),
+          manager_id: user.id // Set the manager_id to the current user's ID
         }])
         .select()
         .single();
 
       if (gameError || !gameData) {
+        console.error("Error creating game:", gameError);
         throw new Error(gameError?.message || "Failed to create game");
       }
+
+      console.log("Game created successfully:", gameData);
 
       // Add selected players to the game
       const gamePlayers = selectedPlayers.map((playerId) => ({
@@ -89,8 +101,11 @@ const NewGame = () => {
         .insert(gamePlayers);
 
       if (playersError) {
+        console.error("Error adding players to game:", playersError);
         throw new Error(playersError.message);
       }
+
+      console.log("Players added successfully");
 
       toast({
         title: "Success",
@@ -198,7 +213,7 @@ const NewGame = () => {
                     onClick={() => handlePlayerSelect(player.id)}
                   >
                     <h3 className="font-medium">{player.name}</h3>
-                    <p className="text-sm opacity-80">{player.email}</p>
+                    {player.email && <p className="text-sm opacity-80">{player.email}</p>}
                   </div>
                 ))}
               </div>
