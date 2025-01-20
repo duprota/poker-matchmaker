@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import {
@@ -60,8 +60,13 @@ const NewGame = () => {
     setLoading(true);
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
+      if (userError) {
+        console.error("Error getting user:", userError);
+        throw new Error("Failed to get user information");
+      }
+
       if (!user) {
         throw new Error("No authenticated user found");
       }
@@ -76,14 +81,19 @@ const NewGame = () => {
           name,
           place,
           date: date.toISOString(),
-          manager_id: user.id // Set the manager_id to the current user's ID
+          manager_id: user.id
         }])
         .select()
-        .single();
+        .maybeSingle();
 
-      if (gameError || !gameData) {
+      if (gameError) {
         console.error("Error creating game:", gameError);
-        throw new Error(gameError?.message || "Failed to create game");
+        throw new Error(gameError.message);
+      }
+
+      if (!gameData) {
+        console.error("No game data returned after creation");
+        throw new Error("Failed to create game - no data returned");
       }
 
       console.log("Game created successfully:", gameData);
@@ -114,10 +124,10 @@ const NewGame = () => {
 
       navigate("/games");
     } catch (error) {
-      console.error("Error creating game:", error);
+      console.error("Error in handleCreateGame:", error);
       toast({
         title: "Error",
-        description: "Failed to create game",
+        description: error instanceof Error ? error.message : "Failed to create game",
         variant: "destructive",
       });
     } finally {
