@@ -28,51 +28,6 @@ const NewGame = () => {
   const [name, setName] = useState<string>("");
   const [place, setPlace] = useState<string>("");
   const [date, setDate] = useState<Date>(new Date());
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Check authentication status on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log("Auth check result:", { user, error: userError });
-        
-        if (userError) {
-          console.error("Auth check error:", userError);
-          toast({
-            title: "Authentication Error",
-            description: "Please sign in to create a game",
-            variant: "destructive",
-          });
-          navigate("/");
-          return;
-        }
-
-        if (!user) {
-          console.log("No authenticated user found");
-          toast({
-            title: "Authentication Required",
-            description: "Please sign in to create a game",
-            variant: "destructive",
-          });
-          navigate("/");
-          return;
-        }
-
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error("Error checking authentication:", error);
-        toast({
-          title: "Error",
-          description: "Failed to verify authentication status",
-          variant: "destructive",
-        });
-        navigate("/");
-      }
-    };
-
-    checkAuth();
-  }, [navigate, toast]);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -100,10 +55,8 @@ const NewGame = () => {
       }
     };
 
-    if (isAuthenticated) {
-      fetchPlayers();
-    }
-  }, [toast, isAuthenticated]);
+    fetchPlayers();
+  }, [toast]);
 
   const handleCreateGame = async () => {
     if (selectedPlayers.length === 0) {
@@ -119,33 +72,17 @@ const NewGame = () => {
     try {
       console.log("Starting game creation process...");
       
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        console.error("Error getting user:", userError);
-        throw new Error("Failed to get user information");
-      }
-
-      if (!user) {
-        console.error("No authenticated user found");
-        throw new Error("No authenticated user found");
-      }
-
-      console.log("Creating game with manager_id:", user.id);
-
-      // Create new game with manager_id
+      // Create new game
       const { data: gameData, error: gameError } = await supabase
         .from("games")
         .insert([{ 
           status: "ongoing",
           name,
           place,
-          date: date.toISOString(),
-          manager_id: user.id
+          date: date.toISOString()
         }])
         .select()
-        .maybeSingle();
+        .single();
 
       if (gameError) {
         console.error("Error creating game:", gameError);
