@@ -1,4 +1,4 @@
-import { Trophy, ArrowRight } from "lucide-react";
+import { Trophy, ArrowRight, Check, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
@@ -9,9 +9,15 @@ interface GameSummaryProps {
   players: GamePlayer[];
   gameHistory: any[];
   date: string;
+  onUpdatePaymentStatus?: (playerId: string, status: string) => Promise<void>;
 }
 
-export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) => {
+export const GameSummary = ({ 
+  players, 
+  gameHistory, 
+  date,
+  onUpdatePaymentStatus 
+}: GameSummaryProps) => {
   // Sort players by final result (descending)
   const sortedPlayers = [...players].sort((a, b) => {
     const resultA = calculateFinalResult(a);
@@ -116,6 +122,7 @@ export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) =>
           {transactions.map((transaction, index) => {
             const fromPlayer = players.find(p => p.id === transaction.from);
             const toPlayer = players.find(p => p.id === transaction.to);
+            const isPaid = fromPlayer?.payment_status === 'paid';
             
             return (
               <Card key={index} className="p-4 hover:bg-muted/50 transition-colors">
@@ -125,7 +132,32 @@ export const GameSummary = ({ players, gameHistory, date }: GameSummaryProps) =>
                     <ArrowRight className="w-4 h-4" />
                     <span className="font-medium">{toPlayer?.player.name}</span>
                   </div>
-                  <p className="font-semibold">${transaction.amount}</p>
+                  <div className="flex items-center gap-4">
+                    <p className="font-semibold">${transaction.amount}</p>
+                    {onUpdatePaymentStatus && fromPlayer && (
+                      <Button
+                        variant={isPaid ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => onUpdatePaymentStatus(
+                          fromPlayer.id,
+                          isPaid ? 'pending' : 'paid'
+                        )}
+                        className="flex items-center gap-2"
+                      >
+                        {isPaid ? (
+                          <>
+                            <X className="w-4 h-4" />
+                            Mark as Pending
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Mark as Paid
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Card>
             );

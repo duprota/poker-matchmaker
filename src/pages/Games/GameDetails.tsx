@@ -213,6 +213,7 @@ const GameDetails = () => {
               players={game.players}
               gameHistory={gameHistory}
               date={game.date}
+              onUpdatePaymentStatus={updatePaymentStatus}
             />
           ) : (
             <>
