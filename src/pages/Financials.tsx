@@ -100,6 +100,11 @@ const Financials = () => {
         },
         (payload) => {
           console.log('Received update on game_players table:', payload);
+          // Show a toast notification
+          toast({
+            title: "Payment status updated",
+            description: "The transaction list has been refreshed.",
+          });
           // Invalidate and refetch the transactions query
           queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
         }
@@ -116,7 +121,10 @@ const Financials = () => {
     try {
       const { error } = await supabase
         .from('game_players')
-        .update({ payment_status: 'paid' })
+        .update({ 
+          payment_status: 'paid',
+          payment_date: new Date().toISOString()
+        })
         .in('id', gamePlayerIds);
 
       if (error) throw error;
@@ -135,10 +143,43 @@ const Financials = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
+          <Card className="p-4">
+            <div className="text-center py-8">Loading transaction history...</div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
+          <Card className="p-4">
+            <div className="text-center py-8 text-red-500">
+              Error loading transaction history. Please try again later.
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const pendingTransactions = transactions?.filter(t => t.paymentStatus === 'pending') || [];
+  const paidTransactions = transactions?.filter(t => t.paymentStatus === 'paid') || [];
+
   const renderTransactionCard = (transaction: TransactionSummary) => {
     const isPaid = transaction.paymentStatus === 'paid';
     return (
-      <Card className={`p-4 mb-4 animate-fade-in hover-scale ${isPaid ? 'bg-muted/50' : 'bg-card'}`}>
+      <Card className={`p-4 mb-4 animate-fade-in hover:scale-[1.01] transition-all ${isPaid ? 'bg-muted/50' : 'bg-card'}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <div className={`p-1.5 rounded-full ${isPaid ? 'bg-green-500/20' : 'bg-yellow-500/20'}`}>
@@ -192,39 +233,6 @@ const Financials = () => {
       </Card>
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
-          <Card className="p-4">
-            <div className="text-center py-8">Loading transaction history...</div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
-          <Card className="p-4">
-            <div className="text-center py-8 text-red-500">
-              Error loading transaction history. Please try again later.
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const pendingTransactions = transactions?.filter(t => t.paymentStatus === 'pending') || [];
-  const paidTransactions = transactions?.filter(t => t.paymentStatus === 'paid') || [];
 
   return (
     <div className="min-h-screen bg-background">
