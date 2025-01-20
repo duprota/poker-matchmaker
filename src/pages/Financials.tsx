@@ -178,18 +178,18 @@ const Financials = () => {
   const renderTransactionCard = (transaction: TransactionSummary) => {
     const isPaid = transaction.paymentStatus === 'paid';
     return (
-      <Card className={`p-4 mb-4 animate-fade-in hover:scale-[1.01] transition-all backdrop-blur-sm ${isPaid ? 'bg-muted/50' : 'bg-card/80'}`}>
+      <Card className={`p-4 mb-4 animate-fade-in hover:scale-[1.01] transition-all backdrop-blur-sm ${isPaid ? 'bg-muted/50' : 'bg-card/80 border-primary/20'}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-full ${isPaid ? 'bg-green-500/20' : 'bg-yellow-500/20'}`}>
+            <div className={`p-1.5 rounded-full ${isPaid ? 'bg-green-500/20' : 'bg-primary/20'}`}>
               {isPaid ? (
                 <Check className="w-4 h-4 text-green-500" />
               ) : (
-                <Clock className="w-4 h-4 text-yellow-500" />
+                <Clock className="w-4 h-4 text-primary" />
               )}
             </div>
             <div>
-              <p className="font-medium text-foreground">{transaction.from} → {transaction.to}</p>
+              <p className="font-medium text-foreground bg-gradient-to-r from-primary/80 via-secondary/80 to-accent/80 bg-clip-text">{transaction.from} → {transaction.to}</p>
               <p className="text-sm text-muted-foreground">
                 {format(new Date(transaction.gameDetails[0].date), 'MMM d, yyyy')}
               </p>
@@ -198,7 +198,7 @@ const Financials = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div 
-                        className="flex items-center gap-1 text-sm text-muted-foreground mt-1 cursor-pointer hover:text-primary"
+                        className="flex items-center gap-1 text-sm text-muted-foreground mt-1 cursor-pointer hover:text-primary transition-colors"
                         onClick={() => {
                           navigator.clipboard.writeText(transaction.toPixKey || '');
                           toast({
@@ -220,7 +220,9 @@ const Financials = () => {
             </div>
           </div>
           <div className="text-right">
-            <p className="font-semibold text-foreground">${transaction.amount.toFixed(2)}</p>
+            <p className="font-semibold text-foreground bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              ${transaction.amount.toFixed(2)}
+            </p>
             <p className="text-sm text-muted-foreground capitalize">
               {transaction.paymentStatus}
             </p>
@@ -229,12 +231,12 @@ const Financials = () => {
         
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="details" className="border-none">
-            <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline">
+            <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline hover:text-primary transition-colors">
               Game Details
             </AccordionTrigger>
             <AccordionContent className="text-sm space-y-2">
               {transaction.gameDetails.map((detail, idx) => (
-                <div key={idx} className="flex justify-between items-center p-2 rounded bg-muted/50">
+                <div key={idx} className="flex justify-between items-center p-2 rounded bg-muted/50 backdrop-blur-sm">
                   <span className="text-foreground">{format(new Date(detail.date), 'MMM d, yyyy')}</span>
                   <span className="font-medium text-foreground">${detail.amount.toFixed(2)}</span>
                 </div>
@@ -248,7 +250,7 @@ const Financials = () => {
             variant="outline"
             size="sm"
             onClick={() => handleMarkAsPaid(transaction.gamePlayerIds)}
-            className="w-full mt-2 bg-card/80 hover:bg-card"
+            className="w-full mt-2 bg-card/80 hover:bg-primary/20 hover:text-primary transition-colors border-primary/20"
           >
             Mark as Paid
           </Button>
@@ -304,7 +306,9 @@ const Financials = () => {
         
         {/* Pending Transactions */}
         <div className="mb-8 animate-fade-in">
-          <h2 className="text-xl font-semibold mb-4 text-foreground">Pending Transactions</h2>
+          <h2 className="text-xl font-semibold mb-4 text-foreground bg-gradient-to-r from-primary/80 via-secondary/80 to-accent/80 bg-clip-text">
+            Pending Transactions
+          </h2>
           {pendingTransactions.length > 0 ? (
             <div className="space-y-4">
               {pendingTransactions.map((transaction, index) => (
@@ -314,7 +318,7 @@ const Financials = () => {
               ))}
             </div>
           ) : (
-            <Card className="p-6 bg-card/80 backdrop-blur-sm">
+            <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20">
               <div className="text-center text-muted-foreground">
                 No pending transactions to display.
               </div>
@@ -324,7 +328,9 @@ const Financials = () => {
 
         {/* Payment History */}
         <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
-          <h2 className="text-xl font-semibold mb-4 text-foreground">Payment History</h2>
+          <h2 className="text-xl font-semibold mb-4 text-foreground bg-gradient-to-r from-primary/80 via-secondary/80 to-accent/80 bg-clip-text">
+            Payment History
+          </h2>
           {paidTransactions.length > 0 ? (
             <div className="space-y-4">
               {paidTransactions.map((transaction, index) => (
@@ -334,7 +340,7 @@ const Financials = () => {
               ))}
             </div>
           ) : (
-            <Card className="p-6 bg-card/80 backdrop-blur-sm">
+            <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20">
               <div className="text-center text-muted-foreground">
                 No payment history to display.
               </div>
