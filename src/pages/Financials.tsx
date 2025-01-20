@@ -99,7 +99,7 @@ const Financials = () => {
           table: 'game_players'
         },
         (payload) => {
-          console.log('Received update on game_players table:', payload);
+          console.log('Received real-time update for game_players:', payload);
           // Show a toast notification
           toast({
             title: "Payment status updated",
@@ -109,7 +109,9 @@ const Financials = () => {
           queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
       console.log('Cleaning up real-time subscription...');
@@ -119,6 +121,7 @@ const Financials = () => {
 
   const handleMarkAsPaid = async (gamePlayerIds: string[]) => {
     try {
+      console.log('Marking transactions as paid:', gamePlayerIds);
       const { error } = await supabase
         .from('game_players')
         .update({ 
@@ -129,8 +132,9 @@ const Financials = () => {
 
       if (error) throw error;
 
+      console.log('Successfully marked transactions as paid');
       toast({
-        title: "Payment marked as paid",
+        title: "Success",
         description: "The payment has been marked as paid successfully.",
       });
     } catch (error) {
