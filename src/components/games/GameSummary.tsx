@@ -18,7 +18,6 @@ export const GameSummary = ({
   date,
   onUpdatePaymentStatus 
 }: GameSummaryProps) => {
-  // Sort players by final result (descending)
   const sortedPlayers = [...players].sort((a, b) => {
     const resultA = calculateFinalResult(a);
     const resultB = calculateFinalResult(b);
@@ -29,12 +28,10 @@ export const GameSummary = ({
   const winnerProfit = calculateFinalResult(winner);
   const winnerROI = ((winnerProfit / (winner.initial_buyin + (winner.total_rebuys * winner.initial_buyin))) * 100).toFixed(2);
 
-  // Calculate total money in play
   const totalMoneyInPlay = players.reduce((acc, player) => {
     return acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin);
   }, 0);
 
-  // Calculate payment transactions
   const playerBalances = players.map(player => ({
     playerId: player.id,
     playerName: player.player.name,
@@ -60,18 +57,25 @@ export const GameSummary = ({
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Winner Section */}
-      <Card className="p-6 bg-gradient-to-r from-primary/10 to-accent/10">
+      <Card className="p-6 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 dark:from-yellow-500/10 dark:to-amber-500/10 border-yellow-500/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Trophy className="w-12 h-12 text-yellow-500" />
+            <div className="relative">
+              <Trophy className="w-12 h-12 text-yellow-500 animate-[pulse_3s_ease-in-out_infinite]" />
+              <div className="absolute -inset-1 bg-yellow-500/20 blur-lg rounded-full -z-10" />
+            </div>
             <div>
-              <h2 className="text-2xl font-bold">{winner.player.name}</h2>
-              <p className="text-lg text-green-500">+${winnerProfit}</p>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
+                {winner.player.name}
+              </h2>
+              <p className="text-lg text-green-500 font-semibold">+${winnerProfit}</p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Return on Investment</p>
-            <p className="text-xl font-semibold">{winnerROI}%</p>
+            <p className="text-xl font-semibold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+              {winnerROI}%
+            </p>
           </div>
         </div>
       </Card>
@@ -85,10 +89,23 @@ export const GameSummary = ({
             const roi = ((result / (player.initial_buyin + (player.total_rebuys * player.initial_buyin))) * 100).toFixed(2);
             
             return (
-              <Card key={player.id} className="p-4 hover:bg-muted/50 transition-colors">
+              <Card 
+                key={player.id} 
+                className={`p-4 hover:bg-muted/50 transition-all duration-300 transform hover:scale-[1.02] ${
+                  index === 0 ? 'bg-gradient-to-r from-yellow-500/10 to-amber-500/10' :
+                  index === 1 ? 'bg-gradient-to-r from-slate-300/10 to-slate-400/10' :
+                  index === 2 ? 'bg-gradient-to-r from-amber-700/10 to-amber-800/10' : ''
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <span className="text-lg font-semibold">{index + 1}</span>
+                    <span className={`text-lg font-bold ${
+                      index === 0 ? 'text-yellow-500' :
+                      index === 1 ? 'text-slate-400' :
+                      index === 2 ? 'text-amber-700' : ''
+                    }`}>
+                      #{index + 1}
+                    </span>
                     <div>
                       <p className="font-medium">{player.player.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -109,9 +126,11 @@ export const GameSummary = ({
       {/* Game Statistics */}
       <div>
         <h3 className="text-xl font-semibold mb-4">Game Statistics</h3>
-        <Card className="p-4">
+        <Card className="p-6 bg-gradient-to-r from-primary/10 to-secondary/10">
           <p className="text-sm text-muted-foreground">Total Money in Play</p>
-          <p className="text-2xl font-semibold">${totalMoneyInPlay}</p>
+          <p className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            ${totalMoneyInPlay}
+          </p>
         </Card>
       </div>
 
@@ -125,7 +144,14 @@ export const GameSummary = ({
             const isPaid = fromPlayer?.payment_status === 'paid';
             
             return (
-              <Card key={index} className="p-4 hover:bg-muted/50 transition-colors">
+              <Card 
+                key={index} 
+                className={`p-4 transition-all duration-300 ${
+                  isPaid 
+                    ? 'bg-green-500/10 hover:bg-green-500/20' 
+                    : 'hover:bg-muted/50'
+                }`}
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <span className="font-medium whitespace-nowrap">{fromPlayer?.player.name}</span>
@@ -149,12 +175,12 @@ export const GameSummary = ({
                     >
                       {isPaid ? (
                         <>
-                          <X className="w-4 h-4" />
+                          <X className="w-4 h-4 mr-2" />
                           <span>Mark as Pending</span>
                         </>
                       ) : (
                         <>
-                          <Check className="w-4 h-4" />
+                          <Check className="w-4 h-4 mr-2" />
                           <span>Mark as Paid</span>
                         </>
                       )}
@@ -171,7 +197,7 @@ export const GameSummary = ({
       <div className="flex justify-center pt-4">
         <Button
           size="lg"
-          className="w-full md:w-auto"
+          className="w-full md:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
           onClick={handleShareWhatsApp}
         >
           Share on WhatsApp
