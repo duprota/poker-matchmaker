@@ -312,7 +312,7 @@ const PlayerCard = ({
           <div className="font-bold">
             {rankingType === "total" 
               ? `$${displayValue}` 
-              : `$${displayValue.toFixed(2)}/game`}
+              : `$${displayValue.toFixed(2)}`}
           </div>
           <div className="text-sm text-muted-foreground">
             <DollarSign className="w-3 h-3 inline" />
