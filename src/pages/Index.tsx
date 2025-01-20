@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Users, Calendar, TrendingUp, GamepadIcon, Award, Rocket, Star, Heart } from "lucide-react";
+import { Trophy, Users, Calendar, TrendingUp, GamepadIcon, Award, Rocket, Star, Heart, Medal } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -58,10 +58,35 @@ const Index = () => {
         throw error;
       }
 
-      console.log("Recent games data:", data);
-      return data;
+      // Process the data to sort players by final result
+      const processedGames = data?.map(game => ({
+        ...game,
+        game_players: game.game_players
+          .filter(player => player.final_result !== null)
+          .sort((a, b) => (b.final_result || 0) - (a.final_result || 0))
+          .slice(0, 3) // Get top 3 players
+      }));
+
+      console.log("Recent games data:", processedGames);
+      return processedGames;
     }
   });
+
+  // Helper function to render player position
+  const renderPlayerPosition = (index: number, playerName: string, result: number) => {
+    const positionStyles = {
+      0: "text-yellow-500 font-bold flex items-center gap-1",
+      1: "text-gray-400 font-semibold",
+      2: "text-amber-600 font-semibold"
+    };
+
+    return (
+      <div className={positionStyles[index as keyof typeof positionStyles]}>
+        {index === 0 && <Trophy className="h-4 w-4 animate-bounce" />}
+        {playerName} (${result})
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-muted">
@@ -194,8 +219,12 @@ const Index = () => {
                     <div className="text-sm text-muted-foreground">
                       {format(new Date(game.date), 'PPp')}
                     </div>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      Players: {game.game_players.map(gp => gp.player.name).join(', ')}
+                    <div className="mt-4 space-y-2">
+                      {game.game_players.map((gp, idx) => (
+                        <div key={idx}>
+                          {renderPlayerPosition(idx, gp.player.name, gp.final_result || 0)}
+                        </div>
+                      ))}
                     </div>
                     <Link 
                       to={`/games/${game.id}`}
