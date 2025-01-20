@@ -52,10 +52,10 @@ const Players = () => {
   };
 
   const addPlayer = async () => {
-    if (!newPlayerName.trim() || !newPlayerEmail.trim()) {
+    if (!newPlayerName.trim()) {
       toast({
         title: "Error",
-        description: "Please provide both name and email",
+        description: "Please provide a name",
         variant: "destructive",
       });
       return;
@@ -65,7 +65,7 @@ const Players = () => {
     try {
       console.log("Adding new player:", { 
         name: newPlayerName, 
-        email: newPlayerEmail,
+        email: newPlayerEmail || null,
         pix_key: newPlayerPixKey 
       });
       
@@ -74,7 +74,7 @@ const Players = () => {
         .insert([
           {
             name: newPlayerName.trim(),
-            email: newPlayerEmail.trim(),
+            email: newPlayerEmail.trim() || null,
             pix_key: newPlayerPixKey.trim() || null,
           },
         ])
@@ -107,10 +107,10 @@ const Players = () => {
   };
 
   const updatePlayer = async () => {
-    if (!editingPlayer || !editingPlayer.name.trim() || !editingPlayer.email.trim()) {
+    if (!editingPlayer || !editingPlayer.name.trim()) {
       toast({
         title: "Error",
-        description: "Please provide both name and email",
+        description: "Please provide a name",
         variant: "destructive",
       });
       return;
@@ -122,7 +122,7 @@ const Players = () => {
         .from("players")
         .update({
           name: editingPlayer.name.trim(),
-          email: editingPlayer.email.trim(),
+          email: editingPlayer.email?.trim() || null,
           pix_key: editingPlayer.pix_key?.trim() || null,
         })
         .eq("id", editingPlayer.id);
@@ -202,7 +202,7 @@ const Players = () => {
                 onChange={(e) => setNewPlayerName(e.target.value)}
               />
               <Input
-                placeholder="Player email"
+                placeholder="Player email (optional)"
                 type="email"
                 value={newPlayerEmail}
                 onChange={(e) => setNewPlayerEmail(e.target.value)}
@@ -235,7 +235,9 @@ const Players = () => {
                   <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
                     {player.name}
                   </h3>
-                  <p className="text-muted-foreground">{player.email}</p>
+                  {player.email && (
+                    <p className="text-muted-foreground">{player.email}</p>
+                  )}
                   {player.pix_key && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Key className="h-4 w-4" />
@@ -268,7 +270,7 @@ const Players = () => {
                           )}
                         />
                         <Input
-                          placeholder="Player email"
+                          placeholder="Player email (optional)"
                           type="email"
                           value={editingPlayer?.email || ""}
                           onChange={(e) => setEditingPlayer(prev => 
