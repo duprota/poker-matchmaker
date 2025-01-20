@@ -181,10 +181,10 @@ const GameDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8">
-          <p className="text-white">Loading game details...</p>
+          <p className="text-foreground font-medium">Loading game details...</p>
         </div>
       </div>
     );
@@ -192,22 +192,22 @@ const GameDetails = () => {
 
   if (!game) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8">
-          <p className="text-white">Game not found</p>
+          <p className="text-destructive">Game not found</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8">
         <GameHeader status={game.status} onDeleteGame={handleDeleteGame} />
         
-        <Card className="p-6 mb-6">
+        <Card className="p-6 mb-6 bg-card/80 backdrop-blur-sm border-primary/10">
           {game.status === "completed" ? (
             <GameSummary 
               players={game.players}
@@ -251,14 +251,14 @@ const GameDetails = () => {
           onFinalize={handleFinalize}
         />
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t border-border">
           <div className="container mx-auto flex justify-end">
             {game.status === "ongoing" && (
               <Button 
                 onClick={() => setShowFinalizeForm(true)} 
                 disabled={finalizing}
                 variant="destructive"
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 {finalizing ? "Finalizing..." : "Finalize Game"}
               </Button>

@@ -176,13 +176,24 @@ const Players = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
+        <Navigation />
+        <div className="container mx-auto py-8">
+          <p className="text-foreground font-medium">Loading players...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold text-white mb-6">Players</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Players</h1>
         
-        <Card className="p-6 mb-8">
+        <Card className="p-6 mb-8 bg-card/80 backdrop-blur-sm border-primary/10">
           <div className="flex flex-col gap-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Input
@@ -206,20 +217,25 @@ const Players = () => {
             <Button 
               onClick={addPlayer} 
               disabled={loading}
-              className="w-full md:w-auto"
+              className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
             >
               {loading ? "Adding..." : "Add Player"}
             </Button>
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {players.map((player) => (
-            <Card key={player.id} className="p-4">
+            <Card 
+              key={player.id} 
+              className="p-6 bg-card/80 backdrop-blur-sm border-primary/10 hover:border-primary/20 transition-all duration-200 hover:shadow-lg group"
+            >
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">{player.name}</h3>
-                  <p className="text-gray-500 dark:text-gray-400">{player.email}</p>
+                  <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {player.name}
+                  </h3>
+                  <p className="text-muted-foreground">{player.email}</p>
                   {player.pix_key && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Key className="h-4 w-4" />
@@ -234,11 +250,12 @@ const Players = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => setEditingPlayer(player)}
+                        className="hover:bg-primary/10"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-card/95 backdrop-blur-lg">
                       <DialogHeader>
                         <DialogTitle>Edit Player</DialogTitle>
                       </DialogHeader>
@@ -265,7 +282,10 @@ const Players = () => {
                             prev ? { ...prev, pix_key: e.target.value } : null
                           )}
                         />
-                        <Button onClick={updatePlayer} className="w-full">
+                        <Button 
+                          onClick={updatePlayer} 
+                          className="w-full bg-primary hover:bg-primary/90"
+                        >
                           Update Player
                         </Button>
                       </div>
@@ -275,6 +295,7 @@ const Players = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => deletePlayer(player.id)}
+                    className="hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

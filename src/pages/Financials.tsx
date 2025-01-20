@@ -259,11 +259,11 @@ const Financials = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
-          <Card className="p-4">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Historical Transactions</h1>
+          <Card className="p-4 bg-card/80 backdrop-blur-sm">
             <div className="text-center py-8">Loading transaction history...</div>
           </Card>
         </div>
@@ -273,11 +273,11 @@ const Financials = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
-          <Card className="p-4">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Historical Transactions</h1>
+          <Card className="p-4 bg-card/80 backdrop-blur-sm">
             <div className="text-center py-8 text-red-500">
               Error loading transaction history. Please try again later.
             </div>
@@ -291,14 +291,14 @@ const Financials = () => {
   const paidTransactions = transactions?.filter(t => t.paymentStatus === 'paid') || [];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Historical Transactions</h1>
         
         {/* Pending Transactions */}
         <div className="mb-8 animate-fade-in">
-          <h2 className="text-xl font-semibold mb-4">Pending Transactions</h2>
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Pending Transactions</h2>
           {pendingTransactions.length > 0 ? (
             <div className="space-y-4">
               {pendingTransactions.map((transaction, index) => (
@@ -308,7 +308,7 @@ const Financials = () => {
               ))}
             </div>
           ) : (
-            <Card className="p-6">
+            <Card className="p-6 bg-card/80 backdrop-blur-sm">
               <div className="text-center text-muted-foreground">
                 No pending transactions to display.
               </div>
@@ -318,7 +318,7 @@ const Financials = () => {
 
         {/* Payment History */}
         <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
-          <h2 className="text-xl font-semibold mb-4">Payment History</h2>
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Payment History</h2>
           {paidTransactions.length > 0 ? (
             <div className="space-y-4">
               {paidTransactions.map((transaction, index) => (
@@ -328,7 +328,7 @@ const Financials = () => {
               ))}
             </div>
           ) : (
-            <Card className="p-6">
+            <Card className="p-6 bg-card/80 backdrop-blur-sm">
               <div className="text-center text-muted-foreground">
                 No payment history to display.
               </div>

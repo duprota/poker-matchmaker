@@ -135,7 +135,7 @@ const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: nu
   return (
     <Card 
       className={cn(
-        "p-4 mb-3 transition-all cursor-pointer hover:scale-[1.02] animate-fade-in",
+        "p-4 mb-3 transition-all cursor-pointer hover:scale-[1.02] animate-fade-in bg-card/80 backdrop-blur-sm border-primary/10 hover:border-primary/20",
         isExpanded && "bg-card/50"
       )}
       onClick={() => setIsExpanded(!isExpanded)}
@@ -208,11 +208,13 @@ const Leaderboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8">
-          <h1 className="text-3xl font-bold text-white mb-6">2024 Leaderboard</h1>
-          <Card className="p-4">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+            2024 Leaderboard
+          </h1>
+          <Card className="p-4 bg-card/80 backdrop-blur-sm">
             <div className="text-center py-8">Loading leaderboard data...</div>
           </Card>
         </div>
@@ -222,12 +224,14 @@ const Leaderboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8">
-          <h1 className="text-3xl font-bold text-white mb-6">2024 Leaderboard</h1>
-          <Card className="p-4">
-            <div className="text-center py-8 text-red-500">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+            2024 Leaderboard
+          </h1>
+          <Card className="p-4 bg-card/80 backdrop-blur-sm">
+            <div className="text-center py-8 text-destructive">
               Error loading leaderboard data. Please try again later.
             </div>
           </Card>
@@ -237,10 +241,12 @@ const Leaderboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold text-white mb-6">2024 Leaderboard</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+          2024 Leaderboard
+        </h1>
         
         <TimeFilter active={timeFilter} onChange={setTimeFilter} />
         

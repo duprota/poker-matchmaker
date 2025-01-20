@@ -119,12 +119,14 @@ const NewGame = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-6">New Game</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+          New Game
+        </h1>
 
-        <Card className="p-6 mb-6">
+        <Card className="p-6 mb-6 bg-card/80 backdrop-blur-sm border-primary/10">
           <div className="space-y-6">
             <div>
               <Label htmlFor="name">Game Name</Label>
@@ -203,12 +205,17 @@ const NewGame = () => {
             </div>
 
             <div className="flex justify-end gap-4">
-              <Button variant="outline" onClick={() => navigate("/games")}>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/games")}
+                className="hover:bg-destructive/10 hover:text-destructive"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreateGame}
                 disabled={selectedPlayers.length === 0 || loading}
+                className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 {loading ? "Creating..." : "Create Game"}
               </Button>
