@@ -178,7 +178,7 @@ const Financials = () => {
   const renderTransactionCard = (transaction: TransactionSummary) => {
     const isPaid = transaction.paymentStatus === 'paid';
     return (
-      <Card className={`p-4 mb-4 animate-fade-in hover:scale-[1.01] transition-all ${isPaid ? 'bg-muted/50' : 'bg-card'}`}>
+      <Card className={`p-4 mb-4 animate-fade-in hover:scale-[1.01] transition-all backdrop-blur-sm ${isPaid ? 'bg-muted/50' : 'bg-card/80'}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <div className={`p-1.5 rounded-full ${isPaid ? 'bg-green-500/20' : 'bg-yellow-500/20'}`}>
@@ -189,7 +189,7 @@ const Financials = () => {
               )}
             </div>
             <div>
-              <p className="font-medium">{transaction.from} → {transaction.to}</p>
+              <p className="font-medium text-foreground">{transaction.from} → {transaction.to}</p>
               <p className="text-sm text-muted-foreground">
                 {format(new Date(transaction.gameDetails[0].date), 'MMM d, yyyy')}
               </p>
@@ -220,7 +220,7 @@ const Financials = () => {
             </div>
           </div>
           <div className="text-right">
-            <p className="font-semibold">${transaction.amount.toFixed(2)}</p>
+            <p className="font-semibold text-foreground">${transaction.amount.toFixed(2)}</p>
             <p className="text-sm text-muted-foreground capitalize">
               {transaction.paymentStatus}
             </p>
@@ -235,8 +235,8 @@ const Financials = () => {
             <AccordionContent className="text-sm space-y-2">
               {transaction.gameDetails.map((detail, idx) => (
                 <div key={idx} className="flex justify-between items-center p-2 rounded bg-muted/50">
-                  <span>{format(new Date(detail.date), 'MMM d, yyyy')}</span>
-                  <span className="font-medium">${detail.amount.toFixed(2)}</span>
+                  <span className="text-foreground">{format(new Date(detail.date), 'MMM d, yyyy')}</span>
+                  <span className="font-medium text-foreground">${detail.amount.toFixed(2)}</span>
                 </div>
               ))}
             </AccordionContent>
@@ -248,7 +248,7 @@ const Financials = () => {
             variant="outline"
             size="sm"
             onClick={() => handleMarkAsPaid(transaction.gamePlayerIds)}
-            className="w-full mt-2"
+            className="w-full mt-2 bg-card/80 hover:bg-card"
           >
             Mark as Paid
           </Button>
@@ -262,9 +262,11 @@ const Financials = () => {
       <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Historical Transactions</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+            Historical Transactions
+          </h1>
           <Card className="p-4 bg-card/80 backdrop-blur-sm">
-            <div className="text-center py-8">Loading transaction history...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading transaction history...</div>
           </Card>
         </div>
       </div>
@@ -276,9 +278,11 @@ const Financials = () => {
       <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Historical Transactions</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+            Historical Transactions
+          </h1>
           <Card className="p-4 bg-card/80 backdrop-blur-sm">
-            <div className="text-center py-8 text-red-500">
+            <div className="text-center py-8 text-destructive">
               Error loading transaction history. Please try again later.
             </div>
           </Card>
@@ -294,7 +298,9 @@ const Financials = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Historical Transactions</h1>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+          Historical Transactions
+        </h1>
         
         {/* Pending Transactions */}
         <div className="mb-8 animate-fade-in">
