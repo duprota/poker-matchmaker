@@ -7,13 +7,19 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Check, Clock } from "lucide-react";
+import { Check, Clock, QrCode } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface GameDebtDetail {
   gameId: string;
@@ -31,6 +37,7 @@ interface TransactionSummary {
   gamePlayerIds: string[];
   paymentStatus: string;
   gameDetails: GameDebtDetail[];
+  toPixKey?: string;
 }
 
 const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
@@ -47,7 +54,8 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
         date
       ),
       players!game_players_player_id_fkey (
-        name
+        name,
+        pix_key
       )
     `)
     .order('created_at', { ascending: false });
@@ -66,6 +74,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     amount: gp.payment_amount || 0,
     gamePlayerIds: [gp.id],
     paymentStatus: gp.payment_status || 'pending',
+    toPixKey: gp.players.pix_key,
     gameDetails: [{
       gameId: gp.game_id,
       date: gp.games.date,
@@ -147,39 +156,6 @@ const Financials = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
-          <Card className="p-4">
-            <div className="text-center py-8">Loading transaction history...</div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
-          <Card className="p-4">
-            <div className="text-center py-8 text-red-500">
-              Error loading transaction history. Please try again later.
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const pendingTransactions = transactions?.filter(t => t.paymentStatus === 'pending') || [];
-  const paidTransactions = transactions?.filter(t => t.paymentStatus === 'paid') || [];
-
   const renderTransactionCard = (transaction: TransactionSummary) => {
     const isPaid = transaction.paymentStatus === 'paid';
     return (
@@ -198,6 +174,21 @@ const Financials = () => {
               <p className="text-sm text-muted-foreground">
                 {format(new Date(transaction.gameDetails[0].date), 'MMM d, yyyy')}
               </p>
+              {transaction.toPixKey && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1 cursor-pointer hover:text-primary">
+                        <QrCode className="h-4 w-4" />
+                        <span className="truncate max-w-[200px]">{transaction.toPixKey}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Click to copy PIX key</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           </div>
           <div className="text-right">
@@ -237,6 +228,39 @@ const Financials = () => {
       </Card>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
+          <Card className="p-4">
+            <div className="text-center py-8">Loading transaction history...</div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-2xl font-bold mb-6">Historical Transactions</h1>
+          <Card className="p-4">
+            <div className="text-center py-8 text-red-500">
+              Error loading transaction history. Please try again later.
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const pendingTransactions = transactions?.filter(t => t.paymentStatus === 'pending') || [];
+  const paidTransactions = transactions?.filter(t => t.paymentStatus === 'paid') || [];
 
   return (
     <div className="min-h-screen bg-background">
