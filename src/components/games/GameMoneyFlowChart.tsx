@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { GamePlayer } from "@/types/game";
 import { Card } from "@/components/ui/card";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatDistanceToNow } from "date-fns";
-import { TrendingUpIcon } from "lucide-react";
+import { formatDistanceToNow, formatDistance } from "date-fns";
+import { TrendingUpIcon, ClockIcon, RefreshCwIcon } from "lucide-react";
 
 interface ChartDataPoint {
   time: string;
@@ -19,6 +19,7 @@ interface GameMoneyFlowChartProps {
 
 export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartProps) => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [gameDuration, setGameDuration] = useState<string>("");
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -70,17 +71,53 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       }
     });
 
+    // Calculate game duration
+    if (gameHistory.length > 0) {
+      const firstEvent = new Date(gameHistory[0].created_at);
+      const duration = formatDistance(new Date(), firstEvent, { addSuffix: false });
+      setGameDuration(duration);
+    }
+
     console.log("Final chart data points:", dataPoints);
     setChartData(dataPoints);
   }, [players, gameHistory]);
 
+  const totalRebuys = players.reduce((acc, player) => acc + player.total_rebuys, 0);
+  const currentTotal = chartData[chartData.length - 1]?.amount || 0;
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Summary Card */}
+      <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center space-x-3">
+            <TrendingUpIcon className="w-5 h-5 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Total in Play</p>
+              <p className="text-2xl font-bold">${currentTotal}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <RefreshCwIcon className="w-5 h-5 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Total Rebuys</p>
+              <p className="text-2xl font-bold">{totalRebuys}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <ClockIcon className="w-5 h-5 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Game Duration</p>
+              <p className="text-2xl font-bold">{gameDuration}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Money Flow Timeline</h3>
-        <div className="text-sm text-muted-foreground">
-          Total in play: ${chartData[chartData.length - 1]?.amount || 0}
-        </div>
       </div>
 
       <div className="relative">
