@@ -14,24 +14,11 @@ import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   
   const {
     game,
@@ -218,7 +205,7 @@ const GameDetails = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto py-8">
-        <GameHeader status={game.status} />
+        <GameHeader status={game.status} onDeleteGame={handleDeleteGame} />
         
         <Card className="p-6 mb-6">
           {game.status === "completed" ? (
@@ -264,7 +251,7 @@ const GameDetails = () => {
         />
 
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border">
-          <div className="container mx-auto flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
+          <div className="container mx-auto flex justify-end">
             {game.status === "ongoing" && (
               <Button 
                 onClick={() => setShowFinalizeForm(true)} 
@@ -275,33 +262,6 @@ const GameDetails = () => {
                 {finalizing ? "Finalizing..." : "Finalize Game"}
               </Button>
             )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="outline"
-                  className="w-full sm:w-auto text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  Delete Game
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className={isMobile ? "w-[95vw]" : ""}>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure you want to delete this game?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the game and all associated data.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className={isMobile ? "flex-col gap-2" : ""}>
-                  <AlertDialogCancel className={isMobile ? "w-full" : ""}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleDeleteGame}
-                    className={isMobile ? "w-full" : ""}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </div>
         </div>
       </div>
