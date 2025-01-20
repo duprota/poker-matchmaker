@@ -7,7 +7,6 @@ import { Trophy, Medal, Star, TrendingUp, TrendingDown, DollarSign } from "lucid
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 
 interface LeaderboardEntry {
@@ -98,23 +97,29 @@ const Leaderboard = () => {
     const totalMoneyWon = leaderboard.reduce((acc, player) => acc + Math.max(0, player.total_winnings), 0);
     const totalGamesPlayed = leaderboard.reduce((acc, player) => acc + player.games_played, 0);
 
-    const summaryText = `🏆 Poker Leaderboard ${timeFilter}\n\n` +
-      `📊 Total Money Won: $${totalMoneyWon}\n` +
-      `🎮 Total Games Played: ${totalGamesPlayed}\n\n` +
-      `🎯 Top Players:\n${leaderboard.slice(0, 5).map((player, index) => {
-        const position = index + 1;
-        const emoji = position === 1 ? '👑' : position === 2 ? '🥈' : position === 3 ? '🥉' : '⭐';
-        const roi = ((player.total_winnings / player.total_spent) * 100).toFixed(1);
-        return `${emoji} ${player.player_name}\n` +
-          `   💰 $${player.total_winnings} (${roi}% ROI)\n` +
-          `   🎲 ${player.games_played} games\n` +
-          `   💫 Best Game ROI: ${player.best_game_roi.toFixed(1)}%\n`;
-      }).join('\n')}` +
-      `\n🔥 Most Profitable Players:\n${leaderboard
-        .filter(p => p.roi_percentage > 0)
-        .sort((a, b) => b.roi_percentage - a.roi_percentage)
-        .slice(0, 3)
-        .map(player => `📈 ${player.player_name}: ${player.roi_percentage.toFixed(1)}% ROI`).join('\n')}`;
+    const summaryText = 
+`🏆 Poker Leaderboard ${timeFilter}
+
+💰 Total Money Won: $${totalMoneyWon}
+🎮 Total Games Played: ${totalGamesPlayed}
+
+👑 Top Players:
+${leaderboard.slice(0, 5).map((player, index) => {
+  const position = index + 1;
+  const emoji = position === 1 ? '👑' : position === 2 ? '🥈' : position === 3 ? '🥉' : '⭐';
+  const roi = ((player.total_winnings / player.total_spent) * 100).toFixed(1);
+  return `${emoji} ${player.player_name}
+   💵 $${player.total_winnings} (${roi}% ROI)
+   🎲 ${player.games_played} games
+   📈 Best Game ROI: ${player.best_game_roi.toFixed(1)}%
+`;
+}).join('\n')}
+🔥 Most Profitable Players:
+${leaderboard
+  .filter(p => p.roi_percentage > 0)
+  .sort((a, b) => b.roi_percentage - a.roi_percentage)
+  .slice(0, 3)
+  .map(player => `📊 ${player.player_name}: ${player.roi_percentage.toFixed(1)}% ROI`).join('\n')}`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(summaryText)}`);
   };
