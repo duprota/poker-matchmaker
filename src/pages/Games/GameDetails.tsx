@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GameHeader } from "@/components/games/GameHeader";
 import { GameInformation } from "@/components/games/GameInformation";
 import { CompletedGameTable } from "@/components/games/CompletedGameTable";
+import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
 import { GameSummary } from "@/components/games/GameSummary";
 import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
 import { PlayerRebuysCard } from "@/components/games/PlayerRebuysCard";
@@ -233,6 +234,11 @@ const GameDetails = () => {
                   />
                 ))}
               </div>
+
+              <GameMoneyFlowChart 
+                players={game.players}
+                gameHistory={gameHistory}
+              />
             </>
           )}
         </Card>
