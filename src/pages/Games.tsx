@@ -81,49 +81,61 @@ const Games = () => {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto py-8">
-          <p className="text-white">Loading games...</p>
+          <p className="text-foreground font-medium">Loading games...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-white">Games</h1>
-          <Button asChild>
+      <div className="container mx-auto py-8 animate-fade-in">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            Games
+          </h1>
+          <Button 
+            asChild
+            className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+          >
             <Link to="/games/new">New Game</Link>
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {games.map((game) => (
-            <Card key={game.id} className="p-4">
+            <Card 
+              key={game.id} 
+              className="p-6 bg-card/80 backdrop-blur-sm border-primary/10 hover:border-primary/20 transition-all duration-200 hover:shadow-lg group"
+            >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold">
+                  <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
                     {game.name || "Game Details"}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-muted-foreground mt-1">
                     {new Date(game.date).toLocaleDateString()}
                   </p>
                 </div>
                 <span
-                  className={`px-2 py-1 rounded text-sm ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
                     game.status === "ongoing"
-                      ? "bg-yellow-200 text-yellow-800"
-                      : "bg-green-200 text-green-800"
+                      ? "bg-secondary/10 text-secondary"
+                      : "bg-primary/10 text-primary"
                   }`}
                 >
                   {game.status}
                 </span>
               </div>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4 line-clamp-2">
                 Players: {game.players.map((p) => p.player.name).join(", ")}
               </p>
-              <Button asChild variant="secondary" className="w-full">
+              <Button 
+                asChild 
+                variant="secondary" 
+                className="w-full bg-secondary/10 hover:bg-secondary/20 text-secondary hover:text-secondary font-medium"
+              >
                 <Link to={`/games/${game.id}`}>View Details</Link>
               </Button>
             </Card>
