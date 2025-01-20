@@ -157,22 +157,13 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-            2024 Leaderboard
-          </h1>
-          <Button
-            size="lg"
-            className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity animate-fade-in"
-            onClick={handleShareWhatsApp}
-          >
-            Share on WhatsApp
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+          2024 Leaderboard
+        </h1>
         
         <TimeFilter active={timeFilter} onChange={setTimeFilter} />
         
-        <ScrollArea className="h-[calc(100vh-220px)]">
+        <ScrollArea className="h-[calc(100vh-320px)]">
           {leaderboard?.map((entry, index) => (
             <PlayerCard 
               key={entry.player_name} 
@@ -181,6 +172,16 @@ const Leaderboard = () => {
             />
           ))}
         </ScrollArea>
+
+        <div className="mt-6 flex justify-center">
+          <Button
+            size="lg"
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity animate-fade-in"
+            onClick={handleShareWhatsApp}
+          >
+            Share on WhatsApp
+          </Button>
+        </div>
       </div>
     </div>
   );
