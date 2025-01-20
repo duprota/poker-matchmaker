@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/toggle";
 
 interface LeaderboardEntry {
   player_name: string;
@@ -19,6 +20,7 @@ interface LeaderboardEntry {
   average_roi: number;
   best_game_roi: number;
   worst_game_roi: number;
+  average_winnings: number;
 }
 
 const calculateROI = (winnings: number, spent: number) => {
@@ -61,7 +63,8 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
         roi_percentage: 0,
         average_roi: 0,
         best_game_roi: -Infinity,
-        worst_game_roi: Infinity
+        worst_game_roi: Infinity,
+        average_winnings: 0
       };
     }
 
@@ -75,47 +78,56 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     return acc;
   }, {});
 
-  // Calculate final ROI percentages
+  // Calculate final ROI percentages and averages
   Object.values(playerStats).forEach(player => {
     player.roi_percentage = calculateROI(player.total_winnings, player.total_spent);
     player.average_roi = player.roi_percentage / player.games_played;
+    player.average_winnings = player.total_winnings / player.games_played;
   });
 
-  return Object.values(playerStats).sort((a, b) => b.total_winnings - a.total_winnings);
+  return Object.values(playerStats);
 };
 
 const Leaderboard = () => {
   const [timeFilter, setTimeFilter] = useState("All Time");
+  const [rankingType, setRankingType] = useState<"total" | "average">("total");
   const { data: leaderboard, isLoading, error } = useQuery({
     queryKey: ['leaderboard', timeFilter],
     queryFn: fetchLeaderboardData,
   });
 
-  const handleShareWhatsApp = () => {
-    if (!leaderboard) return;
+  const sortedLeaderboard = leaderboard?.sort((a, b) => 
+    rankingType === "total" 
+      ? b.total_winnings - a.total_winnings
+      : b.average_winnings - a.average_winnings
+  );
 
-    const totalMoneyWon = leaderboard.reduce((acc, player) => acc + Math.max(0, player.total_winnings), 0);
-    const totalGamesPlayed = leaderboard.reduce((acc, player) => acc + player.games_played, 0);
+  const handleShareWhatsApp = () => {
+    if (!sortedLeaderboard) return;
+
+    const totalMoneyWon = sortedLeaderboard.reduce((acc, player) => acc + Math.max(0, player.total_winnings), 0);
+    const totalGamesPlayed = sortedLeaderboard.reduce((acc, player) => acc + player.games_played, 0);
 
     const summaryText = 
-`🏆 Poker Leaderboard ${timeFilter}
+`🏆 Poker Leaderboard ${timeFilter} (${rankingType === "total" ? "Total Earnings" : "Average per Game"})
 
 💰 Total Money Won: $${totalMoneyWon}
 🎮 Total Games Played: ${totalGamesPlayed}
 
 👑 Top Players:
-${leaderboard.slice(0, 5).map((player, index) => {
+${sortedLeaderboard.slice(0, 5).map((player, index) => {
   const position = index + 1;
   const emoji = position === 1 ? '👑' : position === 2 ? '🥈' : position === 3 ? '🥉' : '⭐';
+  const value = rankingType === "total" ? player.total_winnings : player.average_winnings;
   const roi = ((player.total_winnings / player.total_spent) * 100).toFixed(1);
   return `${emoji} ${player.player_name}
-   💵 $${player.total_winnings} (${roi}% ROI)
+   💵 ${rankingType === "total" ? `$${value}` : `$${value.toFixed(2)}/game`} (${roi}% ROI)
    🎲 ${player.games_played} games
    📈 Best Game ROI: ${player.best_game_roi.toFixed(1)}%
 `;
 }).join('\n')}
 🔥 Most Profitable Players:
-${leaderboard
+${sortedLeaderboard
   .filter(p => p.roi_percentage > 0)
   .sort((a, b) => b.roi_percentage - a.roi_percentage)
   .slice(0, 3)
@@ -166,14 +178,33 @@ ${leaderboard
           2024 Leaderboard
         </h1>
         
-        <TimeFilter active={timeFilter} onChange={setTimeFilter} />
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          <TimeFilter active={timeFilter} onChange={setTimeFilter} />
+          <div className="flex gap-2">
+            <Toggle
+              pressed={rankingType === "total"}
+              onPressedChange={() => setRankingType("total")}
+              className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              Total Earnings
+            </Toggle>
+            <Toggle
+              pressed={rankingType === "average"}
+              onPressedChange={() => setRankingType("average")}
+              className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              Average per Game
+            </Toggle>
+          </div>
+        </div>
         
         <ScrollArea className="h-[calc(100vh-320px)]">
-          {leaderboard?.map((entry, index) => (
+          {sortedLeaderboard?.map((entry, index) => (
             <PlayerCard 
               key={entry.player_name} 
               entry={entry} 
               position={index + 1}
+              rankingType={rankingType}
             />
           ))}
         </ScrollArea>
@@ -197,7 +228,7 @@ const TimeFilter = ({ active, onChange }: { active: string, onChange: (period: s
   const isMobile = useIsMobile();
   
   return (
-    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+    <div className="flex gap-2 overflow-x-auto pb-2">
       {filters.map((filter) => (
         <button
           key={filter}
@@ -236,9 +267,20 @@ const ROIIndicator = ({ value }: { value: number }) => {
   );
 };
 
-const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: number }) => {
+const PlayerCard = ({ 
+  entry, 
+  position,
+  rankingType
+}: { 
+  entry: LeaderboardEntry, 
+  position: number,
+  rankingType: "total" | "average"
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useIsMobile();
+  const displayValue = rankingType === "total" 
+    ? entry.total_winnings 
+    : entry.average_winnings;
   
   return (
     <Card 
@@ -265,9 +307,13 @@ const PlayerCard = ({ entry, position }: { entry: LeaderboardEntry, position: nu
         
         <div className={cn(
           "text-right",
-          entry.total_winnings >= 0 ? "text-green-500" : "text-red-500"
+          displayValue >= 0 ? "text-green-500" : "text-red-500"
         )}>
-          <div className="font-bold">${entry.total_winnings}</div>
+          <div className="font-bold">
+            {rankingType === "total" 
+              ? `$${displayValue}` 
+              : `$${displayValue.toFixed(2)}/game`}
+          </div>
           <div className="text-sm text-muted-foreground">
             <DollarSign className="w-3 h-3 inline" />
             {entry.total_spent} spent
