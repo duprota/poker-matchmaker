@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Key } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerEmail, setNewPlayerEmail] = useState("");
+  const [newPlayerPixKey, setNewPlayerPixKey] = useState("");
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -62,13 +63,19 @@ const Players = () => {
 
     setLoading(true);
     try {
-      console.log("Adding new player:", { name: newPlayerName, email: newPlayerEmail });
+      console.log("Adding new player:", { 
+        name: newPlayerName, 
+        email: newPlayerEmail,
+        pix_key: newPlayerPixKey 
+      });
+      
       const { data, error } = await supabase
         .from("players")
         .insert([
           {
             name: newPlayerName.trim(),
             email: newPlayerEmail.trim(),
+            pix_key: newPlayerPixKey.trim() || null,
           },
         ])
         .select()
@@ -82,6 +89,7 @@ const Players = () => {
       setPlayers([...players, data]);
       setNewPlayerName("");
       setNewPlayerEmail("");
+      setNewPlayerPixKey("");
       toast({
         title: "Success",
         description: "Player added successfully",
@@ -115,6 +123,7 @@ const Players = () => {
         .update({
           name: editingPlayer.name.trim(),
           email: editingPlayer.email.trim(),
+          pix_key: editingPlayer.pix_key?.trim() || null,
         })
         .eq("id", editingPlayer.id);
 
@@ -175,18 +184,23 @@ const Players = () => {
         
         <Card className="p-6 mb-8">
           <div className="flex flex-col gap-4">
-            <div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Input
                 placeholder="Player name"
                 value={newPlayerName}
                 onChange={(e) => setNewPlayerName(e.target.value)}
-                className="mb-2"
               />
               <Input
                 placeholder="Player email"
                 type="email"
                 value={newPlayerEmail}
                 onChange={(e) => setNewPlayerEmail(e.target.value)}
+              />
+              <Input
+                placeholder="PIX key (optional)"
+                value={newPlayerPixKey}
+                onChange={(e) => setNewPlayerPixKey(e.target.value)}
+                className="flex items-center"
               />
             </div>
             <Button 
@@ -203,9 +217,15 @@ const Players = () => {
           {players.map((player) => (
             <Card key={player.id} className="p-4">
               <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">{player.name}</h3>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold">{player.name}</h3>
                   <p className="text-gray-500 dark:text-gray-400">{player.email}</p>
+                  {player.pix_key && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Key className="h-4 w-4" />
+                      <span>{player.pix_key}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Dialog>
@@ -236,6 +256,13 @@ const Players = () => {
                           value={editingPlayer?.email || ""}
                           onChange={(e) => setEditingPlayer(prev => 
                             prev ? { ...prev, email: e.target.value } : null
+                          )}
+                        />
+                        <Input
+                          placeholder="PIX key (optional)"
+                          value={editingPlayer?.pix_key || ""}
+                          onChange={(e) => setEditingPlayer(prev => 
+                            prev ? { ...prev, pix_key: e.target.value } : null
                           )}
                         />
                         <Button onClick={updatePlayer} className="w-full">
