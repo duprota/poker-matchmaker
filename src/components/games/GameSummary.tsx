@@ -51,7 +51,9 @@ export const GameSummary = ({
         `${players.find(p => p.id === t.from)?.player.name} → ${players.find(p => p.id === t.to)?.player.name}: $${t.amount}`
       ).join('\n')}`;
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(summaryText)}`);
+    // Fix: Use encodeURIComponent for the entire text and ensure proper URL formation
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(summaryText)}`;
+    window.open(whatsappUrl);
   };
 
   return (
