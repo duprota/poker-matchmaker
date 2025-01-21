@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown, MessageSquare, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,8 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
 
   const fetchStats = async () => {
     try {
+      console.log("Fetching feedback stats for player:", playerId);
+      
       const { data: feedbackData } = await supabase
         .from("player_feedback")
         .select("vote_type")
@@ -41,16 +43,22 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
           .select("vote_type")
           .eq('from_player_id', user.id)
           .eq('to_player_id', playerId)
-          .single();
+          .maybeSingle(); // Changed from .single() to .maybeSingle()
 
         if (userFeedback) {
           setCurrentVote(userFeedback.vote_type as 'like' | 'dislike');
+        } else {
+          setCurrentVote(null);
         }
       }
     } catch (error) {
       console.error("Error fetching feedback stats:", error);
     }
   };
+
+  useEffect(() => {
+    fetchStats();
+  }, [playerId]);
 
   const handleVote = async (voteType: 'like' | 'dislike') => {
     setIsSubmitting(true);
@@ -71,7 +79,7 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         .select()
         .eq('from_player_id', user.id)
         .eq('to_player_id', playerId)
-        .single();
+        .maybeSingle(); // Changed from .single() to .maybeSingle()
 
       let error;
       
