@@ -50,9 +50,14 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
       payment_amount,
       game_id,
       player_id,
+      final_result,
       games (
         date,
-        manager_id
+        manager_id,
+        players!games_manager_id_fkey (
+          name,
+          pix_key
+        )
       ),
       players!game_players_player_id_fkey (
         name,
@@ -67,36 +72,29 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     throw error;
   }
 
-  // Get manager PIX keys
-  const managerIds = [...new Set(gamePlayers.map(gp => gp.games.manager_id))];
-  const { data: managers, error: managersError } = await supabase
-    .from('players')
-    .select('id, user_id, pix_key')
-    .filter('user_id', 'in', `(${managerIds.join(',')})`);
-
-  if (managersError) {
-    console.error('Error fetching managers:', managersError);
-    throw managersError;
-  }
-
   // Transform the data into TransactionSummary format
   const transactions: TransactionSummary[] = gamePlayers.map((gp: any) => {
-    // Find the manager's PIX key
-    const manager = managers?.find(m => m.user_id === gp.games.manager_id);
+    const finalResult = gp.final_result || 0;
+    // If finalResult is positive, player receives money. If negative, they need to pay
+    const isReceiving = finalResult > 0;
+    
+    // Get the manager's name and PIX key
+    const managerName = gp.games.players?.name || 'Game Manager';
+    const managerPixKey = gp.games.players?.pix_key;
     
     return {
-      from: gp.players.name,
-      fromId: gp.player_id,
-      to: "House",
-      toId: "house",
-      amount: gp.payment_amount || 0,
+      from: isReceiving ? managerName : gp.players.name,
+      fromId: isReceiving ? gp.games.manager_id : gp.player_id,
+      to: isReceiving ? gp.players.name : managerName,
+      toId: isReceiving ? gp.player_id : gp.games.manager_id,
+      amount: Math.abs(finalResult),
       gamePlayerIds: [gp.id],
       paymentStatus: gp.payment_status || 'pending',
-      toPixKey: manager?.pix_key || null,
+      toPixKey: isReceiving ? gp.players.pix_key : managerPixKey,
       gameDetails: [{
         gameId: gp.game_id,
         date: gp.games.date,
-        amount: gp.payment_amount || 0,
+        amount: Math.abs(finalResult),
         gamePlayerId: gp.id
       }]
     };
