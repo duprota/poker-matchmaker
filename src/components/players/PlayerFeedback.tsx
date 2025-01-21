@@ -24,15 +24,31 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
       console.log("Submitting vote:", { playerId, voteType });
       
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to submit feedback",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      const { data: fromPlayer } = await supabase
+      const { data: fromPlayer, error: playerError } = await supabase
         .from("players")
         .select("id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (!fromPlayer) throw new Error("Player not found");
+      if (playerError) throw playerError;
+      
+      if (!fromPlayer) {
+        toast({
+          title: "Error",
+          description: "Your user account is not linked to a player profile",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { error } = await supabase
         .from("player_feedback")
@@ -70,15 +86,31 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to submit a comment",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      const { data: fromPlayer } = await supabase
+      const { data: fromPlayer, error: playerError } = await supabase
         .from("players")
         .select("id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (!fromPlayer) throw new Error("Player not found");
+      if (playerError) throw playerError;
+      
+      if (!fromPlayer) {
+        toast({
+          title: "Error",
+          description: "Your user account is not linked to a player profile",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { error } = await supabase
         .from("player_feedback")
