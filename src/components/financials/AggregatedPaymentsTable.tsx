@@ -52,7 +52,8 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
         description: "Payment status updated successfully",
       });
 
-      // Refresh the games data
+      // Instead of reloading the page, we'll let the parent component handle the refresh
+      // through its own data fetching mechanism
       window.location.reload();
     } catch (error) {
       console.error("Error updating payment status:", error);
@@ -65,6 +66,7 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
   };
 
   const aggregatedPayments = calculateOptimizedPayments(games);
+  console.log('Aggregated payments:', aggregatedPayments);
 
   const isAllPaid = (payment: any) => {
     return payment.details.every((detail: any) => detail.paymentStatus === 'paid');

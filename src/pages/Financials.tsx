@@ -9,41 +9,65 @@ const Financials = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        const { data: gamesData, error: gamesError } = await supabase
-          .from("games")
-          .select(`
-            *,
-            players:game_players (
+  const fetchGames = async () => {
+    try {
+      console.log('Fetching games data for financials...');
+      const { data: gamesData, error: gamesError } = await supabase
+        .from("games")
+        .select(`
+          *,
+          players:game_players (
+            id,
+            game_id,
+            initial_buyin,
+            total_rebuys,
+            final_result,
+            payment_status,
+            payment_amount,
+            player:players (
               id,
-              game_id,
-              initial_buyin,
-              total_rebuys,
-              final_result,
-              payment_status,
-              payment_amount,
-              player:players (
-                id,
-                name,
-                email
-              )
+              name,
+              email
             )
-          `)
-          .eq("status", "completed");
+          )
+        `)
+        .eq("status", "completed");
 
-        if (gamesError) throw gamesError;
+      if (gamesError) throw gamesError;
 
-        setGames(gamesData || []);
-      } catch (error) {
-        console.error("Error fetching games:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log('Fetched games data:', gamesData);
+      setGames(gamesData || []);
+    } catch (error) {
+      console.error("Error fetching games:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Set up real-time subscription for game_players table changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('game_players_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_players'
+        },
+        (payload) => {
+          console.log('Received game_players change:', payload);
+          fetchGames(); // Refresh data when game_players table changes
+        }
+      )
+      .subscribe();
+
+    // Initial fetch
     fetchGames();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
