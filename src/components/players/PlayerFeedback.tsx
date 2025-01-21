@@ -18,37 +18,6 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
   const { toast } = useToast();
   const maxCharacters = 144;
 
-  const ensurePlayerProfile = async (userId: string, userEmail: string | undefined) => {
-    console.log("Ensuring player profile exists for user:", userId);
-    
-    const { data: existingPlayer } = await supabase
-      .from("players")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (existingPlayer) {
-      console.log("Found existing player profile:", existingPlayer);
-      return existingPlayer.id;
-    }
-
-    // Create a new player profile
-    console.log("Creating new player profile for user");
-    const { data: newPlayer, error: createError } = await supabase
-      .from("players")
-      .insert([{
-        user_id: userId,
-        name: userEmail?.split('@')[0] || 'Anonymous User',
-        email: userEmail
-      }])
-      .select("id")
-      .single();
-
-    if (createError) throw createError;
-    console.log("Created new player profile:", newPlayer);
-    return newPlayer.id;
-  };
-
   const handleVote = async (voteType: 'like' | 'dislike') => {
     setIsSubmitting(true);
     try {
@@ -64,17 +33,12 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         return;
       }
 
-      // Ensure user has a player profile
-      const fromPlayerId = await ensurePlayerProfile(user.id, user.email);
-
       const { error } = await supabase
         .from("player_feedback")
-        .upsert({
-          from_player_id: fromPlayerId,
+        .insert({
+          from_player_id: user.id,
           to_player_id: playerId,
           vote_type: voteType,
-        }, {
-          onConflict: 'from_player_id,to_player_id'
         });
 
       if (error) throw error;
@@ -112,18 +76,13 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         return;
       }
 
-      // Ensure user has a player profile
-      const fromPlayerId = await ensurePlayerProfile(user.id, user.email);
-
       const { error } = await supabase
         .from("player_feedback")
-        .upsert({
-          from_player_id: fromPlayerId,
+        .insert({
+          from_player_id: user.id,
           to_player_id: playerId,
           comment: comment.trim(),
           vote_type: 'like' // Default to like when only commenting
-        }, {
-          onConflict: 'from_player_id,to_player_id'
         });
 
       if (error) throw error;
