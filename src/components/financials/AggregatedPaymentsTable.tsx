@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import type { Game, GamePlayer } from "@/types/game";
 
 interface PaymentDetail {
@@ -17,6 +19,8 @@ interface PaymentDetail {
   gameName: string | null;
   gameDate: string;
   amount: number;
+  gamePlayerId: string;
+  paymentStatus: string;
 }
 
 interface AggregatedPayment {
@@ -38,6 +42,7 @@ interface Props {
 
 export const AggregatedPaymentsTable = ({ games }: Props) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const aggregatePayments = (games: Game[]): AggregatedPayment[] => {
     const paymentMap = new Map<string, AggregatedPayment>();
@@ -79,6 +84,8 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                     gameName: game.name,
                     gameDate: game.date,
                     amount: payment,
+                    gamePlayerId: player.id,
+                    paymentStatus: player.payment_status
                   });
                 }
               }
@@ -123,7 +130,42 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
     setExpandedRows(newExpanded);
   };
 
+  const handleUpdatePaymentStatus = async (payment: AggregatedPayment, newStatus: string) => {
+    try {
+      console.log(`Updating payment status for multiple games to ${newStatus}`);
+      
+      // Update all game_players records for this player pair
+      for (const detail of payment.details) {
+        const { error } = await supabase
+          .from("game_players")
+          .update({ payment_status: newStatus })
+          .eq("id", detail.gamePlayerId);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Payment status updated successfully",
+      });
+
+      // Refresh the games data
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const aggregatedPayments = aggregatePayments(games);
+
+  const isAllPaid = (payment: AggregatedPayment) => {
+    return payment.details.every(detail => detail.paymentStatus === 'paid');
+  };
 
   return (
     <Table>
@@ -134,12 +176,15 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
           <TableHead>To</TableHead>
           <TableHead className="text-right">Total Amount</TableHead>
           <TableHead className="text-right"># of Games</TableHead>
+          <TableHead className="text-right">Status</TableHead>
+          <TableHead className="text-right">Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {aggregatedPayments.map((payment) => {
           const key = `${payment.fromPlayer.id}-${payment.toPlayer.id}`;
           const isExpanded = expandedRows.has(key);
+          const allPaid = isAllPaid(payment);
           
           return (
             <React.Fragment key={key}>
@@ -157,6 +202,19 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                 <TableCell>{payment.toPlayer.name}</TableCell>
                 <TableCell className="text-right">${payment.totalAmount.toFixed(2)}</TableCell>
                 <TableCell className="text-right">{payment.details.length}</TableCell>
+                <TableCell className="text-right capitalize">{allPaid ? 'paid' : 'pending'}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUpdatePaymentStatus(
+                      payment,
+                      allPaid ? 'pending' : 'paid'
+                    )}
+                  >
+                    {allPaid ? 'Mark as Pending' : 'Mark as Paid'}
+                  </Button>
+                </TableCell>
               </TableRow>
               {isExpanded && payment.details.map((detail, index) => (
                 <TableRow key={`${key}-detail-${index}`} className="bg-muted/50">
@@ -166,6 +224,10 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                   </TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground">
                     ${detail.amount.toFixed(2)}
+                  </TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-right text-sm text-muted-foreground capitalize">
+                    {detail.paymentStatus}
                   </TableCell>
                   <TableCell></TableCell>
                 </TableRow>
