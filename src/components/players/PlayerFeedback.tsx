@@ -54,8 +54,8 @@ export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) =>
       if (error) throw error;
 
       toast({
-        title: "Feedback enviado!",
-        description: `Você deu um ${voteType === 'like' ? 'like' : 'dislike'} para ${playerName}`,
+        title: "Feedback submitted!",
+        description: `You gave a ${voteType} to ${playerName}`,
       });
 
       setIsOpen(false);
@@ -63,8 +63,8 @@ export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) =>
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast({
-        title: "Erro",
-        description: "Não foi possível enviar o feedback",
+        title: "Error",
+        description: "Could not submit feedback",
         variant: "destructive",
       });
     } finally {
@@ -76,12 +76,12 @@ export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) =>
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          Dar Feedback
+          Give Feedback
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Feedback para {playerName}</DialogTitle>
+          <DialogTitle>Feedback for {playerName}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           <div className="flex justify-center gap-4">
@@ -108,7 +108,7 @@ export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) =>
           </div>
           <div className="space-y-2">
             <Textarea
-              placeholder="Comentário (opcional)"
+              placeholder="Comment (optional)"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               className="min-h-[100px]"
