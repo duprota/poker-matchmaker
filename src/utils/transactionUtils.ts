@@ -32,7 +32,7 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
   console.log('Starting to fetch historical transactions...');
   
   try {
-    // Fetch game players with negative final results (they need to pay)
+    // Fetch all game players that have payment amounts set
     const { data: gamePlayers, error } = await supabase
       .from('game_players')
       .select(`
@@ -51,6 +51,7 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
           pix_key
         )
       `)
+      .not('payment_amount', 'eq', 0)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -61,32 +62,32 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
     console.log('Fetched game players:', gamePlayers);
 
     if (!gamePlayers || gamePlayers.length === 0) {
-      console.log('No game players found');
+      console.log('No game players found with payment amounts');
       return [];
     }
 
     // Convert game players with payment amounts into transactions
     const transactions: Transaction[] = [];
     
-    gamePlayers.forEach(debtor => {
-      // Only process players who need to pay (negative final result)
-      if (debtor.final_result < 0 && debtor.payment_amount > 0) {
-        // Find the creditor (player with positive final result) in the same game
-        const creditor = gamePlayers.find(p => 
-          p.game_id === debtor.game_id && 
+    // Process each game player that needs to pay
+    gamePlayers.forEach(payer => {
+      if (payer.payment_amount > 0) {
+        // Find the corresponding receiver in the same game
+        const receiver = gamePlayers.find(p => 
+          p.game_id === payer.game_id && 
           p.final_result > 0 &&
-          p.payment_amount === Math.abs(debtor.payment_amount)
+          p.id !== payer.id
         );
 
-        if (creditor) {
+        if (receiver) {
           transactions.push({
-            from: debtor.players.name,
-            to: creditor.players.name,
-            amount: debtor.payment_amount,
-            date: debtor.games.date,
-            paymentStatus: debtor.payment_status || 'pending',
-            toPixKey: creditor.players.pix_key || undefined,
-            gamePlayerIds: [debtor.id],
+            from: payer.players.name,
+            to: receiver.players.name,
+            amount: payer.payment_amount,
+            date: payer.games.date,
+            paymentStatus: payer.payment_status || 'pending',
+            toPixKey: receiver.players.pix_key || undefined,
+            gamePlayerIds: [payer.id],
           });
         }
       }
