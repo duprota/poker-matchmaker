@@ -6,14 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Check, Clock, QrCode, ArrowLeftRight } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   Tooltip,
   TooltipContent,
@@ -54,7 +47,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
       games (
         date
       ),
-      players!game_players_player_id_fkey (
+      players (
         name,
         pix_key,
         id
@@ -125,7 +118,6 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
 
 const Financials = () => {
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
   const { data: transactions, isLoading, error } = useQuery({
     queryKey: ['historical-transactions'],
     queryFn: fetchHistoricalTransactions,
