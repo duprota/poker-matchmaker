@@ -60,6 +60,8 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     throw error;
   }
 
+  console.log('Players data:', gamePlayers);
+
   // Group players by game to calculate transactions
   const gameGroups = gamePlayers.reduce((acc, gp) => {
     if (!acc[gp.game_id]) {
