@@ -4,10 +4,14 @@ import { Card } from "@/components/ui/card";
 import { AggregatedPaymentsTable } from "@/components/financials/AggregatedPaymentsTable";
 import { supabase } from "@/integrations/supabase/client";
 import type { Game } from "@/types/game";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const Financials = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPaidExpanded, setIsPaidExpanded] = useState(true);
 
   const fetchGames = async () => {
     try {
@@ -44,7 +48,6 @@ const Financials = () => {
     }
   };
 
-  // Set up real-time subscription for game_players table changes
   useEffect(() => {
     const channel = supabase
       .channel('game_players_changes')
@@ -57,12 +60,11 @@ const Financials = () => {
         },
         (payload) => {
           console.log('Received game_players change:', payload);
-          fetchGames(); // Refresh data when game_players table changes
+          fetchGames();
         }
       )
       .subscribe();
 
-    // Initial fetch
     fetchGames();
 
     return () => {
@@ -73,19 +75,49 @@ const Financials = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-8 px-4 space-y-6">
         <h1 className="text-2xl font-bold mb-6">
           Consolidated Payments
         </h1>
-        <Card className="p-6">
-          {loading ? (
-            <p className="text-muted-foreground text-center">Loading payment data...</p>
-          ) : games.length === 0 ? (
-            <p className="text-muted-foreground text-center">No completed games found.</p>
-          ) : (
-            <AggregatedPaymentsTable games={games} />
-          )}
-        </Card>
+
+        {loading ? (
+          <p className="text-muted-foreground text-center">Loading payment data...</p>
+        ) : games.length === 0 ? (
+          <p className="text-muted-foreground text-center">No completed games found.</p>
+        ) : (
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Pending Transactions</h2>
+              <AggregatedPaymentsTable 
+                games={games} 
+                filterStatus="pending"
+              />
+            </Card>
+
+            <Card className="p-6">
+              <Collapsible open={isPaidExpanded} onOpenChange={setIsPaidExpanded}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Paid Transactions</h2>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      {isPaidExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent>
+                  <AggregatedPaymentsTable 
+                    games={games} 
+                    filterStatus="paid"
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

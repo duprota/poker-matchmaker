@@ -17,9 +17,10 @@ import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
 
 interface Props {
   games: Game[];
+  filterStatus: 'paid' | 'pending';
 }
 
-export const AggregatedPaymentsTable = ({ games }: Props) => {
+export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -66,6 +67,22 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
     return detail.paymentStatus === 'paid';
   };
 
+  // Filter payments based on status
+  const filteredPayments = aggregatedPayments.filter(payment => {
+    const hasMatchingDetails = payment.details.some(detail => 
+      filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
+    );
+    return hasMatchingDetails;
+  });
+
+  if (filteredPayments.length === 0) {
+    return (
+      <p className="text-muted-foreground text-center py-4">
+        No {filterStatus} transactions found.
+      </p>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -78,9 +95,14 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {aggregatedPayments.map((payment) => {
+        {filteredPayments.map((payment) => {
           const key = `${payment.fromPlayer.id}-${payment.toPlayer.id}`;
           const isExpanded = expandedRows.has(key);
+          
+          // Filter details based on status
+          const filteredDetails = payment.details.filter(detail => 
+            filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
+          );
           
           return (
             <React.Fragment key={key}>
@@ -96,18 +118,16 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                 </TableCell>
                 <TableCell>{payment.fromPlayer.name}</TableCell>
                 <TableCell>{payment.toPlayer.name}</TableCell>
-                <TableCell className="text-right">${payment.totalAmount.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                  {payment.details.length === 0 ? (
-                    <span className="text-muted-foreground">No details</span>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      {payment.details.filter(isDetailPaid).length} of {payment.details.length} paid
-                    </span>
-                  )}
+                  ${filteredDetails.reduce((sum, detail) => sum + detail.amount, 0).toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="text-muted-foreground">
+                    {filteredDetails.length} transaction{filteredDetails.length !== 1 ? 's' : ''}
+                  </span>
                 </TableCell>
               </TableRow>
-              {isExpanded && payment.details.map((detail, index) => (
+              {isExpanded && filteredDetails.map((detail, index) => (
                 <TableRow key={`${key}-detail-${index}`} className="bg-muted/50">
                   <TableCell></TableCell>
                   <TableCell colSpan={2} className="text-sm text-muted-foreground">
