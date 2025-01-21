@@ -15,14 +15,46 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCommentField, setShowCommentField] = useState(false);
+  const [currentVote, setCurrentVote] = useState<'like' | 'dislike' | null>(null);
+  const [stats, setStats] = useState({ likes: 0, dislikes: 0 });
   const { toast } = useToast();
   const maxCharacters = 144;
+
+  const fetchStats = async () => {
+    try {
+      const { data: feedbackData } = await supabase
+        .from("player_feedback")
+        .select("vote_type")
+        .eq("to_player_id", playerId);
+
+      if (feedbackData) {
+        const likes = feedbackData.filter(f => f.vote_type === 'like').length;
+        const dislikes = feedbackData.filter(f => f.vote_type === 'dislike').length;
+        setStats({ likes, dislikes });
+      }
+
+      // Get current user's vote
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userFeedback } = await supabase
+          .from("player_feedback")
+          .select("vote_type")
+          .eq('from_player_id', user.id)
+          .eq('to_player_id', playerId)
+          .single();
+
+        if (userFeedback) {
+          setCurrentVote(userFeedback.vote_type as 'like' | 'dislike');
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching feedback stats:", error);
+    }
+  };
 
   const handleVote = async (voteType: 'like' | 'dislike') => {
     setIsSubmitting(true);
     try {
-      console.log("Submitting vote:", { playerId, voteType });
-      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -43,30 +75,43 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
 
       let error;
       
+      // If clicking the same vote type again, remove the vote
+      const newVoteType = existingFeedback?.vote_type === voteType ? null : voteType;
+      
       if (existingFeedback) {
-        // Update existing feedback
-        const { error: updateError } = await supabase
-          .from("player_feedback")
-          .update({ vote_type: voteType })
-          .eq('from_player_id', user.id)
-          .eq('to_player_id', playerId);
-        error = updateError;
-      } else {
+        if (newVoteType === null) {
+          // Remove vote
+          const { error: deleteError } = await supabase
+            .from("player_feedback")
+            .delete()
+            .eq('from_player_id', user.id)
+            .eq('to_player_id', playerId);
+          error = deleteError;
+        } else {
+          // Update existing feedback
+          const { error: updateError } = await supabase
+            .from("player_feedback")
+            .update({ vote_type: newVoteType })
+            .eq('from_player_id', user.id)
+            .eq('to_player_id', playerId);
+          error = updateError;
+        }
+      } else if (newVoteType !== null) {
         // Insert new feedback
         const { error: insertError } = await supabase
           .from("player_feedback")
           .insert({
             from_player_id: user.id,
             to_player_id: playerId,
-            vote_type: voteType,
+            vote_type: newVoteType,
           });
         error = insertError;
       }
 
       if (error) throw error;
 
-      // Feedback submitted silently
-
+      setCurrentVote(newVoteType);
+      fetchStats();
       onFeedbackSubmitted?.();
     } catch (error) {
       console.error("Error submitting feedback:", error);
@@ -150,24 +195,30 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => handleVote('like')}
           disabled={isSubmitting}
-          className="hover:bg-green-500/10 hover:text-green-500"
+          className={`flex items-center gap-2 ${
+            currentVote === 'like' ? 'bg-green-500/10 text-green-500' : 'hover:bg-green-500/10 hover:text-green-500'
+          }`}
         >
           <ThumbsUp className="w-4 h-4" />
+          <span className="text-sm font-medium">{stats.likes}</span>
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => handleVote('dislike')}
           disabled={isSubmitting}
-          className="hover:bg-red-500/10 hover:text-red-500"
+          className={`flex items-center gap-2 ${
+            currentVote === 'dislike' ? 'bg-red-500/10 text-red-500' : 'hover:bg-red-500/10 hover:text-red-500'
+          }`}
         >
           <ThumbsDown className="w-4 h-4" />
+          <span className="text-sm font-medium">{stats.dislikes}</span>
         </Button>
         <Button
           variant="ghost"
