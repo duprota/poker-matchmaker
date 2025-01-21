@@ -6,6 +6,7 @@ import { calculateFinalResult } from "./GameCalculations";
 import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
 import { PlayerFeedback } from "@/components/players/PlayerFeedback";
 import { PlayerFeedbackStats } from "@/components/players/PlayerFeedbackStats";
+import { useState } from "react";
 
 interface GameSummaryProps {
   players: GamePlayer[];
@@ -55,6 +56,12 @@ export const GameSummary = ({
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(summaryText)}`;
     window.open(whatsappUrl);
+  };
+
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleFeedbackSubmitted = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -124,10 +131,14 @@ export const GameSummary = ({
                   
                   {/* Player Feedback Section */}
                   <div className="pt-2 flex items-center justify-between border-t border-border">
-                    <PlayerFeedbackStats playerId={player.player.id} />
+                    <PlayerFeedbackStats 
+                      key={`stats-${player.player.id}-${refreshKey}`} 
+                      playerId={player.player.id} 
+                    />
                     <PlayerFeedback 
                       playerId={player.player.id}
                       playerName={player.player.name}
+                      onFeedbackSubmitted={handleFeedbackSubmitted}
                     />
                   </div>
                 </div>

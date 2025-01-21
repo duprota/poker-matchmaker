@@ -1,13 +1,6 @@
 import { useState } from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,20 +8,21 @@ import { supabase } from "@/integrations/supabase/client";
 interface PlayerFeedbackProps {
   playerId: string;
   playerName: string;
+  onFeedbackSubmitted?: () => void;
 }
 
-export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: PlayerFeedbackProps) => {
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCommentField, setShowCommentField] = useState(false);
   const { toast } = useToast();
+  const maxCharacters = 144;
 
   const handleVote = async (voteType: 'like' | 'dislike') => {
     setIsSubmitting(true);
     try {
-      console.log("Submitting vote:", { playerId, voteType, comment });
+      console.log("Submitting vote:", { playerId, voteType });
       
-      // Get the current user's player ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
@@ -46,7 +40,6 @@ export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) =>
           from_player_id: fromPlayer.id,
           to_player_id: playerId,
           vote_type: voteType,
-          comment: comment.trim() || null
         }, {
           onConflict: 'from_player_id,to_player_id'
         });
@@ -58,8 +51,7 @@ export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) =>
         description: `You gave a ${voteType} to ${playerName}`,
       });
 
-      setIsOpen(false);
-      setComment("");
+      onFeedbackSubmitted?.();
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast({
@@ -72,50 +64,116 @@ export const PlayerFeedback = ({ playerId, playerName }: PlayerFeedbackProps) =>
     }
   };
 
+  const handleSubmitComment = async () => {
+    if (!comment.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { data: fromPlayer } = await supabase
+        .from("players")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!fromPlayer) throw new Error("Player not found");
+
+      const { error } = await supabase
+        .from("player_feedback")
+        .upsert({
+          from_player_id: fromPlayer.id,
+          to_player_id: playerId,
+          comment: comment.trim(),
+          vote_type: 'like' // Default to like when only commenting
+        }, {
+          onConflict: 'from_player_id,to_player_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Comment submitted!",
+        description: "Your comment has been added",
+      });
+
+      setComment("");
+      setShowCommentField(false);
+      onFeedbackSubmitted?.();
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      toast({
+        title: "Error",
+        description: "Could not submit comment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Give Feedback
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleVote('like')}
+          disabled={isSubmitting}
+          className="hover:bg-green-500/10 hover:text-green-500"
+        >
+          <ThumbsUp className="w-4 h-4" />
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Feedback for {playerName}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <div className="flex justify-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleVote('dislike')}
+          disabled={isSubmitting}
+          className="hover:bg-red-500/10 hover:text-red-500"
+        >
+          <ThumbsDown className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowCommentField(!showCommentField)}
+          className="hover:bg-primary/10"
+        >
+          <MessageSquare className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {showCommentField && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{comment.length}/{maxCharacters} characters</span>
             <Button
-              size="lg"
-              variant="outline"
-              className="flex-1 flex-col gap-2 h-auto py-6 hover:bg-green-500/10 hover:text-green-500 group"
-              onClick={() => handleVote('like')}
-              disabled={isSubmitting}
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCommentField(false)}
             >
-              <ThumbsUp className="w-8 h-8 group-hover:animate-bounce" />
-              <span>Like</span>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="flex-1 flex-col gap-2 h-auto py-6 hover:bg-red-500/10 hover:text-red-500 group"
-              onClick={() => handleVote('dislike')}
-              disabled={isSubmitting}
-            >
-              <ThumbsDown className="w-8 h-8 group-hover:animate-bounce" />
-              <span>Dislike</span>
+              <X className="w-4 h-4" />
             </Button>
           </div>
-          <div className="space-y-2">
+          <div className="flex gap-2">
             <Textarea
-              placeholder="Comment (optional)"
+              placeholder="Write your comment..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="min-h-[100px]"
+              onChange={(e) => setComment(e.target.value.slice(0, maxCharacters))}
+              className="min-h-[80px] text-sm"
             />
+            <Button
+              size="sm"
+              onClick={handleSubmitComment}
+              disabled={isSubmitting || !comment.trim()}
+              className="self-end"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   );
 };
