@@ -32,7 +32,7 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
   console.log('Starting to fetch historical transactions...');
   
   try {
-    // Fetch all game players that have payment amounts set
+    // Fetch all game players with their related data
     const { data: gamePlayers, error } = await supabase
       .from('game_players')
       .select(`
@@ -51,7 +51,6 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
           pix_key
         )
       `)
-      .not('payment_amount', 'eq', 0)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -59,36 +58,38 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
       throw error;
     }
 
-    console.log('Fetched game players:', gamePlayers);
+    console.log('Raw game players data:', gamePlayers);
 
     if (!gamePlayers || gamePlayers.length === 0) {
-      console.log('No game players found with payment amounts');
+      console.log('No game players found');
       return [];
     }
 
-    // Convert game players with payment amounts into transactions
+    // Convert game players into transactions
     const transactions: Transaction[] = [];
     
     // Process each game player that needs to pay
     gamePlayers.forEach(payer => {
-      if (payer.payment_amount > 0) {
+      // Include all transactions where final_result indicates a payment needed
+      if (payer.final_result < 0) {
         // Find the corresponding receiver in the same game
         const receiver = gamePlayers.find(p => 
           p.game_id === payer.game_id && 
-          p.final_result > 0 &&
-          p.id !== payer.id
+          p.final_result > 0
         );
 
         if (receiver) {
-          transactions.push({
+          const transaction = {
             from: payer.players.name,
             to: receiver.players.name,
-            amount: payer.payment_amount,
+            amount: Math.abs(payer.final_result), // Use final_result instead of payment_amount
             date: payer.games.date,
             paymentStatus: payer.payment_status || 'pending',
             toPixKey: receiver.players.pix_key || undefined,
             gamePlayerIds: [payer.id],
-          });
+          };
+          console.log('Created transaction:', transaction);
+          transactions.push(transaction);
         }
       }
     });
@@ -97,13 +98,18 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
     return transactions;
   } catch (error) {
     console.error('Error in fetchHistoricalTransactions:', error);
+    toast({
+      title: "Error loading transactions",
+      description: error instanceof Error ? error.message : "Failed to load transactions",
+      variant: "destructive",
+    });
     throw error;
   }
 };
 
 export const updatePaymentStatus = async (gamePlayerIds: string[], status: string) => {
   try {
-    console.log(`Marking transactions as ${status}:`, gamePlayerIds);
+    console.log(`Updating payment status to ${status} for:`, gamePlayerIds);
     const { error } = await supabase
       .from('game_players')
       .update({ 
@@ -112,7 +118,10 @@ export const updatePaymentStatus = async (gamePlayerIds: string[], status: strin
       })
       .in('id', gamePlayerIds);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating payment status:', error);
+      throw error;
+    }
 
     console.log('Successfully updated payment status');
     toast({
