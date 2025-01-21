@@ -21,6 +21,8 @@ interface LeaderboardEntry {
   best_game_roi: number;
   worst_game_roi: number;
   average_winnings: number;
+  net_earnings: number;
+  average_net_earnings: number;
 }
 
 const calculateROI = (winnings: number, spent: number) => {
@@ -52,6 +54,7 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     const spent = entry.initial_buyin * (1 + entry.total_rebuys);
     const result = entry.final_result || 0;
     const gameRoi = calculateROI(result, spent);
+    const netEarnings = result - spent;
     
     if (!acc[playerName]) {
       acc[playerName] = {
@@ -64,14 +67,17 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
         average_roi: 0,
         best_game_roi: -Infinity,
         worst_game_roi: Infinity,
-        average_winnings: 0
+        average_winnings: 0,
+        net_earnings: 0,
+        average_net_earnings: 0
       };
     }
 
     acc[playerName].games_played += 1;
     acc[playerName].total_winnings += result;
     acc[playerName].total_spent += spent;
-    acc[playerName].biggest_win = Math.max(acc[playerName].biggest_win, result);
+    acc[playerName].net_earnings += netEarnings;
+    acc[playerName].biggest_win = Math.max(acc[playerName].biggest_win, netEarnings);
     acc[playerName].best_game_roi = Math.max(acc[playerName].best_game_roi, gameRoi);
     acc[playerName].worst_game_roi = Math.min(acc[playerName].worst_game_roi, gameRoi);
 
@@ -83,6 +89,7 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     player.roi_percentage = calculateROI(player.total_winnings, player.total_spent);
     player.average_roi = player.roi_percentage / player.games_played;
     player.average_winnings = player.total_winnings / player.games_played;
+    player.average_net_earnings = player.net_earnings / player.games_played;
   });
 
   return Object.values(playerStats);
@@ -98,18 +105,18 @@ const Leaderboard = () => {
 
   const sortedLeaderboard = leaderboard?.sort((a, b) => 
     rankingType === "total" 
-      ? b.total_winnings - a.total_winnings
-      : b.average_winnings - a.average_winnings
+      ? b.net_earnings - a.net_earnings
+      : b.average_net_earnings - a.average_net_earnings
   );
 
   const handleShareWhatsApp = () => {
     if (!sortedLeaderboard) return;
 
-    const totalMoneyWon = sortedLeaderboard.reduce((acc, player) => acc + Math.max(0, player.total_winnings), 0);
+    const totalMoneyWon = sortedLeaderboard.reduce((acc, player) => acc + Math.max(0, player.net_earnings), 0);
     const totalGamesPlayed = sortedLeaderboard.reduce((acc, player) => acc + player.games_played, 0);
 
     const summaryText = 
-`🏆 Poker Leaderboard ${timeFilter} (${rankingType === "total" ? "Total Earnings" : "Average per Game"})
+`🏆 Poker Leaderboard ${timeFilter} (${rankingType === "total" ? "Total Net Earnings" : "Average Net Earnings per Game"})
 
 💰 Total Money Won: $${totalMoneyWon}
 🎮 Total Games Played: ${totalGamesPlayed}
@@ -118,8 +125,8 @@ const Leaderboard = () => {
 ${sortedLeaderboard.slice(0, 5).map((player, index) => {
   const position = index + 1;
   const emoji = position === 1 ? '👑' : position === 2 ? '🥈' : position === 3 ? '🥉' : '⭐';
-  const value = rankingType === "total" ? player.total_winnings : player.average_winnings;
-  const roi = ((player.total_winnings / player.total_spent) * 100).toFixed(1);
+  const value = rankingType === "total" ? player.net_earnings : player.average_net_earnings;
+  const roi = player.roi_percentage.toFixed(1);
   return `${emoji} ${player.player_name}
    💵 ${rankingType === "total" ? `$${value}` : `$${value.toFixed(2)}/game`} (${roi}% ROI)
    🎲 ${player.games_played} games
@@ -186,14 +193,14 @@ ${sortedLeaderboard
               onPressedChange={() => setRankingType("total")}
               className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
             >
-              Total Earnings
+              Total Net Earnings
             </Toggle>
             <Toggle
               pressed={rankingType === "average"}
               onPressedChange={() => setRankingType("average")}
               className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
             >
-              Average per Game
+              Average Net per Game
             </Toggle>
           </div>
         </div>
@@ -277,10 +284,9 @@ const PlayerCard = ({
   rankingType: "total" | "average"
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const isMobile = useIsMobile();
   const displayValue = rankingType === "total" 
-    ? entry.total_winnings 
-    : entry.average_winnings;
+    ? entry.net_earnings 
+    : entry.average_net_earnings;
   
   return (
     <Card 
