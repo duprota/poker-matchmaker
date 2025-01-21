@@ -259,13 +259,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "player_feedback_from_player_id_fkey"
-            columns: ["from_player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "player_feedback_to_player_id_fkey"
             columns: ["to_player_id"]
             isOneToOne: false

@@ -43,10 +43,7 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
 
       if (error) throw error;
 
-      toast({
-        title: "Feedback submitted!",
-        description: `You gave a ${voteType} to ${playerName}`,
-      });
+      // Feedback submitted silently
 
       onFeedbackSubmitted?.();
     } catch (error) {
