@@ -5,6 +5,7 @@ import { TransactionList } from "@/components/transactions/TransactionList";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Card } from "@/components/ui/card";
 
 const Financials = () => {
   const queryClient = useQueryClient();
@@ -65,6 +66,7 @@ const Financials = () => {
   }
 
   if (error) {
+    console.error('Error in Financials page:', error);
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
@@ -72,9 +74,12 @@ const Financials = () => {
           <h1 className="text-2xl font-bold mb-6">
             Transactions
           </h1>
-          <div className="text-center py-8 text-destructive">
+          <Card className="p-6 text-center text-destructive">
             Error loading transaction history. Please try again later.
-          </div>
+            <pre className="mt-2 text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : 'Unknown error'}
+            </pre>
+          </Card>
         </div>
       </div>
     );
@@ -82,6 +87,12 @@ const Financials = () => {
 
   const pendingTransactions = transactions?.filter(t => t.paymentStatus === 'pending') || [];
   const paidTransactions = transactions?.filter(t => t.paymentStatus === 'paid') || [];
+
+  console.log('Rendering transactions:', {
+    total: transactions?.length || 0,
+    pending: pendingTransactions.length,
+    paid: paidTransactions.length
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">

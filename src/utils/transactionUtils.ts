@@ -29,82 +29,102 @@ interface Transaction {
 }
 
 export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
-  console.log('Fetching historical transactions...');
+  console.log('Starting to fetch historical transactions...');
   
-  const { data: gamePlayers, error } = await supabase
-    .from('game_players')
-    .select(`
-      id,
-      payment_status,
-      payment_amount,
-      game_id,
-      player_id,
-      final_result,
-      games (
-        date
-      ),
-      players (
+  try {
+    const { data: gamePlayers, error } = await supabase
+      .from('game_players')
+      .select(`
         id,
-        name,
-        pix_key
-      )
-    `)
-    .order('created_at', { ascending: false });
+        payment_status,
+        payment_amount,
+        game_id,
+        player_id,
+        final_result,
+        games (
+          date
+        ),
+        players (
+          id,
+          name,
+          pix_key
+        )
+      `)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching transactions:', error);
-    throw error;
-  }
-
-  console.log('Players data:', gamePlayers);
-
-  // Group players by game to calculate transactions
-  const gameGroups = gamePlayers.reduce((acc, gp) => {
-    if (!acc[gp.game_id]) {
-      acc[gp.game_id] = [];
+    if (error) {
+      console.error('Error fetching game players:', error);
+      throw error;
     }
-    acc[gp.game_id].push(gp);
-    return acc;
-  }, {} as Record<string, GamePlayer[]>);
 
-  // Calculate transactions for each game
-  const transactions: Transaction[] = [];
-  
-  Object.values(gameGroups).forEach((players) => {
-    // Find players who need to pay (negative final_result)
-    const debtors = players.filter(p => (p.final_result || 0) < 0);
-    // Find players who should receive money (positive final_result)
-    const creditors = players.filter(p => (p.final_result || 0) > 0);
+    console.log('Fetched game players:', gamePlayers);
 
-    debtors.forEach(debtor => {
-      const debtAmount = Math.abs(debtor.final_result || 0);
-      let remainingDebt = debtAmount;
+    if (!gamePlayers || gamePlayers.length === 0) {
+      console.log('No game players found');
+      return [];
+    }
 
-      creditors.forEach(creditor => {
-        if (remainingDebt <= 0) return;
+    // Group players by game to calculate transactions
+    const gameGroups = gamePlayers.reduce((acc, gp) => {
+      if (!acc[gp.game_id]) {
+        acc[gp.game_id] = [];
+      }
+      acc[gp.game_id].push(gp);
+      return acc;
+    }, {} as Record<string, GamePlayer[]>);
 
-        const creditAmount = creditor.final_result || 0;
-        const transactionAmount = Math.min(remainingDebt, creditAmount);
+    console.log('Grouped games:', Object.keys(gameGroups).length);
 
-        if (transactionAmount > 0) {
-          transactions.push({
-            from: debtor.players.name,
-            to: creditor.players.name,
-            amount: transactionAmount,
-            date: debtor.games.date,
-            paymentStatus: debtor.payment_status || 'pending',
-            toPixKey: creditor.players.pix_key || undefined,
-            gamePlayerIds: [debtor.id],
-          });
-        }
+    // Calculate transactions for each game
+    const transactions: Transaction[] = [];
+    
+    Object.values(gameGroups).forEach((players) => {
+      console.log(`Processing game with ${players.length} players`);
+      
+      // Find players who need to pay (negative final_result)
+      const debtors = players.filter(p => (p.final_result || 0) < 0);
+      // Find players who should receive money (positive final_result)
+      const creditors = players.filter(p => (p.final_result || 0) > 0);
 
-        remainingDebt -= transactionAmount;
+      console.log(`Found ${debtors.length} debtors and ${creditors.length} creditors`);
+
+      debtors.forEach(debtor => {
+        const debtAmount = Math.abs(debtor.final_result || 0);
+        let remainingDebt = debtAmount;
+
+        console.log(`Processing debtor ${debtor.players.name} with debt ${debtAmount}`);
+
+        creditors.forEach(creditor => {
+          if (remainingDebt <= 0) return;
+
+          const creditAmount = creditor.final_result || 0;
+          const transactionAmount = Math.min(remainingDebt, creditAmount);
+
+          if (transactionAmount > 0) {
+            console.log(`Creating transaction: ${debtor.players.name} -> ${creditor.players.name}: $${transactionAmount}`);
+            
+            transactions.push({
+              from: debtor.players.name,
+              to: creditor.players.name,
+              amount: transactionAmount,
+              date: debtor.games.date,
+              paymentStatus: debtor.payment_status || 'pending',
+              toPixKey: creditor.players.pix_key || undefined,
+              gamePlayerIds: [debtor.id],
+            });
+          }
+
+          remainingDebt -= transactionAmount;
+        });
       });
     });
-  });
 
-  console.log('Processed transactions:', transactions);
-  return transactions;
+    console.log('Final transactions:', transactions);
+    return transactions;
+  } catch (error) {
+    console.error('Error in fetchHistoricalTransactions:', error);
+    throw error;
+  }
 };
 
 export const updatePaymentStatus = async (gamePlayerIds: string[], status: string) => {
