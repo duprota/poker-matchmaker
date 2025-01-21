@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, ChevronUp, ArrowRight, Check, X } from "lucide-react";
-import { formatDate } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Game } from "@/types/game";
 import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
+import { PaymentRowHeader } from "./PaymentRowHeader";
+import { PaymentDetail } from "./PaymentDetail";
 
 interface Props {
   games: Game[];
@@ -56,7 +55,6 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
   const aggregatedPayments = calculateOptimizedPayments(games);
   console.log('Aggregated payments:', aggregatedPayments);
 
-  // Filter payments based on status
   const filteredPayments = aggregatedPayments.filter(payment => {
     const hasMatchingDetails = payment.details.some(detail => 
       filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
@@ -78,7 +76,6 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
         const key = `${payment.fromPlayer.id}-${payment.toPlayer.id}`;
         const isExpanded = expandedRows.has(key);
         
-        // Filter details based on status
         const filteredDetails = payment.details.filter(detail => 
           filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
         );
@@ -94,70 +91,28 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
                   : 'hover:bg-muted/50'
               }`}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{payment.fromPlayer.name}</span>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium">{payment.toPlayer.name}</span>
-                  <span className="font-semibold text-lg ml-2">${totalAmount.toFixed(2)}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleRowExpansion(key)}
-                  className="w-full sm:w-auto"
-                >
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 mr-2" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                  )}
-                  {filteredDetails.length} transaction{filteredDetails.length !== 1 ? 's' : ''}
-                </Button>
-              </div>
+              <PaymentRowHeader
+                fromPlayerName={payment.fromPlayer.name}
+                toPlayerName={payment.toPlayer.name}
+                totalAmount={totalAmount}
+                isExpanded={isExpanded}
+                detailsCount={filteredDetails.length}
+                onToggle={() => toggleRowExpansion(key)}
+              />
             </Card>
 
             {isExpanded && (
               <div className="pl-4 space-y-2">
                 {filteredDetails.map((detail, index) => (
-                  <Card 
-                    key={`${key}-detail-${index}`} 
-                    className="p-4 bg-muted/30"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">
-                          {detail.gameName || 'Unnamed Game'} ({formatDate(detail.gameDate)})
-                        </p>
-                        <p className="font-medium">${detail.amount.toFixed(2)}</p>
-                      </div>
-                      <Button
-                        variant={detail.paymentStatus === 'paid' ? "outline" : "default"}
-                        size="sm"
-                        onClick={() => handleUpdatePaymentStatus(
-                          detail.gamePlayerId,
-                          detail.paymentStatus === 'pending' ? 'paid' : 'pending'
-                        )}
-                        className={`w-full sm:w-auto transition-all duration-200 ${
-                          detail.paymentStatus === 'paid' 
-                            ? 'hover:bg-red-500/10 hover:text-red-500 hover:border-red-500' 
-                            : 'hover:bg-green-500/90'
-                        }`}
-                      >
-                        {detail.paymentStatus === 'paid' ? (
-                          <>
-                            <X className="w-4 h-4 mr-2" />
-                            <span>Mark as Pending</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4 mr-2" />
-                            <span>Mark as Paid</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </Card>
+                  <PaymentDetail
+                    key={`${key}-detail-${index}`}
+                    gameName={detail.gameName}
+                    gameDate={detail.gameDate}
+                    amount={detail.amount}
+                    paymentStatus={detail.paymentStatus}
+                    gamePlayerId={detail.gamePlayerId}
+                    onStatusUpdate={handleUpdatePaymentStatus}
+                  />
                 ))}
               </div>
             )}
