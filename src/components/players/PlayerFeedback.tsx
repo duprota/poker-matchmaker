@@ -208,21 +208,26 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleVote(currentVote === 'like' ? 'dislike' : 'like')}
+            onClick={() => handleVote('like')}
             disabled={isSubmitting}
             className={`flex items-center gap-2 ${
-              currentVote === 'like' ? 'bg-green-500/10 text-green-500' : 
+              currentVote === 'like' ? 'bg-green-500/10 text-green-500' : ''
+            }`}
+          >
+            <ThumbsUp className="w-4 h-4" />
+            <span className="text-sm font-medium">{stats.likes}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleVote('dislike')}
+            disabled={isSubmitting}
+            className={`flex items-center gap-2 ${
               currentVote === 'dislike' ? 'bg-red-500/10 text-red-500' : ''
             }`}
           >
-            {currentVote === 'dislike' ? (
-              <ThumbsDown className="w-4 h-4" />
-            ) : (
-              <ThumbsUp className="w-4 h-4" />
-            )}
-            <span className="text-sm font-medium">
-              {currentVote === 'dislike' ? stats.dislikes : stats.likes}
-            </span>
+            <ThumbsDown className="w-4 h-4" />
+            <span className="text-sm font-medium">{stats.dislikes}</span>
           </Button>
         </div>
         <Button
