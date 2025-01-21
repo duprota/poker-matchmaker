@@ -175,8 +175,6 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
           <TableHead>From</TableHead>
           <TableHead>To</TableHead>
           <TableHead className="text-right">Total Amount</TableHead>
-          <TableHead className="text-right"># of Games</TableHead>
-          <TableHead className="text-right">Status</TableHead>
           <TableHead className="text-right">Action</TableHead>
         </TableRow>
       </TableHeader>
@@ -201,8 +199,6 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                 <TableCell>{payment.fromPlayer.name}</TableCell>
                 <TableCell>{payment.toPlayer.name}</TableCell>
                 <TableCell className="text-right">${payment.totalAmount.toFixed(2)}</TableCell>
-                <TableCell className="text-right">{payment.details.length}</TableCell>
-                <TableCell className="text-right capitalize">{allPaid ? 'paid' : 'pending'}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="outline"
@@ -224,10 +220,6 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                   </TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground">
                     ${detail.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell></TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground capitalize">
-                    {detail.paymentStatus}
                   </TableCell>
                   <TableCell></TableCell>
                 </TableRow>
