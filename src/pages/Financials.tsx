@@ -69,16 +69,25 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     throw error;
   }
 
-  // Get manager information from the players table using user_id
-  const managerIds = [...new Set(gamePlayers.map(gp => gp.games.manager_id))];
-  const { data: managers, error: managersError } = await supabase
-    .from('players')
-    .select('name, pix_key, user_id')
-    .in('user_id', managerIds);
+  // Filter out null manager_ids and get unique values
+  const managerIds = [...new Set(gamePlayers
+    .map(gp => gp.games?.manager_id)
+    .filter(id => id != null)
+  )];
 
-  if (managersError) {
-    console.error('Error fetching managers:', managersError);
-    throw managersError;
+  let managers = [];
+  if (managerIds.length > 0) {
+    const { data: managersData, error: managersError } = await supabase
+      .from('players')
+      .select('name, pix_key, user_id')
+      .in('user_id', managerIds);
+
+    if (managersError) {
+      console.error('Error fetching managers:', managersError);
+      throw managersError;
+    }
+    
+    managers = managersData || [];
   }
 
   // Transform the data into TransactionSummary format
@@ -88,7 +97,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     const isReceiving = finalResult > 0;
     
     // Get the manager's name and PIX key
-    const manager = managers?.find(m => m.user_id === gp.games.manager_id);
+    const manager = managers.find(m => m.user_id === gp.games?.manager_id);
     const managerName = manager?.name || 'Game Manager';
     const managerPixKey = manager?.pix_key;
     
