@@ -33,13 +33,35 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         return;
       }
 
-      const { error } = await supabase
+      // First check if feedback already exists
+      const { data: existingFeedback } = await supabase
         .from("player_feedback")
-        .insert({
-          from_player_id: user.id,
-          to_player_id: playerId,
-          vote_type: voteType,
-        });
+        .select()
+        .eq('from_player_id', user.id)
+        .eq('to_player_id', playerId)
+        .single();
+
+      let error;
+      
+      if (existingFeedback) {
+        // Update existing feedback
+        const { error: updateError } = await supabase
+          .from("player_feedback")
+          .update({ vote_type: voteType })
+          .eq('from_player_id', user.id)
+          .eq('to_player_id', playerId);
+        error = updateError;
+      } else {
+        // Insert new feedback
+        const { error: insertError } = await supabase
+          .from("player_feedback")
+          .insert({
+            from_player_id: user.id,
+            to_player_id: playerId,
+            vote_type: voteType,
+          });
+        error = insertError;
+      }
 
       if (error) throw error;
 
@@ -73,14 +95,36 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         return;
       }
 
-      const { error } = await supabase
+      // Check if feedback already exists
+      const { data: existingFeedback } = await supabase
         .from("player_feedback")
-        .insert({
-          from_player_id: user.id,
-          to_player_id: playerId,
-          comment: comment.trim(),
-          vote_type: 'like' // Default to like when only commenting
-        });
+        .select()
+        .eq('from_player_id', user.id)
+        .eq('to_player_id', playerId)
+        .single();
+
+      let error;
+
+      if (existingFeedback) {
+        // Update existing feedback with new comment
+        const { error: updateError } = await supabase
+          .from("player_feedback")
+          .update({ comment: comment.trim() })
+          .eq('from_player_id', user.id)
+          .eq('to_player_id', playerId);
+        error = updateError;
+      } else {
+        // Insert new feedback with comment
+        const { error: insertError } = await supabase
+          .from("player_feedback")
+          .insert({
+            from_player_id: user.id,
+            to_player_id: playerId,
+            comment: comment.trim(),
+            vote_type: 'like' // Default to like when only commenting
+          });
+        error = insertError;
+      }
 
       if (error) throw error;
 
