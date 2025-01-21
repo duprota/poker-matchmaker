@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "./GameCalculations";
 import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
+import { PlayerFeedback } from "@/components/players/PlayerFeedback";
+import { PlayerFeedbackStats } from "@/components/players/PlayerFeedbackStats";
 
 interface GameSummaryProps {
   players: GamePlayer[];
@@ -51,7 +53,6 @@ export const GameSummary = ({
         `${players.find(p => p.id === t.from)?.player.name} → ${players.find(p => p.id === t.to)?.player.name}: $${t.amount}`
       ).join('\n')}`;
 
-    // Fix: Use encodeURIComponent for the entire text and ensure proper URL formation
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(summaryText)}`;
     window.open(whatsappUrl);
   };
@@ -99,25 +100,36 @@ export const GameSummary = ({
                   index === 2 ? 'bg-gradient-to-r from-amber-700/10 to-amber-800/10' : ''
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className={`text-lg font-bold ${
-                      index === 0 ? 'text-yellow-500' :
-                      index === 1 ? 'text-slate-400' :
-                      index === 2 ? 'text-amber-700' : ''
-                    }`}>
-                      #{index + 1}
-                    </span>
-                    <div>
-                      <p className="font-medium">{player.player.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        ROI: {roi}%
-                      </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className={`text-lg font-bold ${
+                        index === 0 ? 'text-yellow-500' :
+                        index === 1 ? 'text-slate-400' :
+                        index === 2 ? 'text-amber-700' : ''
+                      }`}>
+                        #{index + 1}
+                      </span>
+                      <div>
+                        <p className="font-medium">{player.player.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          ROI: {roi}%
+                        </p>
+                      </div>
                     </div>
+                    <p className={`font-semibold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {result >= 0 ? '+' : ''}{result}
+                    </p>
                   </div>
-                  <p className={`font-semibold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {result >= 0 ? '+' : ''}{result}
-                  </p>
+                  
+                  {/* Player Feedback Section */}
+                  <div className="pt-2 flex items-center justify-between border-t border-border">
+                    <PlayerFeedbackStats playerId={player.player.id} />
+                    <PlayerFeedback 
+                      playerId={player.player.id}
+                      playerName={player.player.name}
+                    />
+                  </div>
                 </div>
               </Card>
             );

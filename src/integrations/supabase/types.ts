@@ -232,6 +232,48 @@ export type Database = {
         }
         Relationships: []
       }
+      player_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          from_player_id: string
+          id: string
+          to_player_id: string
+          vote_type: Database["public"]["Enums"]["player_vote_type"]
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          from_player_id: string
+          id?: string
+          to_player_id: string
+          vote_type: Database["public"]["Enums"]["player_vote_type"]
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          from_player_id?: string
+          id?: string
+          to_player_id?: string
+          vote_type?: Database["public"]["Enums"]["player_vote_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_feedback_from_player_id_fkey"
+            columns: ["from_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_feedback_to_player_id_fkey"
+            columns: ["to_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           created_at: string
@@ -292,6 +334,7 @@ export type Database = {
     Enums: {
       game_event_type: "rebuy" | "result_update"
       group_member_role: "admin" | "member"
+      player_vote_type: "like" | "dislike"
       user_role: "user" | "manager"
     }
     CompositeTypes: {
