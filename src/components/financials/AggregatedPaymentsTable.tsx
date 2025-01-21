@@ -12,29 +12,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { Game, GamePlayer } from "@/types/game";
-
-interface PaymentDetail {
-  gameId: string;
-  gameName: string | null;
-  gameDate: string;
-  amount: number;
-  gamePlayerId: string;
-  paymentStatus: string;
-}
-
-interface AggregatedPayment {
-  fromPlayer: {
-    id: string;
-    name: string;
-  };
-  toPlayer: {
-    id: string;
-    name: string;
-  };
-  totalAmount: number;
-  details: PaymentDetail[];
-}
+import type { Game } from "@/types/game";
+import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
 
 interface Props {
   games: Game[];
@@ -43,82 +22,6 @@ interface Props {
 export const AggregatedPaymentsTable = ({ games }: Props) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-
-  const aggregatePayments = (games: Game[]): AggregatedPayment[] => {
-    const paymentMap = new Map<string, AggregatedPayment>();
-
-    games.forEach(game => {
-      const players = game.players;
-      
-      players.forEach(player => {
-        const finalResult = calculateFinalResult(player);
-        if (finalResult < 0) {
-          // Player owes money
-          players.forEach(otherPlayer => {
-            if (player.id !== otherPlayer.id) {
-              const otherPlayerResult = calculateFinalResult(otherPlayer);
-              if (otherPlayerResult > 0) {
-                // Calculate proportional payment
-                const payment = calculatePaymentBetweenPlayers(player, otherPlayer, game);
-                if (payment > 0) {
-                  const key = `${player.player.id}-${otherPlayer.player.id}`;
-                  if (!paymentMap.has(key)) {
-                    paymentMap.set(key, {
-                      fromPlayer: {
-                        id: player.player.id,
-                        name: player.player.name,
-                      },
-                      toPlayer: {
-                        id: otherPlayer.player.id,
-                        name: otherPlayer.player.name,
-                      },
-                      totalAmount: 0,
-                      details: [],
-                    });
-                  }
-                  
-                  const aggregated = paymentMap.get(key)!;
-                  aggregated.totalAmount += payment;
-                  aggregated.details.push({
-                    gameId: game.id,
-                    gameName: game.name,
-                    gameDate: game.date,
-                    amount: payment,
-                    gamePlayerId: player.id,
-                    paymentStatus: player.payment_status
-                  });
-                }
-              }
-            }
-          });
-        }
-      });
-    });
-
-    return Array.from(paymentMap.values());
-  };
-
-  const calculateFinalResult = (player: GamePlayer) => {
-    const finalSum = player.final_result || 0;
-    const buyIn = player.initial_buyin || 0;
-    const rebuys = player.total_rebuys || 0;
-    return finalSum - buyIn - (rebuys * buyIn);
-  };
-
-  const calculatePaymentBetweenPlayers = (
-    fromPlayer: GamePlayer,
-    toPlayer: GamePlayer,
-    game: Game
-  ) => {
-    const fromPlayerLoss = Math.abs(calculateFinalResult(fromPlayer));
-    const toPlayerWin = calculateFinalResult(toPlayer);
-    const totalWinnings = game.players
-      .map(p => calculateFinalResult(p))
-      .filter(result => result > 0)
-      .reduce((sum, result) => sum + result, 0);
-
-    return (fromPlayerLoss * (toPlayerWin / totalWinnings));
-  };
 
   const toggleRowExpansion = (key: string) => {
     const newExpanded = new Set(expandedRows);
@@ -130,7 +33,7 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
     setExpandedRows(newExpanded);
   };
 
-  const handleUpdatePaymentStatus = async (payment: AggregatedPayment, newStatus: string) => {
+  const handleUpdatePaymentStatus = async (payment: any, newStatus: string) => {
     try {
       console.log(`Updating payment status for multiple games to ${newStatus}`);
       
@@ -161,10 +64,10 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
     }
   };
 
-  const aggregatedPayments = aggregatePayments(games);
+  const aggregatedPayments = calculateOptimizedPayments(games);
 
-  const isAllPaid = (payment: AggregatedPayment) => {
-    return payment.details.every(detail => detail.paymentStatus === 'paid');
+  const isAllPaid = (payment: any) => {
+    return payment.details.every((detail: any) => detail.paymentStatus === 'paid');
   };
 
   return (
