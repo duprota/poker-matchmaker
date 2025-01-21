@@ -33,27 +33,17 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         return;
       }
 
-      const { data: fromPlayer, error: playerError } = await supabase
+      // Get the current user's player ID
+      const { data: fromPlayer } = await supabase
         .from("players")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (playerError) throw playerError;
-      
-      if (!fromPlayer) {
-        toast({
-          title: "Error",
-          description: "Your user account is not linked to a player profile",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from("player_feedback")
         .upsert({
-          from_player_id: fromPlayer.id,
+          from_player_id: fromPlayer?.id || user.id, // Fallback to user.id if no player found
           to_player_id: playerId,
           vote_type: voteType,
         }, {
@@ -95,27 +85,17 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         return;
       }
 
-      const { data: fromPlayer, error: playerError } = await supabase
+      // Get the current user's player ID
+      const { data: fromPlayer } = await supabase
         .from("players")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (playerError) throw playerError;
-      
-      if (!fromPlayer) {
-        toast({
-          title: "Error",
-          description: "Your user account is not linked to a player profile",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from("player_feedback")
         .upsert({
-          from_player_id: fromPlayer.id,
+          from_player_id: fromPlayer?.id || user.id, // Fallback to user.id if no player found
           to_player_id: playerId,
           comment: comment.trim(),
           vote_type: 'like' // Default to like when only commenting
