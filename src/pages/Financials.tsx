@@ -54,10 +54,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
       games (
         date,
         manager_id,
-        players!games_manager_id_fkey (
-          name,
-          pix_key
-        )
+        name
       ),
       players!game_players_player_id_fkey (
         name,
@@ -72,6 +69,18 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     throw error;
   }
 
+  // Get manager information from the players table using user_id
+  const managerIds = [...new Set(gamePlayers.map(gp => gp.games.manager_id))];
+  const { data: managers, error: managersError } = await supabase
+    .from('players')
+    .select('name, pix_key, user_id')
+    .in('user_id', managerIds);
+
+  if (managersError) {
+    console.error('Error fetching managers:', managersError);
+    throw managersError;
+  }
+
   // Transform the data into TransactionSummary format
   const transactions: TransactionSummary[] = gamePlayers.map((gp: any) => {
     const finalResult = gp.final_result || 0;
@@ -79,8 +88,9 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     const isReceiving = finalResult > 0;
     
     // Get the manager's name and PIX key
-    const managerName = gp.games.players?.name || 'Game Manager';
-    const managerPixKey = gp.games.players?.pix_key;
+    const manager = managers?.find(m => m.user_id === gp.games.manager_id);
+    const managerName = manager?.name || 'Game Manager';
+    const managerPixKey = manager?.pix_key;
     
     return {
       from: isReceiving ? managerName : gp.players.name,
