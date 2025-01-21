@@ -82,14 +82,16 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
       console.log(`Processing game with ${players.length} players`);
       
       // Find players who need to pay (negative final_result)
-      const debtors = players.filter(p => (p.final_result || 0) < 0);
+      const debtors = players.filter(p => p.final_result < 0);
       // Find players who should receive money (positive final_result)
-      const creditors = players.filter(p => (p.final_result || 0) > 0);
+      const creditors = players.filter(p => p.final_result > 0);
 
       console.log(`Found ${debtors.length} debtors and ${creditors.length} creditors`);
+      console.log('Debtors:', debtors.map(d => ({ name: d.players.name, amount: d.final_result })));
+      console.log('Creditors:', creditors.map(c => ({ name: c.players.name, amount: c.final_result })));
 
       debtors.forEach(debtor => {
-        const debtAmount = Math.abs(debtor.final_result || 0);
+        const debtAmount = Math.abs(debtor.final_result);
         let remainingDebt = debtAmount;
 
         console.log(`Processing debtor ${debtor.players.name} with debt ${debtAmount}`);
@@ -97,7 +99,7 @@ export const fetchHistoricalTransactions = async (): Promise<Transaction[]> => {
         creditors.forEach(creditor => {
           if (remainingDebt <= 0) return;
 
-          const creditAmount = creditor.final_result || 0;
+          const creditAmount = creditor.final_result;
           const transactionAmount = Math.min(remainingDebt, creditAmount);
 
           if (transactionAmount > 0) {
