@@ -33,28 +33,22 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
     setExpandedRows(newExpanded);
   };
 
-  const handleUpdatePaymentStatus = async (payment: any, newStatus: string) => {
+  const handleUpdatePaymentStatus = async (gamePlayerId: string, newStatus: string) => {
     try {
-      console.log(`Updating payment status for multiple games to ${newStatus}`);
+      console.log(`Updating payment status for game player ${gamePlayerId} to ${newStatus}`);
       
-      // Update all game_players records for this player pair
-      for (const detail of payment.details) {
-        const { error } = await supabase
-          .from("game_players")
-          .update({ payment_status: newStatus })
-          .eq("id", detail.gamePlayerId);
+      const { error } = await supabase
+        .from("game_players")
+        .update({ payment_status: newStatus })
+        .eq("id", gamePlayerId);
 
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
         description: "Payment status updated successfully",
       });
 
-      // Instead of reloading the page, we'll let the parent component handle the refresh
-      // through its own data fetching mechanism
-      window.location.reload();
     } catch (error) {
       console.error("Error updating payment status:", error);
       toast({
@@ -68,8 +62,8 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
   const aggregatedPayments = calculateOptimizedPayments(games);
   console.log('Aggregated payments:', aggregatedPayments);
 
-  const isAllPaid = (payment: any) => {
-    return payment.details.every((detail: any) => detail.paymentStatus === 'paid');
+  const isDetailPaid = (detail: any) => {
+    return detail.paymentStatus === 'paid';
   };
 
   return (
@@ -80,14 +74,13 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
           <TableHead>From</TableHead>
           <TableHead>To</TableHead>
           <TableHead className="text-right">Total Amount</TableHead>
-          <TableHead className="text-right">Action</TableHead>
+          <TableHead className="text-right">Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {aggregatedPayments.map((payment) => {
           const key = `${payment.fromPlayer.id}-${payment.toPlayer.id}`;
           const isExpanded = expandedRows.has(key);
-          const allPaid = isAllPaid(payment);
           
           return (
             <React.Fragment key={key}>
@@ -105,16 +98,13 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                 <TableCell>{payment.toPlayer.name}</TableCell>
                 <TableCell className="text-right">${payment.totalAmount.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleUpdatePaymentStatus(
-                      payment,
-                      allPaid ? 'pending' : 'paid'
-                    )}
-                  >
-                    {allPaid ? 'Mark as Pending' : 'Mark as Paid'}
-                  </Button>
+                  {payment.details.length === 0 ? (
+                    <span className="text-muted-foreground">No details</span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {payment.details.filter(isDetailPaid).length} of {payment.details.length} paid
+                    </span>
+                  )}
                 </TableCell>
               </TableRow>
               {isExpanded && payment.details.map((detail, index) => (
@@ -126,7 +116,18 @@ export const AggregatedPaymentsTable = ({ games }: Props) => {
                   <TableCell className="text-right text-sm text-muted-foreground">
                     ${detail.amount.toFixed(2)}
                   </TableCell>
-                  <TableCell></TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUpdatePaymentStatus(
+                        detail.gamePlayerId,
+                        detail.paymentStatus === 'pending' ? 'paid' : 'pending'
+                      )}
+                    >
+                      {detail.paymentStatus === 'pending' ? 'Mark as Paid' : 'Mark as Pending'}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </React.Fragment>
