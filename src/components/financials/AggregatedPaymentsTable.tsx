@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ChevronDown, ChevronUp, ArrowRight, Check, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -63,10 +56,6 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
   const aggregatedPayments = calculateOptimizedPayments(games);
   console.log('Aggregated payments:', aggregatedPayments);
 
-  const isDetailPaid = (detail: any) => {
-    return detail.paymentStatus === 'paid';
-  };
-
   // Filter payments based on status
   const filteredPayments = aggregatedPayments.filter(payment => {
     const hasMatchingDetails = payment.details.some(detail => 
@@ -84,76 +73,97 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[50px]"></TableHead>
-          <TableHead>From</TableHead>
-          <TableHead>To</TableHead>
-          <TableHead className="text-right">Total Amount</TableHead>
-          <TableHead className="text-right">Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredPayments.map((payment) => {
-          const key = `${payment.fromPlayer.id}-${payment.toPlayer.id}`;
-          const isExpanded = expandedRows.has(key);
-          
-          // Filter details based on status
-          const filteredDetails = payment.details.filter(detail => 
-            filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
-          );
-          
-          return (
-            <React.Fragment key={key}>
-              <TableRow>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleRowExpansion(key)}
+    <div className="space-y-3">
+      {filteredPayments.map((payment) => {
+        const key = `${payment.fromPlayer.id}-${payment.toPlayer.id}`;
+        const isExpanded = expandedRows.has(key);
+        
+        // Filter details based on status
+        const filteredDetails = payment.details.filter(detail => 
+          filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
+        );
+
+        const totalAmount = filteredDetails.reduce((sum, detail) => sum + detail.amount, 0);
+        
+        return (
+          <div key={key} className="space-y-2 animate-fade-in">
+            <Card 
+              className={`p-4 transition-all duration-300 hover:bg-muted/50 ${
+                filterStatus === 'paid' 
+                  ? 'bg-green-500/10 hover:bg-green-500/20' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{payment.fromPlayer.name}</span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium">{payment.toPlayer.name}</span>
+                  <span className="font-semibold text-lg ml-2">${totalAmount.toFixed(2)}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleRowExpansion(key)}
+                  className="w-full sm:w-auto"
+                >
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4 mr-2" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                  )}
+                  {filteredDetails.length} transaction{filteredDetails.length !== 1 ? 's' : ''}
+                </Button>
+              </div>
+            </Card>
+
+            {isExpanded && (
+              <div className="pl-4 space-y-2">
+                {filteredDetails.map((detail, index) => (
+                  <Card 
+                    key={`${key}-detail-${index}`} 
+                    className="p-4 bg-muted/30"
                   >
-                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </Button>
-                </TableCell>
-                <TableCell>{payment.fromPlayer.name}</TableCell>
-                <TableCell>{payment.toPlayer.name}</TableCell>
-                <TableCell className="text-right">
-                  ${filteredDetails.reduce((sum, detail) => sum + detail.amount, 0).toFixed(2)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <span className="text-muted-foreground">
-                    {filteredDetails.length} transaction{filteredDetails.length !== 1 ? 's' : ''}
-                  </span>
-                </TableCell>
-              </TableRow>
-              {isExpanded && filteredDetails.map((detail, index) => (
-                <TableRow key={`${key}-detail-${index}`} className="bg-muted/50">
-                  <TableCell></TableCell>
-                  <TableCell colSpan={2} className="text-sm text-muted-foreground">
-                    {detail.gameName || 'Unnamed Game'} ({formatDate(detail.gameDate)})
-                  </TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
-                    ${detail.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUpdatePaymentStatus(
-                        detail.gamePlayerId,
-                        detail.paymentStatus === 'pending' ? 'paid' : 'pending'
-                      )}
-                    >
-                      {detail.paymentStatus === 'pending' ? 'Mark as Paid' : 'Mark as Pending'}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </React.Fragment>
-          );
-        })}
-      </TableBody>
-    </Table>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          {detail.gameName || 'Unnamed Game'} ({formatDate(detail.gameDate)})
+                        </p>
+                        <p className="font-medium">${detail.amount.toFixed(2)}</p>
+                      </div>
+                      <Button
+                        variant={detail.paymentStatus === 'paid' ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => handleUpdatePaymentStatus(
+                          detail.gamePlayerId,
+                          detail.paymentStatus === 'pending' ? 'paid' : 'pending'
+                        )}
+                        className={`w-full sm:w-auto transition-all duration-200 ${
+                          detail.paymentStatus === 'paid' 
+                            ? 'hover:bg-red-500/10 hover:text-red-500 hover:border-red-500' 
+                            : 'hover:bg-green-500/90'
+                        }`}
+                      >
+                        {detail.paymentStatus === 'paid' ? (
+                          <>
+                            <X className="w-4 h-4 mr-2" />
+                            <span>Mark as Pending</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>Mark as Paid</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 };
