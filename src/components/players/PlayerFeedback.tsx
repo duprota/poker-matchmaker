@@ -43,7 +43,7 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
           .select("vote_type")
           .eq('from_player_id', user.id)
           .eq('to_player_id', playerId)
-          .maybeSingle(); // Changed from .single() to .maybeSingle()
+          .maybeSingle();
 
         if (userFeedback) {
           setCurrentVote(userFeedback.vote_type as 'like' | 'dislike');
@@ -79,7 +79,7 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
         .select()
         .eq('from_player_id', user.id)
         .eq('to_player_id', playerId)
-        .maybeSingle(); // Changed from .single() to .maybeSingle()
+        .maybeSingle();
 
       let error;
       
@@ -204,30 +204,27 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleVote('like')}
-          disabled={isSubmitting}
-          className={`flex items-center gap-2 ${
-            currentVote === 'like' ? 'bg-green-500/10 text-green-500' : 'hover:bg-green-500/10 hover:text-green-500'
-          }`}
-        >
-          <ThumbsUp className="w-4 h-4" />
-          <span className="text-sm font-medium">{stats.likes}</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleVote('dislike')}
-          disabled={isSubmitting}
-          className={`flex items-center gap-2 ${
-            currentVote === 'dislike' ? 'bg-red-500/10 text-red-500' : 'hover:bg-red-500/10 hover:text-red-500'
-          }`}
-        >
-          <ThumbsDown className="w-4 h-4" />
-          <span className="text-sm font-medium">{stats.dislikes}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleVote(currentVote === 'like' ? 'dislike' : 'like')}
+            disabled={isSubmitting}
+            className={`flex items-center gap-2 ${
+              currentVote === 'like' ? 'bg-green-500/10 text-green-500' : 
+              currentVote === 'dislike' ? 'bg-red-500/10 text-red-500' : ''
+            }`}
+          >
+            {currentVote === 'dislike' ? (
+              <ThumbsDown className="w-4 h-4" />
+            ) : (
+              <ThumbsUp className="w-4 h-4" />
+            )}
+            <span className="text-sm font-medium">
+              {currentVote === 'dislike' ? stats.dislikes : stats.likes}
+            </span>
+          </Button>
+        </div>
         <Button
           variant="ghost"
           size="sm"
