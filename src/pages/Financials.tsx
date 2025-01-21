@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Check, Clock, QrCode } from "lucide-react";
+import { Check, Clock, QrCode, ArrowLeftRight } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -52,9 +52,7 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
       player_id,
       final_result,
       games (
-        date,
-        manager_id,
-        name
+        date
       ),
       players!game_players_player_id_fkey (
         name,
@@ -69,54 +67,56 @@ const fetchHistoricalTransactions = async (): Promise<TransactionSummary[]> => {
     throw error;
   }
 
-  // Filter out null manager_ids and get unique values
-  const managerIds = [...new Set(gamePlayers
-    .map(gp => gp.games?.manager_id)
-    .filter(id => id != null)
-  )];
-
-  let managers = [];
-  if (managerIds.length > 0) {
-    const { data: managersData, error: managersError } = await supabase
-      .from('players')
-      .select('name, pix_key, user_id')
-      .in('user_id', managerIds);
-
-    if (managersError) {
-      console.error('Error fetching managers:', managersError);
-      throw managersError;
+  // Group players by game to calculate transactions
+  const gameGroups = gamePlayers.reduce((acc, gp) => {
+    if (!acc[gp.game_id]) {
+      acc[gp.game_id] = [];
     }
-    
-    managers = managersData || [];
-  }
+    acc[gp.game_id].push(gp);
+    return acc;
+  }, {});
 
-  // Transform the data into TransactionSummary format
-  const transactions: TransactionSummary[] = gamePlayers.map((gp: any) => {
-    const finalResult = gp.final_result || 0;
-    // If finalResult is positive, player receives money. If negative, they need to pay
-    const isReceiving = finalResult > 0;
-    
-    // Get the manager's name and PIX key
-    const manager = managers.find(m => m.user_id === gp.games?.manager_id);
-    const managerName = manager?.name || 'Game Manager';
-    const managerPixKey = manager?.pix_key;
-    
-    return {
-      from: isReceiving ? managerName : gp.players.name,
-      fromId: isReceiving ? gp.games.manager_id : gp.player_id,
-      to: isReceiving ? gp.players.name : managerName,
-      toId: isReceiving ? gp.player_id : gp.games.manager_id,
-      amount: Math.abs(finalResult),
-      gamePlayerIds: [gp.id],
-      paymentStatus: gp.payment_status || 'pending',
-      toPixKey: isReceiving ? gp.players.pix_key : managerPixKey,
-      gameDetails: [{
-        gameId: gp.game_id,
-        date: gp.games.date,
-        amount: Math.abs(finalResult),
-        gamePlayerId: gp.id
-      }]
-    };
+  // Calculate transactions for each game
+  const transactions: TransactionSummary[] = [];
+  
+  Object.values(gameGroups).forEach((players: any[]) => {
+    // Find players who need to pay (negative final_result)
+    const debtors = players.filter(p => (p.final_result || 0) < 0);
+    // Find players who should receive money (positive final_result)
+    const creditors = players.filter(p => (p.final_result || 0) > 0);
+
+    debtors.forEach(debtor => {
+      const debtAmount = Math.abs(debtor.final_result || 0);
+      let remainingDebt = debtAmount;
+
+      creditors.forEach(creditor => {
+        if (remainingDebt <= 0) return;
+
+        const creditAmount = creditor.final_result || 0;
+        const transactionAmount = Math.min(remainingDebt, creditAmount);
+
+        if (transactionAmount > 0) {
+          transactions.push({
+            from: debtor.players.name,
+            fromId: debtor.player_id,
+            to: creditor.players.name,
+            toId: creditor.player_id,
+            amount: transactionAmount,
+            gamePlayerIds: [debtor.id],
+            paymentStatus: debtor.payment_status || 'pending',
+            toPixKey: creditor.players.pix_key,
+            gameDetails: [{
+              gameId: debtor.game_id,
+              date: debtor.games.date,
+              amount: transactionAmount,
+              gamePlayerId: debtor.id
+            }]
+          });
+        }
+
+        remainingDebt -= transactionAmount;
+      });
+    });
   });
 
   console.log('Processed transactions:', transactions);
@@ -145,12 +145,10 @@ const Financials = () => {
         },
         (payload) => {
           console.log('Received real-time update for game_players:', payload);
-          // Show a toast notification
           toast({
             title: "Payment status updated",
             description: "The transaction list has been refreshed.",
           });
-          // Invalidate and refetch the transactions query
           queryClient.invalidateQueries({ queryKey: ['historical-transactions'] });
         }
       )
@@ -206,7 +204,11 @@ const Financials = () => {
               )}
             </div>
             <div>
-              <p className="font-medium text-foreground bg-gradient-to-r from-primary/80 via-secondary/80 to-accent/80 bg-clip-text">{transaction.from} → {transaction.to}</p>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-foreground">{transaction.from}</span>
+                <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium text-foreground">{transaction.to}</span>
+              </div>
               <p className="text-sm text-muted-foreground">
                 {format(new Date(transaction.gameDetails[0].date), 'MMM d, yyyy')}
               </p>
@@ -237,7 +239,7 @@ const Financials = () => {
             </div>
           </div>
           <div className="text-right">
-            <p className="font-semibold text-foreground bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            <p className="font-semibold text-foreground">
               ${transaction.amount.toFixed(2)}
             </p>
             <p className="text-sm text-muted-foreground capitalize">
@@ -246,22 +248,6 @@ const Financials = () => {
           </div>
         </div>
         
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="details" className="border-none">
-            <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline hover:text-primary transition-colors">
-              Game Details
-            </AccordionTrigger>
-            <AccordionContent className="text-sm space-y-2">
-              {transaction.gameDetails.map((detail, idx) => (
-                <div key={idx} className="flex justify-between items-center p-2 rounded bg-muted/50 backdrop-blur-sm">
-                  <span className="text-foreground">{format(new Date(detail.date), 'MMM d, yyyy')}</span>
-                  <span className="font-medium text-foreground">${detail.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-
         {!isPaid && (
           <Button
             variant="outline"
@@ -281,8 +267,8 @@ const Financials = () => {
       <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-            Historical Transactions
+          <h1 className="text-2xl font-bold mb-6">
+            Transactions
           </h1>
           <Card className="p-4 bg-card/80 backdrop-blur-sm">
             <div className="text-center py-8 text-muted-foreground">Loading transaction history...</div>
@@ -297,8 +283,8 @@ const Financials = () => {
       <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
         <Navigation />
         <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-            Historical Transactions
+          <h1 className="text-2xl font-bold mb-6">
+            Transactions
           </h1>
           <Card className="p-4 bg-card/80 backdrop-blur-sm">
             <div className="text-center py-8 text-destructive">
@@ -317,13 +303,13 @@ const Financials = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-          Historical Transactions
+        <h1 className="text-2xl font-bold mb-6">
+          Transactions
         </h1>
         
         {/* Pending Transactions */}
         <div className="mb-8 animate-fade-in">
-          <h2 className="text-xl font-semibold mb-4 text-foreground bg-gradient-to-r from-primary/80 via-secondary/80 to-accent/80 bg-clip-text">
+          <h2 className="text-xl font-semibold mb-4">
             Pending Transactions
           </h2>
           {pendingTransactions.length > 0 ? (
@@ -345,7 +331,7 @@ const Financials = () => {
 
         {/* Payment History */}
         <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
-          <h2 className="text-xl font-semibold mb-4 text-foreground bg-gradient-to-r from-primary/80 via-secondary/80 to-accent/80 bg-clip-text">
+          <h2 className="text-xl font-semibold mb-4">
             Payment History
           </h2>
           {paidTransactions.length > 0 ? (
