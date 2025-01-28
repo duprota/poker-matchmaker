@@ -1,26 +1,21 @@
-import { useState } from "react";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Save, X } from "lucide-react";
+import { PlayerRow } from "./table/PlayerRow";
+import { TotalRow } from "./table/TotalRow";
 
 interface TotalAmountsTableProps {
   players: GamePlayer[];
 }
 
 export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
-  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<number>(0);
   const { toast } = useToast();
 
   // Sort players alphabetically by name
@@ -28,30 +23,20 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
     a.player.name.localeCompare(b.player.name)
   );
 
-  const calculateTotalAmount = (player: GamePlayer) => {
-    return player.initial_buyin + (player.total_rebuys * player.initial_buyin);
-  };
-
-  const handleEdit = (player: GamePlayer) => {
-    setEditingPlayerId(player.id);
-    setEditValue(player.total_rebuys);
-  };
-
-  const handleCancel = () => {
-    setEditingPlayerId(null);
-    setEditValue(0);
-  };
-
-  const handleSave = async (player: GamePlayer) => {
+  const handleUpdateRebuys = async (playerId: string, newValue: number) => {
     try {
-      console.log(`Updating rebuys for player ${player.id} to ${editValue}`);
+      console.log(`Updating rebuys for player ${playerId} to ${newValue}`);
       
       const { error } = await supabase
         .from("game_players")
-        .update({ total_rebuys: editValue })
-        .eq("id", player.id);
+        .update({ total_rebuys: newValue })
+        .eq("id", playerId);
 
       if (error) throw error;
+
+      // Get the player and game info for history
+      const player = players.find(p => p.id === playerId);
+      if (!player) throw new Error("Player not found");
 
       // Add to game history
       const { error: historyError } = await supabase
@@ -60,7 +45,7 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
           game_id: player.game_id,
           game_player_id: player.id,
           event_type: "rebuy",
-          amount: editValue
+          amount: newValue
         });
 
       if (historyError) throw historyError;
@@ -69,8 +54,6 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
         title: "Success",
         description: "Rebuys updated successfully",
       });
-      
-      setEditingPlayerId(null);
     } catch (error) {
       console.error("Error updating rebuys:", error);
       toast({
@@ -95,63 +78,13 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
         </TableHeader>
         <TableBody>
           {sortedPlayers.map((player) => (
-            <TableRow key={player.id}>
-              <TableCell>{player.player.name}</TableCell>
-              <TableCell className="text-right">
-                {editingPlayerId === player.id ? (
-                  <Input
-                    type="number"
-                    value={editValue}
-                    onChange={(e) => setEditValue(Number(e.target.value))}
-                    className="w-20 ml-auto"
-                  />
-                ) : (
-                  player.total_rebuys
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                ${calculateTotalAmount(player)}
-              </TableCell>
-              <TableCell className="text-right">
-                {editingPlayerId === player.id ? (
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleSave(player)}
-                    >
-                      <Save className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleCancel}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(player)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
+            <PlayerRow
+              key={player.id}
+              player={player}
+              onUpdateRebuys={handleUpdateRebuys}
+            />
           ))}
-          <TableRow>
-            <TableCell className="font-semibold">Total</TableCell>
-            <TableCell className="text-right font-semibold">
-              {players.reduce((acc, player) => acc + player.total_rebuys, 0)}
-            </TableCell>
-            <TableCell className="text-right font-semibold">
-              ${players.reduce((acc, player) => acc + calculateTotalAmount(player), 0)}
-            </TableCell>
-            <TableCell />
-          </TableRow>
+          <TotalRow players={sortedPlayers} />
         </TableBody>
       </Table>
     </div>
