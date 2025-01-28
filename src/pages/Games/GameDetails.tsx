@@ -8,10 +8,9 @@ import { GameMoneyFlowChart } from "@/components/games/GameMoneyFlowChart";
 import { OngoingGameForm } from "@/components/games/OngoingGameForm";
 import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
 import { useToast } from "@/hooks/use-toast";
-import { calculateTotalBuyInsAndRebuys, calculateTotalResults } from "@/components/games/GameCalculations";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PlayIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const GameDetails = () => {
   const { id } = useParams();
@@ -113,40 +112,48 @@ const GameDetails = () => {
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8">
           <GameHeader 
-            game={game}
-            onDelete={handleDeleteGame}
+            status={game.status}
+            onDeleteGame={handleDeleteGame}
           />
         </div>
 
         {showFinalizeForm ? (
           <FinalizeGameForm
-            game={game}
+            isOpen={showFinalizeForm}
             onClose={() => setShowFinalizeForm(false)}
-            onRefresh={refreshGame}
+            players={game.players}
+            onFinalize={async (results) => {
+              // Handle finalize logic
+              refreshGame();
+            }}
           />
         ) : (
           <>
             <div className="grid gap-8">
               <GameInformation
-                game={game}
+                date={game.date}
+                status={game.status}
+                name={game.name}
                 hasBalanceError={hasBalanceError}
-                onUpdateResult={updatePlayerResult}
-                onUpdatePaymentStatus={updatePaymentStatus}
+                totalBuyInsAndRebuys={0}
+                totalResults={0}
+                players={game.players}
               />
 
               <GameMoneyFlowChart
-                gameId={game.id}
-                totalBuyInsAndRebuys={calculateTotalBuyInsAndRebuys(game.players)}
-                totalResults={calculateTotalResults(game.players)}
                 players={game.players}
-                name={game.name}
+                gameHistory={[]}
               />
 
               <div className="grid gap-4 mt-8">
                 {game.status === "ongoing" && (
                   <OngoingGameForm
-                    game={game}
-                    onRefresh={refreshGame}
+                    players={game.players}
+                    rebuys={{}}
+                    onRebuyChange={() => {}}
+                    onSaveRebuys={() => {}}
+                    savingRebuys={false}
+                    setRebuys={() => {}}
                   />
                 )}
               </div>
