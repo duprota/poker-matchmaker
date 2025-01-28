@@ -1,70 +1,80 @@
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { GameStatus } from "@/types/game";
 
-interface GamePlayer {
-  id: string;
-  player: {
-    name: string;
-    email: string;
+const OngoingGameForm = () => {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: "",
+    date: "",
+    status: "ongoing" as GameStatus,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  initial_buyin: number;
-  total_rebuys: number;
-  final_result: number | null;
-}
 
-interface OngoingGameFormProps {
-  players: GamePlayer[];
-  rebuys: Record<string, number>;
-  onRebuyChange: (playerId: string, value: string) => void;
-  onSaveRebuys: () => void;
-  savingRebuys: boolean;
-  setRebuys: (rebuys: Record<string, number>) => void;
-}
+  const createGame = async (data: any) => {
+    try {
+      console.log('Creating new game with data:', data);
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .insert([
+          { 
+            ...data,
+            status: data.status as GameStatus // Cast to enum type
+          }
+        ])
+        .select()
+        .single();
 
-export const OngoingGameForm = ({
-  players,
-  rebuys,
-  onRebuyChange,
-  onSaveRebuys,
-  savingRebuys,
-  setRebuys,
-}: OngoingGameFormProps) => {
-  const handleSaveRebuys = () => {
-    onSaveRebuys();
-    // Reset rebuys after saving
-    setRebuys({});
+      if (gameError) throw gameError;
+      return gameData;
+    } catch (error) {
+      console.error('Error creating game:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createGame(formData);
+      toast({
+        title: "Success",
+        description: "Game created successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create game",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Rebuys</h2>
-        <div className="grid gap-4 mb-4">
-          {players.map((gamePlayer) => (
-            <div key={gamePlayer.id} className="flex items-center gap-4">
-              <span className="min-w-[150px]">{gamePlayer.player.name}</span>
-              <div className="flex-1 max-w-[200px]">
-                <Input
-                  type="number"
-                  value={rebuys[gamePlayer.id] || 0}
-                  onChange={(e) => onRebuyChange(gamePlayer.id, e.target.value)}
-                  className="max-w-[120px]"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Total: ${(rebuys[gamePlayer.id] || 0) * gamePlayer.initial_buyin}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <Button 
-          onClick={handleSaveRebuys} 
-          disabled={savingRebuys}
-          className="w-full md:w-auto"
-        >
-          {savingRebuys ? "Saving..." : "Save Rebuys"}
-        </Button>
-      </div>
-    </div>
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        placeholder="Game Name"
+        required
+      />
+      <input
+        type="date"
+        name="date"
+        value={formData.date}
+        onChange={handleChange}
+        required
+      />
+      <button type="submit">Create Game</button>
+    </form>
   );
 };
+
+export default OngoingGameForm;

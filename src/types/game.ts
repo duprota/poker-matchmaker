@@ -13,10 +13,12 @@ export interface GamePlayer {
   payment_amount: number;
 }
 
+export type GameStatus = 'created' | 'ongoing' | 'completed' | 'cancelled';
+
 export interface Game {
   id: string;
   date: string;
-  status: string;
+  status: GameStatus;
   players: GamePlayer[];
   name?: string;
   place?: string;
