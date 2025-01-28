@@ -23,6 +23,11 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
   const [editValue, setEditValue] = useState<number>(0);
   const { toast } = useToast();
 
+  // Sort players alphabetically by name
+  const sortedPlayers = [...players].sort((a, b) => 
+    a.player.name.localeCompare(b.player.name)
+  );
+
   const calculateTotalAmount = (player: GamePlayer) => {
     return player.initial_buyin + (player.total_rebuys * player.initial_buyin);
   };
@@ -89,7 +94,7 @@ export const TotalAmountsTable = ({ players }: TotalAmountsTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {players.map((player) => (
+          {sortedPlayers.map((player) => (
             <TableRow key={player.id}>
               <TableCell>{player.player.name}</TableCell>
               <TableCell className="text-right">
