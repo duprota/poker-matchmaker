@@ -10,6 +10,7 @@ interface ChartDataPoint {
   amount: number;
   playerName?: string;
   timestamp: Date;
+  eventType: string;
 }
 
 interface GameMoneyFlowChartProps {
@@ -32,7 +33,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       time: "0",
       amount: initialTotal,
       playerName: "Initial Buy-ins",
-      timestamp: new Date(gameHistory[0]?.created_at || new Date())
+      timestamp: new Date(gameHistory[0]?.created_at || new Date()),
+      eventType: 'initial'
     }];
 
     // Get only rebuy events and sort them by timestamp
@@ -49,16 +51,23 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     rebuyEvents.forEach(event => {
       const player = players.find(p => p.id === event.game_player_id);
       if (player) {
-        const rebuyAmount = player.initial_buyin;
-        runningTotal += rebuyAmount;
+        // Get the current total rebuys for this player from the event
+        const currentRebuys = event.amount || 0;
+        const previousRebuys = player.total_rebuys - currentRebuys;
+        
+        // Calculate the change in money for this rebuy event
+        const rebuyChange = (currentRebuys - previousRebuys) * player.initial_buyin;
+        runningTotal += rebuyChange;
         
         const eventTime = new Date(event.created_at);
-        const gameStartTime = new Date(rebuyEvents[0]?.created_at || event.created_at);
+        const gameStartTime = new Date(gameHistory[0]?.created_at || event.created_at);
         const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
 
-        console.log(`Rebuy at ${minutesSinceStart} minutes:`, {
+        console.log(`Rebuy event at ${minutesSinceStart} minutes:`, {
           player: player.player.name,
-          rebuyAmount,
+          currentRebuys,
+          previousRebuys,
+          rebuyChange,
           newTotal: runningTotal
         });
 
@@ -66,7 +75,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
           time: minutesSinceStart.toString(),
           amount: runningTotal,
           playerName: player.player.name,
-          timestamp: eventTime
+          timestamp: eventTime,
+          eventType: 'rebuy'
         });
       }
     });
@@ -89,7 +99,6 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     <div className="space-y-6 animate-fade-in relative z-0">
       <div className="mt-8">
         <h3 className="text-lg font-semibold mb-4">Game Stats</h3>
-        {/* Summary Card */}
         <Card className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center space-x-3">
@@ -124,10 +133,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       </div>
 
       <div className="relative">
-        {/* Timeline line */}
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-muted" />
-
-        {/* Timeline events */}
         <div className="space-y-4">
           {chartData.map((point, index) => (
             <div
@@ -138,7 +144,6 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
               `}
               style={{ animationDelay: `${index * 150}ms` }}
             >
-              {/* Timeline dot */}
               <div className="absolute left-2.5 top-6 w-3 h-3 rounded-full bg-primary" />
               
               <Card className="p-4 bg-card">
@@ -159,7 +164,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
 
                   {index > 0 && (
                     <div className="text-sm text-muted-foreground">
-                      +${point.amount - chartData[index - 1].amount} from previous
+                      {point.amount - chartData[index - 1].amount > 0 ? '+' : ''}
+                      ${point.amount - chartData[index - 1].amount} from previous
                     </div>
                   )}
                 </div>
