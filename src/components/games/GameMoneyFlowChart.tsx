@@ -44,6 +44,12 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
 
     console.log("Sorted rebuy events:", rebuyEvents);
 
+    // Calculate current total based on initial buy-ins and current total rebuys
+    const currentTotal = players.reduce((acc, player) => {
+      const totalAmount = player.initial_buyin * (1 + (player.total_rebuys || 0));
+      return acc + totalAmount;
+    }, 0);
+
     // Track running total starting from initial buy-ins
     let runningTotal = initialTotal;
 
@@ -81,6 +87,17 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       }
     });
 
+    // Add final point if total has changed
+    if (currentTotal !== runningTotal) {
+      dataPoints.push({
+        time: "current",
+        amount: currentTotal,
+        playerName: "Current Total",
+        timestamp: new Date(),
+        eventType: 'current'
+      });
+    }
+
     // Calculate game duration
     if (gameHistory.length > 0) {
       const firstEvent = new Date(gameHistory[0].created_at);
@@ -93,7 +110,10 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
   }, [players, gameHistory]);
 
   const totalRebuys = players.reduce((acc, player) => acc + player.total_rebuys, 0);
-  const currentTotal = chartData[chartData.length - 1]?.amount || 0;
+  const currentTotal = players.reduce((acc, player) => {
+    const totalAmount = player.initial_buyin * (1 + (player.total_rebuys || 0));
+    return acc + totalAmount;
+  }, 0);
 
   return (
     <div className="space-y-6 animate-fade-in relative z-0">
