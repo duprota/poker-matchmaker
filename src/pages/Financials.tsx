@@ -3,7 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { AggregatedPaymentsTable } from "@/components/financials/AggregatedPaymentsTable";
 import { supabase } from "@/integrations/supabase/client";
-import type { Game } from "@/types/game";
+import type { Game, GameStatus } from "@/types/game";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
