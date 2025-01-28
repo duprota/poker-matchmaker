@@ -72,11 +72,11 @@ const NewGame = () => {
     try {
       console.log("Starting game creation process...");
       
-      // Create new game
+      // Create new game with 'created' status instead of 'ongoing'
       const { data: gameData, error: gameError } = await supabase
         .from("games")
         .insert([{ 
-          status: "ongoing",
+          status: "created",
           name,
           place,
           date: date.toISOString()

@@ -14,6 +14,7 @@ import { useGameDetails } from "@/hooks/useGameDetails";
 import { calculateTotalBuyInsAndRebuys, calculateTotalResults } from "@/components/games/GameCalculations";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { PlayIcon } from "lucide-react";
 
 const GameDetails = () => {
   const { id } = useParams();
@@ -175,6 +176,35 @@ const GameDetails = () => {
     }
   };
 
+  const handleStartGame = async () => {
+    try {
+      console.log("Starting game:", id);
+      const { error } = await supabase
+        .from("games")
+        .update({ 
+          status: "ongoing",
+          started_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Game started successfully",
+      });
+      
+      refreshGame();
+    } catch (error) {
+      console.error("Error starting game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start game",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchGameHistory();
   }, [id]);
@@ -224,6 +254,7 @@ const GameDetails = () => {
                 totalBuyInsAndRebuys={calculateTotalBuyInsAndRebuys(game.players)}
                 totalResults={calculateTotalResults(game.players)}
                 players={game.players}
+                name={game.name}
               />
 
               <div className="grid gap-4 mt-8">
@@ -252,7 +283,16 @@ const GameDetails = () => {
         />
 
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t border-border">
-          <div className="container mx-auto flex justify-end">
+          <div className="container mx-auto flex justify-end gap-4">
+            {game.status === "created" && (
+              <Button 
+                onClick={handleStartGame}
+                className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <PlayIcon className="w-4 h-4 mr-2" />
+                Start Game
+              </Button>
+            )}
             {game.status === "ongoing" && (
               <Button 
                 onClick={() => setShowFinalizeForm(true)} 

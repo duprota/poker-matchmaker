@@ -66,7 +66,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
         runningTotal += rebuyChange;
         
         const eventTime = new Date(event.created_at);
-        const gameStartTime = new Date(gameHistory[0]?.created_at || event.created_at);
+        // Use started_at if available, otherwise fall back to created_at
+        const gameStartTime = new Date(gameHistory[0]?.started_at || gameHistory[0]?.created_at || event.created_at);
         const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
 
         console.log(`Rebuy event at ${minutesSinceStart} minutes:`, {
@@ -98,9 +99,9 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       });
     }
 
-    // Calculate game duration
+    // Calculate game duration using started_at if available
     if (gameHistory.length > 0) {
-      const firstEvent = new Date(gameHistory[0].created_at);
+      const firstEvent = new Date(gameHistory[0]?.started_at || gameHistory[0]?.created_at);
       const duration = formatDistance(new Date(), firstEvent, { addSuffix: false });
       setGameDuration(duration);
     }

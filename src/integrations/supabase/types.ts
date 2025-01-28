@@ -134,6 +134,7 @@ export type Database = {
           manager_id: string | null
           name: string | null
           place: string | null
+          started_at: string | null
           status: string
         }
         Insert: {
@@ -144,6 +145,7 @@ export type Database = {
           manager_id?: string | null
           name?: string | null
           place?: string | null
+          started_at?: string | null
           status: string
         }
         Update: {
@@ -154,6 +156,7 @@ export type Database = {
           manager_id?: string | null
           name?: string | null
           place?: string | null
+          started_at?: string | null
           status?: string
         }
         Relationships: [
