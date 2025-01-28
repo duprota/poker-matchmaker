@@ -7,9 +7,45 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  // Fetch statistics
+  const { toast } = useToast();
+
+  // Add a test effect to check Supabase connection
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log("Testing Supabase connection...");
+        const { data, error } = await supabase
+          .from('games')
+          .select('id')
+          .limit(1);
+        
+        if (error) {
+          console.error("Supabase connection error:", error);
+          toast({
+            title: "Connection Error",
+            description: `Failed to connect to Supabase: ${error.message}`,
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        console.log("Supabase connection successful:", data);
+        toast({
+          title: "Connection Success",
+          description: "Successfully connected to Supabase",
+        });
+      } catch (err) {
+        console.error("Error testing connection:", err);
+      }
+    };
+
+    testConnection();
+  }, []);
+
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
