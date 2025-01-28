@@ -39,8 +39,13 @@ const Financials = () => {
 
       if (gamesError) throw gamesError;
 
-      console.log('Fetched games data:', gamesData);
-      setGames(gamesData || []);
+      const typedGames = (gamesData || []).map(game => ({
+        ...game,
+        status: game.status as GameStatus,
+      }));
+
+      console.log('Fetched games data:', typedGames);
+      setGames(typedGames);
     } catch (error) {
       console.error("Error fetching games:", error);
     } finally {

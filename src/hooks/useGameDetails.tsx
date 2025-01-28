@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { Game, GamePlayer } from "@/types/game";
+import type { Game, GamePlayer, GameStatus } from "@/types/game";
 
 export const useGameDetails = (gameId: string | undefined) => {
   const [game, setGame] = useState<Game | null>(null);
@@ -45,6 +45,7 @@ export const useGameDetails = (gameId: string | undefined) => {
 
       const gameWithPlayers: Game = {
         ...gameData,
+        status: gameData.status as GameStatus,
         players: playersData as GamePlayer[],
       };
 

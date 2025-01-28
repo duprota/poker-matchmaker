@@ -54,6 +54,7 @@ const Games = () => {
 
             return {
               ...game,
+              status: game.status as GameStatus,
               players: playersData,
             };
           })
