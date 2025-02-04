@@ -31,10 +31,7 @@ export const OngoingGameForm = ({
         .update({ total_rebuys: newRebuys })
         .eq("id", playerId);
 
-      if (updateError) {
-        console.error("Error updating game_players:", updateError);
-        throw updateError;
-      }
+      if (updateError) throw updateError;
 
       console.log("Successfully updated game_players table");
 
@@ -54,10 +51,7 @@ export const OngoingGameForm = ({
           amount: newRebuys
         });
 
-      if (historyError) {
-        console.error("Error updating game_history:", historyError);
-        throw historyError;
-      }
+      if (historyError) throw historyError;
 
       console.log("Successfully added entry to game_history");
       console.log("Rebuy change completed successfully");
@@ -66,6 +60,10 @@ export const OngoingGameForm = ({
         title: "Success",
         description: "Rebuy registered successfully",
       });
+
+      // Force a refresh of the game data after successful update
+      window.location.reload();
+      
     } catch (error) {
       console.error("Error updating rebuys:", error);
       toast({

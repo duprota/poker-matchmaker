@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { Game } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
