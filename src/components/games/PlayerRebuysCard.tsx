@@ -16,12 +16,23 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRe
   const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
   const totalAmount = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleQuickRebuy = async () => {
+    if (isProcessing) return;
+    
     try {
+      setIsProcessing(true);
       await onRebuyChange(player.id, player.total_rebuys + 1);
     } catch (error) {
       console.error("Error in quick rebuy:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process rebuy. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -35,11 +46,21 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRe
       return;
     }
     
+    if (isProcessing) return;
+
     try {
+      setIsProcessing(true);
       await onRebuyChange(player.id, newValue);
       setShowHistory(false);
     } catch (error) {
       console.error("Error updating rebuys:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update rebuys",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -54,7 +75,7 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRe
                 variant="outline"
                 size="sm"
                 onClick={() => setShowHistory(true)}
-                disabled={isUpdating}
+                disabled={isProcessing}
                 className="gap-2"
               >
                 <Edit2 className="w-4 h-4" />
@@ -62,11 +83,11 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRe
               </Button>
               <Button
                 onClick={handleQuickRebuy}
-                disabled={isUpdating}
+                disabled={isProcessing}
                 size="sm"
                 className="gap-2"
               >
-                {isUpdating ? (
+                {isProcessing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Plus className="w-4 h-4" />
@@ -101,7 +122,7 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRe
                   key={value}
                   variant={player.total_rebuys === value ? "default" : "outline"}
                   onClick={() => handleUpdateRebuys(value)}
-                  disabled={isUpdating}
+                  disabled={isProcessing}
                 >
                   {value}
                 </Button>

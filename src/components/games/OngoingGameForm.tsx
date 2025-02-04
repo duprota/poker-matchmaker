@@ -16,11 +16,6 @@ export interface OngoingGameFormProps {
 
 export const OngoingGameForm = ({
   players,
-  rebuys,
-  onRebuyChange,
-  onSaveRebuys,
-  savingRebuys,
-  setRebuys,
 }: OngoingGameFormProps) => {
   const { toast } = useToast();
   const [updatingPlayer, setUpdatingPlayer] = useState<string | null>(null);
@@ -65,16 +60,8 @@ export const OngoingGameForm = ({
       }
 
       console.log("Successfully added entry to game_history");
-
-      // Update local state with proper typing
-      const newRebuysState: Record<string, number> = {
-        ...rebuys,
-        [playerId]: newRebuys
-      };
-      setRebuys(newRebuysState);
-      onRebuyChange(playerId, String(newRebuys));
-
       console.log("Rebuy change completed successfully");
+      
       toast({
         title: "Success",
         description: "Rebuy registered successfully",
@@ -86,6 +73,7 @@ export const OngoingGameForm = ({
         description: "Failed to register rebuy. Please try again.",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setUpdatingPlayer(null);
     }

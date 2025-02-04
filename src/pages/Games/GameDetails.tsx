@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { PlayIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { GamePlayer } from "@/types/game";
 
 const GameDetails = () => {
   const { id } = useParams();
@@ -18,6 +19,46 @@ const GameDetails = () => {
   const { toast } = useToast();
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const { game, loading, hasBalanceError, updatePlayerResult, updatePaymentStatus, refreshGame } = useGameDetails(id);
+  const [localPlayers, setLocalPlayers] = useState<GamePlayer[]>([]);
+
+  useEffect(() => {
+    if (game?.players) {
+      setLocalPlayers(game.players);
+    }
+  }, [game?.players]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel('game-players-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_players',
+          filter: `game_id=eq.${id}`
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          
+          if (payload.eventType === 'UPDATE') {
+            const updatedPlayer = payload.new as GamePlayer;
+            setLocalPlayers(prevPlayers => 
+              prevPlayers.map(player => 
+                player.id === updatedPlayer.id ? { ...player, ...updatedPlayer } : player
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
 
   const handleDeleteGame = async () => {
     if (!id || !window.confirm("Are you sure you want to delete this game?")) return;
@@ -121,9 +162,8 @@ const GameDetails = () => {
           <FinalizeGameForm
             isOpen={showFinalizeForm}
             onClose={() => setShowFinalizeForm(false)}
-            players={game.players}
+            players={localPlayers}
             onFinalize={async (results) => {
-              // Handle finalize logic
               refreshGame();
             }}
           />
@@ -137,18 +177,18 @@ const GameDetails = () => {
                 hasBalanceError={hasBalanceError}
                 totalBuyInsAndRebuys={0}
                 totalResults={0}
-                players={game.players}
+                players={localPlayers}
               />
 
               <GameMoneyFlowChart
-                players={game.players}
+                players={localPlayers}
                 gameHistory={[]}
               />
 
               <div className="grid gap-4 mt-8">
                 {game.status === "ongoing" && (
                   <OngoingGameForm
-                    players={game.players}
+                    players={localPlayers}
                     rebuys={{}}
                     onRebuyChange={() => {}}
                     onSaveRebuys={() => {}}
