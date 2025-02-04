@@ -32,8 +32,11 @@ export const OngoingGameForm = ({
   };
 
   const handleQuickRebuy = (playerId: string) => {
-    const currentRebuys = rebuys[playerId] || 0;
-    onRebuyChange(playerId, String(currentRebuys + 1));
+    console.log("Quick rebuy clicked for player:", playerId);
+    const currentRebuys = Number(rebuys[playerId] || 0);
+    const newValue = currentRebuys + 1;
+    console.log("Current rebuys:", currentRebuys, "New value:", newValue);
+    onRebuyChange(playerId, String(newValue));
   };
 
   return (
