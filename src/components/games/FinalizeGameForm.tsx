@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GamePlayer } from "@/types/game";
 import { calculateTotalBuyInsAndRebuys } from "./GameCalculations";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface FinalizeGameFormProps {
   isOpen: boolean;
@@ -19,7 +21,9 @@ export const FinalizeGameForm = ({
   players,
   onFinalize 
 }: FinalizeGameFormProps) => {
+  const { toast } = useToast();
   const [results, setResults] = useState<Record<string, number>>({});
+  const [updating, setUpdating] = useState(false);
   const totalMoneyInGame = calculateTotalBuyInsAndRebuys(players);
   const totalResults = Object.values(results).reduce((acc, val) => acc + (val || 0), 0);
   const difference = totalMoneyInGame - totalResults;
@@ -31,9 +35,67 @@ export const FinalizeGameForm = ({
     }));
   };
 
-  const handleFinalize = () => {
-    if (difference === 0) {
+  const handleFinalize = async () => {
+    if (difference !== 0) return;
+    
+    try {
+      console.log("Starting game finalization...");
+      setUpdating(true);
+
+      // Update each player's final result
+      for (const player of players) {
+        console.log(`Updating final result for player ${player.id} to ${results[player.id]}`);
+        
+        const { error: updateError } = await supabase
+          .from("game_players")
+          .update({ 
+            final_result: results[player.id],
+            payment_status: results[player.id] >= 0 ? 'to_receive' : 'to_pay'
+          })
+          .eq("id", player.id);
+
+        if (updateError) throw updateError;
+
+        // Add to game history
+        const { error: historyError } = await supabase
+          .from("game_history")
+          .insert({
+            game_id: player.game_id,
+            game_player_id: player.id,
+            event_type: "result_update",
+            amount: results[player.id]
+          });
+
+        if (historyError) throw historyError;
+      }
+
+      // Update game status to completed
+      const { error: gameError } = await supabase
+        .from("games")
+        .update({ status: "completed" })
+        .eq("id", players[0].game_id);
+
+      if (gameError) throw gameError;
+
+      console.log("Game finalization completed successfully");
+      
+      toast({
+        title: "Success",
+        description: "Game finalized successfully",
+      });
+
       onFinalize(results);
+      onClose();
+      
+    } catch (error) {
+      console.error("Error finalizing game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to finalize game. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -51,6 +113,9 @@ export const FinalizeGameForm = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Finalize Game</DialogTitle>
+          <DialogDescription>
+            Enter the final amount for each player. The total must match the money in game.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -91,9 +156,9 @@ export const FinalizeGameForm = ({
             </Button>
             <Button 
               onClick={handleFinalize} 
-              disabled={difference !== 0}
+              disabled={difference !== 0 || updating}
             >
-              Finalize Game
+              {updating ? "Finalizing..." : "Finalize Game"}
             </Button>
           </div>
         </div>
