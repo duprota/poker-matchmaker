@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { PlayIcon } from "lucide-react";
 import { Game } from "@/types/game";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,7 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
   const { toast } = useToast();
 
   const handleDeleteGame = async () => {
-    if (!game.id || !window.confirm("Are you sure you want to delete this game?")) return;
+    if (!game?.id) return;
 
     try {
       console.log("Deleting game:", game.id);
@@ -45,7 +44,7 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
   };
 
   const handleStartGame = async () => {
-    if (!game.id) return;
+    if (!game?.id) return;
 
     try {
       console.log("Starting game:", game.id);
