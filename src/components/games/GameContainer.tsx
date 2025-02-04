@@ -4,6 +4,8 @@ import { PlayIcon } from "lucide-react";
 import { Game } from "@/types/game";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { OngoingGameForm } from "./OngoingGameForm";
+import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
 
 interface GameContainerProps {
   game: Game;

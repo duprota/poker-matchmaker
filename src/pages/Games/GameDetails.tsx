@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { useGameDetails } from "@/hooks/useGameDetails";
 import { GameHeader } from "@/components/games/GameHeader";
@@ -7,11 +7,73 @@ import { GameInformation } from "@/components/games/GameInformation";
 import { GameContainer } from "@/components/games/GameContainer";
 import { GameActions } from "@/components/games/GameActions";
 import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const GameDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const { game, loading, hasBalanceError, refreshGame } = useGameDetails(id);
+
+  const handleDeleteGame = async () => {
+    if (!game?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from("games")
+        .delete()
+        .eq("id", game.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Game deleted successfully",
+      });
+      
+      navigate("/games");
+    } catch (error) {
+      console.error("Error deleting game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete game",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStartGame = async () => {
+    if (!game?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from("games")
+        .update({ 
+          status: "ongoing",
+          started_at: new Date().toISOString()
+        })
+        .eq("id", game.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Game started successfully",
+      });
+      
+      refreshGame();
+    } catch (error) {
+      console.error("Error starting game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start game",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return (
