@@ -28,23 +28,31 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     const initialTotal = players.reduce((acc, player) => acc + (player.initial_buyin || 0), 0);
     console.log("Initial total from buy-ins:", initialTotal);
 
-    // Get game start time from the first history entry with started_at
-    const startedAtEntry = gameHistory.find(entry => entry.started_at);
-    const firstEntry = gameHistory[0];
+    // Get game start time from the game history
     const now = new Date();
-    
-    // Get a valid start time
     let gameStartTime: Date;
-    if (startedAtEntry?.started_at && !isNaN(new Date(startedAtEntry.started_at).getTime())) {
-      gameStartTime = new Date(startedAtEntry.started_at);
-    } else if (firstEntry?.created_at && !isNaN(new Date(firstEntry.created_at).getTime())) {
-      gameStartTime = new Date(firstEntry.created_at);
-    } else {
-      gameStartTime = now;
-      console.warn("No valid start time found, using current time");
-    }
 
-    console.log("Game start time:", gameStartTime.toISOString());
+    // First try to get the started_at time from the game history
+    const gameStartEntry = gameHistory.find(entry => entry.started_at);
+    if (gameStartEntry?.started_at && !isNaN(new Date(gameStartEntry.started_at).getTime())) {
+      gameStartTime = new Date(gameStartEntry.started_at);
+      console.log("Found game start time from started_at:", gameStartTime);
+      
+      // Calculate and set game duration immediately if we have a valid start time
+      const duration = formatDistance(now, gameStartTime, { addSuffix: false });
+      console.log("Setting game duration:", duration);
+      setGameDuration(duration);
+    } else {
+      // Fallback to created_at time if no started_at is available
+      const firstEntry = gameHistory[0];
+      if (firstEntry?.created_at && !isNaN(new Date(firstEntry.created_at).getTime())) {
+        gameStartTime = new Date(firstEntry.created_at);
+        console.log("Using created_at as fallback start time:", gameStartTime);
+      } else {
+        gameStartTime = now;
+        console.warn("No valid start time found, using current time");
+      }
+    }
 
     // Initialize data points array with initial buy-ins
     const dataPoints: ChartDataPoint[] = [{
@@ -55,7 +63,22 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
       eventType: 'initial'
     }];
 
-    // Get only rebuy events and sort them by timestamp
+    let runningTotal = initialTotal;
+
+    // Process each player's initial buy-in as a separate event
+    players.forEach(player => {
+      if (player.initial_buyin > 0) {
+        dataPoints.push({
+          time: "0",
+          amount: player.initial_buyin,
+          playerName: `${player.player.name} - Initial Buy-in`,
+          timestamp: gameStartTime,
+          eventType: 'initial_buyin'
+        });
+      }
+    });
+
+    // Get and process rebuy events
     const rebuyEvents = [...gameHistory]
       .filter(entry => entry.event_type === 'rebuy')
       .sort((a, b) => {
@@ -63,75 +86,50 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
         const dateB = new Date(b.created_at);
         return dateA.getTime() - dateB.getTime();
       })
-      .filter(entry => !isNaN(new Date(entry.created_at).getTime())); // Filter out invalid dates
+      .filter(entry => !isNaN(new Date(entry.created_at).getTime()));
 
-    console.log("Sorted rebuy events:", rebuyEvents);
-
-    // Calculate current total based on initial buy-ins and current total rebuys
-    const currentTotal = players.reduce((acc, player) => {
-      const totalAmount = player.initial_buyin * (1 + (player.total_rebuys || 0));
-      return acc + totalAmount;
-    }, 0);
-
-    // Track running total starting from initial buy-ins
-    let runningTotal = initialTotal;
+    console.log("Processing rebuy events:", rebuyEvents);
 
     // Process each rebuy event
     rebuyEvents.forEach(event => {
       const player = players.find(p => p.id === event.game_player_id);
       if (player) {
-        // Get the current total rebuys for this player from the event
-        const currentRebuys = event.amount || 0;
-        const previousRebuys = player.total_rebuys - currentRebuys;
-        
-        // Calculate the change in money for this rebuy event
-        const rebuyChange = (currentRebuys - previousRebuys) * player.initial_buyin;
-        runningTotal += rebuyChange;
+        const rebuyAmount = event.amount * player.initial_buyin;
+        runningTotal += rebuyAmount;
         
         const eventTime = new Date(event.created_at);
         const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
 
-        console.log(`Rebuy event at ${minutesSinceStart} minutes:`, {
-          player: player.player.name,
-          currentRebuys,
-          previousRebuys,
-          rebuyChange,
-          newTotal: runningTotal,
-          eventTime: eventTime.toISOString()
+        console.log(`Adding rebuy event for ${player.player.name}:`, {
+          amount: rebuyAmount,
+          total: runningTotal,
+          time: minutesSinceStart
         });
 
         dataPoints.push({
           time: minutesSinceStart.toString(),
           amount: runningTotal,
-          playerName: player.player.name,
+          playerName: `${player.player.name} - Rebuy`,
           timestamp: eventTime,
           eventType: 'rebuy'
         });
       }
     });
 
-    // Add final point if total has changed
+    // Add current total if it's different
+    const currentTotal = players.reduce((acc, player) => {
+      const totalAmount = player.initial_buyin * (1 + (player.total_rebuys || 0));
+      return acc + totalAmount;
+    }, 0);
+
     if (currentTotal !== runningTotal) {
       dataPoints.push({
         time: "current",
         amount: currentTotal,
         playerName: "Current Total",
-        timestamp: new Date(),
+        timestamp: now,
         eventType: 'current'
       });
-    }
-
-    // Calculate game duration using started_at if available
-    if (gameHistory.length > 0) {
-      const gameStart = gameHistory.find(entry => entry.started_at)?.started_at;
-      if (gameStart) {
-        const startDate = new Date(gameStart);
-        if (!isNaN(startDate.getTime())) {
-          const duration = formatDistance(now, startDate, { addSuffix: false });
-          console.log("Game duration calculated:", duration, "from start time:", gameStart);
-          setGameDuration(duration);
-        }
-      }
     }
 
     console.log("Final chart data points:", dataPoints);
