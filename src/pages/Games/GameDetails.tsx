@@ -153,7 +153,7 @@ const GameDetails = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-8 px-4 pb-32"> {/* Added pb-32 for bottom padding */}
         <div className="mb-8">
           <GameHeader 
             status={game.status}
