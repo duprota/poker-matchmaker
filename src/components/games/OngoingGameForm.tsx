@@ -30,18 +30,26 @@ export const OngoingGameForm = ({
       console.log("Starting rebuy change:", { playerId, newRebuys });
       setUpdatingPlayer(playerId);
 
-      // Update game_players table
+      // First update game_players table
       const { error: updateError } = await supabase
         .from("game_players")
         .update({ total_rebuys: newRebuys })
         .eq("id", playerId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating game_players:", updateError);
+        throw updateError;
+      }
+
+      console.log("Successfully updated game_players table");
 
       // Get the player info for the history entry
       const player = players.find(p => p.id === playerId);
+      if (!player) {
+        throw new Error("Player not found");
+      }
       
-      // Add to game history
+      // Then add to game history
       const { error: historyError } = await supabase
         .from("game_history")
         .insert({
@@ -51,7 +59,12 @@ export const OngoingGameForm = ({
           amount: newRebuys
         });
 
-      if (historyError) throw historyError;
+      if (historyError) {
+        console.error("Error updating game_history:", historyError);
+        throw historyError;
+      }
+
+      console.log("Successfully added entry to game_history");
 
       // Update local state with proper typing
       const newRebuysState: Record<string, number> = {
