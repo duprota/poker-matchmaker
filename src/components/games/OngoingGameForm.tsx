@@ -19,6 +19,11 @@ export const OngoingGameForm = ({
 }: OngoingGameFormProps) => {
   const { toast } = useToast();
   const [updatingPlayer, setUpdatingPlayer] = useState<string | null>(null);
+  
+  // Sort players by name and memoize the sorted array
+  const sortedPlayers = [...players].sort((a, b) => 
+    a.player.name.localeCompare(b.player.name)
+  );
 
   const handleRebuyChange = async (playerId: string, newRebuys: number) => {
     try {
@@ -81,7 +86,7 @@ export const OngoingGameForm = ({
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Game Progress</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {players.map((gamePlayer) => (
+        {sortedPlayers.map((gamePlayer) => (
           <PlayerRebuysCard
             key={gamePlayer.id}
             player={gamePlayer}
