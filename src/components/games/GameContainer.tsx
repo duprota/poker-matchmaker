@@ -13,6 +13,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 
 interface GameContainerProps {
@@ -204,23 +205,25 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
 
           <Command className="rounded-lg border shadow-md">
             <CommandInput placeholder="Search players..." />
-            <CommandEmpty>No players found.</CommandEmpty>
-            <CommandGroup>
-              {players.map((player) => (
-                <CommandItem
-                  key={player.id}
-                  onSelect={() => setSelectedPlayer(player)}
-                  className="cursor-pointer"
-                >
-                  <div className={`flex flex-col ${selectedPlayer?.id === player.id ? 'text-primary' : ''}`}>
-                    <span className="font-medium">{player.name}</span>
-                    {player.email && (
-                      <span className="text-sm text-muted-foreground">{player.email}</span>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            <CommandList>
+              <CommandEmpty>No players found.</CommandEmpty>
+              <CommandGroup>
+                {players?.map((player) => (
+                  <CommandItem
+                    key={player.id}
+                    onSelect={() => setSelectedPlayer(player)}
+                    className="cursor-pointer"
+                  >
+                    <div className={`flex flex-col ${selectedPlayer?.id === player.id ? 'text-primary' : ''}`}>
+                      <span className="font-medium">{player.name}</span>
+                      {player.email && (
+                        <span className="text-sm text-muted-foreground">{player.email}</span>
+                      )}
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
           </Command>
 
           <div className="flex justify-end gap-4">
