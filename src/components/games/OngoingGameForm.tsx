@@ -36,7 +36,14 @@ export const OngoingGameForm = ({
     const currentRebuys = Number(rebuys[playerId] || 0);
     const newValue = currentRebuys + 1;
     console.log("Current rebuys:", currentRebuys, "New value:", newValue);
+    setRebuys({ ...rebuys, [playerId]: newValue });
     onRebuyChange(playerId, String(newValue));
+  };
+
+  const handleInputChange = (playerId: string, value: string) => {
+    const numericValue = value === '' ? '0' : value;
+    setRebuys({ ...rebuys, [playerId]: Number(numericValue) });
+    onRebuyChange(playerId, numericValue);
   };
 
   return (
@@ -50,8 +57,9 @@ export const OngoingGameForm = ({
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
+                  min="0"
                   value={rebuys[gamePlayer.id] || 0}
-                  onChange={(e) => onRebuyChange(gamePlayer.id, e.target.value)}
+                  onChange={(e) => handleInputChange(gamePlayer.id, e.target.value)}
                   className="w-20"
                 />
                 <Button
