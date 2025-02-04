@@ -81,10 +81,19 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
           <OngoingGameForm
             players={game.players}
             rebuys={{}}
-            onRebuyChange={() => {}}
-            onSaveRebuys={() => {}}
+            onRebuyChange={() => {
+              console.log("Rebuy change detected");
+              refreshGame();
+            }}
+            onSaveRebuys={() => {
+              console.log("Rebuys saved");
+              refreshGame();
+            }}
             savingRebuys={false}
-            setRebuys={() => {}}
+            setRebuys={() => {
+              console.log("Rebuys updated");
+              refreshGame();
+            }}
           />
         )}
       </div>

@@ -8,72 +8,12 @@ import { GameContainer } from "@/components/games/GameContainer";
 import { GameActions } from "@/components/games/GameActions";
 import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const { game, loading, hasBalanceError, refreshGame } = useGameDetails(id);
-
-  const handleDeleteGame = async () => {
-    if (!game?.id) return;
-
-    try {
-      const { error } = await supabase
-        .from("games")
-        .delete()
-        .eq("id", game.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Game deleted successfully",
-      });
-      
-      navigate("/games");
-    } catch (error) {
-      console.error("Error deleting game:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete game",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStartGame = async () => {
-    if (!game?.id) return;
-
-    try {
-      const { error } = await supabase
-        .from("games")
-        .update({ 
-          status: "ongoing",
-          started_at: new Date().toISOString()
-        })
-        .eq("id", game.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Game started successfully",
-      });
-      
-      refreshGame();
-    } catch (error) {
-      console.error("Error starting game:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start game",
-        variant: "destructive",
-      });
-    }
-  };
 
   if (loading) {
     return (
@@ -110,7 +50,9 @@ const GameDetails = () => {
         <div className="mb-8">
           <GameHeader 
             status={game.status}
-            onDeleteGame={handleDeleteGame}
+            onDeleteGame={() => {
+              navigate("/games");
+            }}
           />
         </div>
 
@@ -120,6 +62,7 @@ const GameDetails = () => {
             onClose={() => setShowFinalizeForm(false)}
             players={game.players}
             onFinalize={async () => {
+              console.log("Game finalized, refreshing...");
               refreshGame();
             }}
           />
@@ -137,14 +80,20 @@ const GameDetails = () => {
 
             <GameContainer 
               game={game}
-              refreshGame={refreshGame}
+              refreshGame={() => {
+                console.log("Refreshing game from container...");
+                refreshGame();
+              }}
             />
           </>
         )}
 
         <GameActions 
           status={game.status}
-          onStartGame={handleStartGame}
+          onStartGame={() => {
+            console.log("Starting game...");
+            refreshGame();
+          }}
           onShowFinalizeForm={() => setShowFinalizeForm(true)}
         />
       </div>
