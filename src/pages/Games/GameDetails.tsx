@@ -183,12 +183,7 @@ const GameDetails = () => {
                 players={localPlayers}
               />
 
-              <GameMoneyFlowChart
-                players={localPlayers}
-                gameHistory={[]}
-              />
-
-              <div className="grid gap-4 mt-8">
+              <div className="grid gap-4">
                 {game.status === "ongoing" && (
                   <OngoingGameForm
                     players={localPlayers}
@@ -200,6 +195,11 @@ const GameDetails = () => {
                   />
                 )}
               </div>
+
+              <GameMoneyFlowChart
+                players={localPlayers}
+                gameHistory={[]}
+              />
             </div>
           </>
         )}
