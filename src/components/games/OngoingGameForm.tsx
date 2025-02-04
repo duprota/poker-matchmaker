@@ -2,10 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { PlayerRebuysCard } from "./PlayerRebuysCard";
 
 export interface OngoingGameFormProps {
   players: any[];
@@ -26,65 +24,24 @@ export const OngoingGameForm = ({
 }: OngoingGameFormProps) => {
   const { toast } = useToast();
 
-  const handleSaveRebuys = () => {
-    onSaveRebuys();
-    setRebuys({});
-  };
-
-  const handleQuickRebuy = (playerId: string) => {
-    console.log("Quick rebuy clicked for player:", playerId);
-    const currentRebuys = Number(rebuys[playerId] || 0);
-    const newValue = currentRebuys + 1;
-    console.log("Current rebuys:", currentRebuys, "New value:", newValue);
-    setRebuys({ ...rebuys, [playerId]: newValue });
-    onRebuyChange(playerId, String(newValue));
-  };
-
-  const handleInputChange = (playerId: string, value: string) => {
-    const numericValue = value === '' ? '0' : value;
-    setRebuys({ ...rebuys, [playerId]: Number(numericValue) });
-    onRebuyChange(playerId, numericValue);
+  const handleRebuyChange = async (playerId: string, newRebuys: number) => {
+    console.log("Handling rebuy change:", { playerId, newRebuys });
+    setRebuys({ ...rebuys, [playerId]: newRebuys });
+    onRebuyChange(playerId, String(newRebuys));
   };
 
   return (
-    <Card className="p-6 space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Rebuys</h2>
-        <div className="grid gap-4 mb-4">
-          {players.map((gamePlayer) => (
-            <div key={gamePlayer.id} className="flex items-center gap-4">
-              <span className="min-w-[150px]">{gamePlayer.player.name}</span>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  value={rebuys[gamePlayer.id] || 0}
-                  onChange={(e) => handleInputChange(gamePlayer.id, e.target.value)}
-                  className="w-20"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleQuickRebuy(gamePlayer.id)}
-                  className="h-10 w-10"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-                <p className="text-sm text-muted-foreground ml-4">
-                  Total: ${(rebuys[gamePlayer.id] || 0) * gamePlayer.initial_buyin}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <Button 
-          onClick={handleSaveRebuys} 
-          disabled={savingRebuys}
-          className="w-full md:w-auto"
-        >
-          {savingRebuys ? "Saving..." : "Save Rebuys"}
-        </Button>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-semibold">Game Progress</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {players.map((gamePlayer) => (
+          <PlayerRebuysCard
+            key={gamePlayer.id}
+            player={gamePlayer}
+            onRebuyChange={handleRebuyChange}
+          />
+        ))}
       </div>
-    </Card>
+    </div>
   );
 };
