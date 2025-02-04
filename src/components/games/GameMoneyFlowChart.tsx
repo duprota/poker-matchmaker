@@ -28,12 +28,16 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     const initialTotal = players.reduce((acc, player) => acc + (player.initial_buyin || 0), 0);
     console.log("Initial total from buy-ins:", initialTotal);
 
+    // Get game start time from the first history entry with started_at
+    const gameStartTime = new Date(gameHistory.find(entry => entry.started_at)?.started_at || gameHistory[0]?.created_at);
+    console.log("Game start time:", gameStartTime);
+
     // Initialize data points array with initial buy-ins
     const dataPoints: ChartDataPoint[] = [{
       time: "0",
       amount: initialTotal,
       playerName: "Initial Buy-ins",
-      timestamp: new Date(gameHistory[0]?.created_at || new Date()),
+      timestamp: gameStartTime,
       eventType: 'initial'
     }];
 
@@ -66,8 +70,6 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
         runningTotal += rebuyChange;
         
         const eventTime = new Date(event.created_at);
-        // Use started_at if available, otherwise fall back to created_at
-        const gameStartTime = new Date(gameHistory[0]?.started_at || gameHistory[0]?.created_at || event.created_at);
         const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
 
         console.log(`Rebuy event at ${minutesSinceStart} minutes:`, {
@@ -75,7 +77,8 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
           currentRebuys,
           previousRebuys,
           rebuyChange,
-          newTotal: runningTotal
+          newTotal: runningTotal,
+          eventTime: eventTime.toISOString()
         });
 
         dataPoints.push({
@@ -101,9 +104,12 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
 
     // Calculate game duration using started_at if available
     if (gameHistory.length > 0) {
-      const firstEvent = new Date(gameHistory[0]?.started_at || gameHistory[0]?.created_at);
-      const duration = formatDistance(new Date(), firstEvent, { addSuffix: false });
-      setGameDuration(duration);
+      const gameStart = gameHistory.find(entry => entry.started_at)?.started_at;
+      if (gameStart) {
+        const duration = formatDistance(new Date(), new Date(gameStart), { addSuffix: false });
+        console.log("Game duration calculated:", duration, "from start time:", gameStart);
+        setGameDuration(duration);
+      }
     }
 
     console.log("Final chart data points:", dataPoints);
@@ -142,7 +148,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
               <ClockIcon className="w-5 h-5 text-primary" />
               <div>
                 <p className="text-sm text-muted-foreground">Game Duration</p>
-                <p className="text-2xl font-bold">{gameDuration}</p>
+                <p className="text-2xl font-bold">{gameDuration || "Not started"}</p>
               </div>
             </div>
           </div>
