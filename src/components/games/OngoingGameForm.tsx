@@ -53,8 +53,12 @@ export const OngoingGameForm = ({
 
       if (historyError) throw historyError;
 
-      // Update local state
-      setRebuys(prev => ({ ...prev, [playerId]: newRebuys }));
+      // Update local state with proper typing
+      const newRebuysState: Record<string, number> = {
+        ...rebuys,
+        [playerId]: newRebuys
+      };
+      setRebuys(newRebuysState);
       onRebuyChange(playerId, String(newRebuys));
 
       console.log("Rebuy change completed successfully");
