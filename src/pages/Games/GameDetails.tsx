@@ -30,6 +30,8 @@ const GameDetails = () => {
   useEffect(() => {
     if (!id) return;
 
+    console.log('Setting up real-time subscription for game:', id);
+    
     const channel = supabase
       .channel('game-players-changes')
       .on(
@@ -56,6 +58,7 @@ const GameDetails = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [id]);
