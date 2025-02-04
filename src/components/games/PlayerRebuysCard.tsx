@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, History } from "lucide-react";
+import { Plus, History, Edit2, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,52 +8,38 @@ import { useToast } from "@/hooks/use-toast";
 
 interface PlayerRebuysCardProps {
   player: GamePlayer;
-  onRebuyChange: (playerId: string, newRebuys: number) => void;
+  onRebuyChange: (playerId: string, newRebuys: number) => Promise<void>;
+  isUpdating: boolean;
 }
 
-export const PlayerRebuysCard = ({ player, onRebuyChange }: PlayerRebuysCardProps) => {
+export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRebuysCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-
   const totalAmount = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
 
   const handleQuickRebuy = async () => {
-    setIsUpdating(true);
     try {
       await onRebuyChange(player.id, player.total_rebuys + 1);
-      toast({
-        title: "Rebuy added",
-        description: `Added 1 rebuy for ${player.player.name}`,
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add rebuy",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
+      console.error("Error in quick rebuy:", error);
     }
   };
 
   const handleUpdateRebuys = async (newValue: number) => {
-    setIsUpdating(true);
+    if (newValue < 0) {
+      toast({
+        title: "Invalid value",
+        description: "Number of rebuys cannot be negative",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       await onRebuyChange(player.id, newValue);
       setShowHistory(false);
-      toast({
-        title: "Rebuys updated",
-        description: `Updated rebuys for ${player.player.name}`,
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update rebuys",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
+      console.error("Error updating rebuys:", error);
     }
   };
 
@@ -68,9 +54,10 @@ export const PlayerRebuysCard = ({ player, onRebuyChange }: PlayerRebuysCardProp
                 variant="outline"
                 size="sm"
                 onClick={() => setShowHistory(true)}
+                disabled={isUpdating}
                 className="gap-2"
               >
-                <History className="w-4 h-4" />
+                <Edit2 className="w-4 h-4" />
                 Edit
               </Button>
               <Button
@@ -79,7 +66,11 @@ export const PlayerRebuysCard = ({ player, onRebuyChange }: PlayerRebuysCardProp
                 size="sm"
                 className="gap-2"
               >
-                <Plus className="w-4 h-4" />
+                {isUpdating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
                 Rebuy
               </Button>
             </div>

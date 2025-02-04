@@ -23,11 +23,55 @@ export const OngoingGameForm = ({
   setRebuys,
 }: OngoingGameFormProps) => {
   const { toast } = useToast();
+  const [updatingPlayer, setUpdatingPlayer] = useState<string | null>(null);
 
   const handleRebuyChange = async (playerId: string, newRebuys: number) => {
-    console.log("Handling rebuy change:", { playerId, newRebuys });
-    setRebuys({ ...rebuys, [playerId]: newRebuys });
-    onRebuyChange(playerId, String(newRebuys));
+    try {
+      console.log("Starting rebuy change:", { playerId, newRebuys });
+      setUpdatingPlayer(playerId);
+
+      // Update game_players table
+      const { error: updateError } = await supabase
+        .from("game_players")
+        .update({ total_rebuys: newRebuys })
+        .eq("id", playerId);
+
+      if (updateError) throw updateError;
+
+      // Get the player info for the history entry
+      const player = players.find(p => p.id === playerId);
+      
+      // Add to game history
+      const { error: historyError } = await supabase
+        .from("game_history")
+        .insert({
+          game_id: player.game_id,
+          game_player_id: playerId,
+          event_type: "rebuy",
+          amount: newRebuys
+        });
+
+      if (historyError) throw historyError;
+
+      // Update local state
+      setRebuys(prev => ({ ...prev, [playerId]: newRebuys }));
+      onRebuyChange(playerId, String(newRebuys));
+
+      console.log("Rebuy change completed successfully");
+      toast({
+        title: "Success",
+        description: "Rebuy registered successfully",
+      });
+    } catch (error) {
+      console.error("Error updating rebuys:", error);
+      toast({
+        title: "Error",
+        description: "Failed to register rebuy. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingPlayer(null);
+    }
   };
 
   return (
@@ -39,6 +83,7 @@ export const OngoingGameForm = ({
             key={gamePlayer.id}
             player={gamePlayer}
             onRebuyChange={handleRebuyChange}
+            isUpdating={updatingPlayer === gamePlayer.id}
           />
         ))}
       </div>
