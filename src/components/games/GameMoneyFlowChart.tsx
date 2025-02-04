@@ -29,8 +29,22 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     console.log("Initial total from buy-ins:", initialTotal);
 
     // Get game start time from the first history entry with started_at
-    const gameStartTime = new Date(gameHistory.find(entry => entry.started_at)?.started_at || gameHistory[0]?.created_at);
-    console.log("Game start time:", gameStartTime);
+    const startedAtEntry = gameHistory.find(entry => entry.started_at);
+    const firstEntry = gameHistory[0];
+    const now = new Date();
+    
+    // Ensure we have a valid date by providing fallbacks
+    const gameStartTime = startedAtEntry?.started_at ? 
+      new Date(startedAtEntry.started_at) : 
+      (firstEntry?.created_at ? new Date(firstEntry.created_at) : now);
+
+    // Validate the date
+    if (isNaN(gameStartTime.getTime())) {
+      console.error("Invalid game start time, using current time as fallback");
+      gameStartTime = now;
+    }
+
+    console.log("Game start time:", gameStartTime.toISOString());
 
     // Initialize data points array with initial buy-ins
     const dataPoints: ChartDataPoint[] = [{
@@ -69,7 +83,13 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
         const rebuyChange = (currentRebuys - previousRebuys) * player.initial_buyin;
         runningTotal += rebuyChange;
         
+        // Ensure we have a valid date for the event
         const eventTime = new Date(event.created_at);
+        if (isNaN(eventTime.getTime())) {
+          console.error("Invalid event time, skipping event:", event);
+          return;
+        }
+
         const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
 
         console.log(`Rebuy event at ${minutesSinceStart} minutes:`, {
@@ -106,9 +126,16 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     if (gameHistory.length > 0) {
       const gameStart = gameHistory.find(entry => entry.started_at)?.started_at;
       if (gameStart) {
-        const duration = formatDistance(new Date(), new Date(gameStart), { addSuffix: false });
-        console.log("Game duration calculated:", duration, "from start time:", gameStart);
-        setGameDuration(duration);
+        try {
+          const startDate = new Date(gameStart);
+          if (!isNaN(startDate.getTime())) {
+            const duration = formatDistance(now, startDate, { addSuffix: false });
+            console.log("Game duration calculated:", duration, "from start time:", gameStart);
+            setGameDuration(duration);
+          }
+        } catch (error) {
+          console.error("Error calculating game duration:", error);
+        }
       }
     }
 
