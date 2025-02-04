@@ -50,7 +50,7 @@ export const FinalizeGameForm = ({
           .from("game_players")
           .update({ 
             final_result: results[player.id],
-            payment_status: results[player.id] >= 0 ? 'to_receive' : 'to_pay'
+            payment_status: results[player.id] >= 0 ? 'pending' : 'pending'
           })
           .eq("id", player.id);
 
