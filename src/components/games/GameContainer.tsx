@@ -2,13 +2,18 @@ import { Game, GamePlayer } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
 import { Button } from "@/components/ui/button";
-import { Plus, UserMinus } from "lucide-react";
+import { Plus, UserMinus, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
 
 interface GameContainerProps {
   game: Game;
@@ -18,14 +23,40 @@ interface GameContainerProps {
 export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
   const { toast } = useToast();
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
-  const [newPlayerName, setNewPlayerName] = useState("");
-  const [newPlayerEmail, setNewPlayerEmail] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [players, setPlayers] = useState<any[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+
+  const fetchPlayers = async () => {
+    try {
+      console.log("Fetching available players...");
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+
+      // Filter out players already in the game
+      const availablePlayers = data?.filter(
+        (player) => !game.players.some((gp) => gp.player.id === player.id)
+      );
+
+      console.log("Available players:", availablePlayers);
+      setPlayers(availablePlayers || []);
+    } catch (error) {
+      console.error("Error fetching players:", error);
+      toast({
+        description: "Failed to load players",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleAddPlayer = async () => {
-    if (!newPlayerName.trim()) {
+    if (!selectedPlayer) {
       toast({
-        description: "Player name is required",
+        description: "Please select a player",
         variant: "destructive",
       });
       return;
@@ -33,37 +64,14 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
 
     try {
       setIsProcessing(true);
-      console.log("Adding new player to game:", { name: newPlayerName, email: newPlayerEmail });
-
-      // First, create or get the player
-      const { data: playerData, error: playerError } = await supabase
-        .from("players")
-        .select("*")
-        .eq("name", newPlayerName)
-        .maybeSingle();
-
-      let playerId;
-
-      if (!playerData) {
-        // Create new player if doesn't exist
-        const { data: newPlayer, error: createError } = await supabase
-          .from("players")
-          .insert({ name: newPlayerName, email: newPlayerEmail })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        playerId = newPlayer.id;
-      } else {
-        playerId = playerData.id;
-      }
+      console.log("Adding player to game:", selectedPlayer);
 
       // Add player to game
       const { error: gamePlayerError } = await supabase
         .from("game_players")
         .insert({
           game_id: game.id,
-          player_id: playerId,
+          player_id: selectedPlayer.id,
           initial_buyin: game.players[0]?.initial_buyin || 100, // Use same buy-in as other players
           total_rebuys: 0
         });
@@ -75,8 +83,7 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
       });
 
       setShowAddPlayerDialog(false);
-      setNewPlayerName("");
-      setNewPlayerEmail("");
+      setSelectedPlayer(null);
       refreshGame();
 
     } catch (error) {
@@ -121,7 +128,10 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Manage Players</h3>
           <Button 
-            onClick={() => setShowAddPlayerDialog(true)}
+            onClick={() => {
+              setShowAddPlayerDialog(true);
+              fetchPlayers();
+            }}
             className="gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -188,43 +198,44 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
           <DialogHeader>
             <DialogTitle>Add Player</DialogTitle>
             <DialogDescription>
-              Add a new player to the game. If the player doesn't exist, they will be created.
+              Select an existing player to add to the game.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                placeholder="Enter player name"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email (optional)</Label>
-              <Input
-                id="email"
-                type="email"
-                value={newPlayerEmail}
-                onChange={(e) => setNewPlayerEmail(e.target.value)}
-                placeholder="Enter player email"
-              />
-            </div>
-          </div>
+          <Command className="rounded-lg border shadow-md">
+            <CommandInput placeholder="Search players..." />
+            <CommandEmpty>No players found.</CommandEmpty>
+            <CommandGroup>
+              {players.map((player) => (
+                <CommandItem
+                  key={player.id}
+                  onSelect={() => setSelectedPlayer(player)}
+                  className="cursor-pointer"
+                >
+                  <div className={`flex flex-col ${selectedPlayer?.id === player.id ? 'text-primary' : ''}`}>
+                    <span className="font-medium">{player.name}</span>
+                    {player.email && (
+                      <span className="text-sm text-muted-foreground">{player.email}</span>
+                    )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
 
           <div className="flex justify-end gap-4">
             <Button
               variant="outline"
-              onClick={() => setShowAddPlayerDialog(false)}
+              onClick={() => {
+                setShowAddPlayerDialog(false);
+                setSelectedPlayer(null);
+              }}
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddPlayer}
-              disabled={isProcessing || !newPlayerName.trim()}
+              disabled={isProcessing || !selectedPlayer}
             >
               {isProcessing ? "Adding..." : "Add Player"}
             </Button>
