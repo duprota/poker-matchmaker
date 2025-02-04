@@ -33,15 +33,15 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     const firstEntry = gameHistory[0];
     const now = new Date();
     
-    // Ensure we have a valid date by providing fallbacks
-    const gameStartTime = startedAtEntry?.started_at ? 
-      new Date(startedAtEntry.started_at) : 
-      (firstEntry?.created_at ? new Date(firstEntry.created_at) : now);
-
-    // Validate the date
-    if (isNaN(gameStartTime.getTime())) {
-      console.error("Invalid game start time, using current time as fallback");
+    // Get a valid start time
+    let gameStartTime: Date;
+    if (startedAtEntry?.started_at && !isNaN(new Date(startedAtEntry.started_at).getTime())) {
+      gameStartTime = new Date(startedAtEntry.started_at);
+    } else if (firstEntry?.created_at && !isNaN(new Date(firstEntry.created_at).getTime())) {
+      gameStartTime = new Date(firstEntry.created_at);
+    } else {
       gameStartTime = now;
+      console.warn("No valid start time found, using current time");
     }
 
     console.log("Game start time:", gameStartTime.toISOString());
@@ -58,7 +58,12 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     // Get only rebuy events and sort them by timestamp
     const rebuyEvents = [...gameHistory]
       .filter(entry => entry.event_type === 'rebuy')
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .filter(entry => !isNaN(new Date(entry.created_at).getTime())); // Filter out invalid dates
 
     console.log("Sorted rebuy events:", rebuyEvents);
 
@@ -83,13 +88,7 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
         const rebuyChange = (currentRebuys - previousRebuys) * player.initial_buyin;
         runningTotal += rebuyChange;
         
-        // Ensure we have a valid date for the event
         const eventTime = new Date(event.created_at);
-        if (isNaN(eventTime.getTime())) {
-          console.error("Invalid event time, skipping event:", event);
-          return;
-        }
-
         const minutesSinceStart = Math.floor((eventTime.getTime() - gameStartTime.getTime()) / (1000 * 60));
 
         console.log(`Rebuy event at ${minutesSinceStart} minutes:`, {
@@ -126,15 +125,11 @@ export const GameMoneyFlowChart = ({ players, gameHistory }: GameMoneyFlowChartP
     if (gameHistory.length > 0) {
       const gameStart = gameHistory.find(entry => entry.started_at)?.started_at;
       if (gameStart) {
-        try {
-          const startDate = new Date(gameStart);
-          if (!isNaN(startDate.getTime())) {
-            const duration = formatDistance(now, startDate, { addSuffix: false });
-            console.log("Game duration calculated:", duration, "from start time:", gameStart);
-            setGameDuration(duration);
-          }
-        } catch (error) {
-          console.error("Error calculating game duration:", error);
+        const startDate = new Date(gameStart);
+        if (!isNaN(startDate.getTime())) {
+          const duration = formatDistance(now, startDate, { addSuffix: false });
+          console.log("Game duration calculated:", duration, "from start time:", gameStart);
+          setGameDuration(duration);
         }
       }
     }
