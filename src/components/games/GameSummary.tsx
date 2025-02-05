@@ -1,4 +1,4 @@
-import { Trophy, ArrowRight, Check, X, DollarSign, Share2, Users, Repeat } from "lucide-react";
+import { Trophy, ArrowRight, Check, X, DollarSign, Share2, Users, Repeat, Clock, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
@@ -8,11 +8,15 @@ import { PlayerFeedback } from "@/components/players/PlayerFeedback";
 import { PlayerFeedbackStats } from "@/components/players/PlayerFeedbackStats";
 import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
 
 interface GameSummaryProps {
   players: GamePlayer[];
   gameHistory: any[];
   date: string;
+  name?: string;
+  place?: string;
+  startedAt?: string;
   onUpdatePaymentStatus?: (playerId: string, status: string) => Promise<void>;
 }
 
@@ -20,6 +24,9 @@ export const GameSummary = ({
   players, 
   gameHistory, 
   date,
+  name,
+  place,
+  startedAt,
   onUpdatePaymentStatus 
 }: GameSummaryProps) => {
   const sortedPlayers = [...players].sort((a, b) => {
@@ -37,6 +44,14 @@ export const GameSummary = ({
   }, 0);
 
   const totalRebuys = players.reduce((acc, player) => acc + player.total_rebuys, 0);
+  const mostRebuys = players.reduce((acc, player) => Math.max(acc, player.total_rebuys), 0);
+  const playerWithMostRebuys = players.find(player => player.total_rebuys === mostRebuys);
+  
+  const highestSingleWin = Math.max(...players.map(player => calculateFinalResult(player)));
+  
+  const gameDuration = startedAt ? 
+    format(new Date(date), 'PPp') + ' - ' + format(new Date(startedAt), 'p') 
+    : format(new Date(date), 'PPp');
 
   const playerBalances = players.map(player => ({
     playerId: player.id,
@@ -47,13 +62,20 @@ export const GameSummary = ({
   const transactions = calculateMinimumTransactions(playerBalances);
 
   const handleShareWhatsApp = () => {
-    const summaryText = `🏆 Game Summary (${new Date(date).toLocaleDateString()})\n\n` +
-      `Winner: ${winner.player.name} (+$${winnerProfit}) - ROI: ${winnerROI}%\n\n` +
-      `Rankings:\n${sortedPlayers.map((p, i) => 
-        `${i + 1}. ${p.player.name}: ${calculateFinalResult(p) >= 0 ? '+' : ''}$${calculateFinalResult(p)}`
-      ).join('\n')}\n\n` +
-      `Total Money in Play: $${totalMoneyInPlay}\n\n` +
-      `Required Payments:\n${transactions.map(t => 
+    const summaryText = `🎰 ${name ? name + ' - ' : ''}${format(new Date(date), 'PPp')}\n` +
+      `${place ? `📍 ${place}\n` : ''}` +
+      `\n🏆 Winner: ${winner.player.name} (+$${winnerProfit}) - ROI: ${winnerROI}%\n\n` +
+      `📊 Rankings:\n${sortedPlayers.map((p, i) => {
+        const result = calculateFinalResult(p);
+        const roi = ((result / (p.initial_buyin + (p.total_rebuys * p.initial_buyin))) * 100).toFixed(2);
+        return `${i + 1}. ${p.player.name}: ${result >= 0 ? '+' : ''}$${result} (ROI: ${roi}%)`;
+      }).join('\n')}\n\n` +
+      `💰 Game Stats:\n` +
+      `• Total Money in Play: $${totalMoneyInPlay}\n` +
+      `• Total Rebuys: ${totalRebuys}\n` +
+      `• Highest Win: $${highestSingleWin}\n` +
+      `• Most Rebuys: ${playerWithMostRebuys?.player.name} (${mostRebuys})\n\n` +
+      `💸 Required Payments:\n${transactions.map(t => 
         `${players.find(p => p.id === t.from)?.player.name} → ${players.find(p => p.id === t.to)?.player.name}: $${t.amount}`
       ).join('\n')}`;
 
@@ -70,26 +92,42 @@ export const GameSummary = ({
     <div className="space-y-8 animate-fade-in">
       {/* Game Overview */}
       <Card className="p-6 bg-gradient-to-r from-card/50 to-card shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-center gap-3">
-            <Users className="w-5 h-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm text-muted-foreground">Players</p>
-              <p className="text-xl font-semibold">{players.length}</p>
-            </div>
+        <div className="flex flex-col gap-4">
+          {name && (
+            <h1 className="text-2xl font-bold text-center">{name}</h1>
+          )}
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            <span>{gameDuration}</span>
+            {place && (
+              <>
+                <span>•</span>
+                <MapPin className="w-4 h-4" />
+                <span>{place}</span>
+              </>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm text-muted-foreground">Total Money</p>
-              <p className="text-xl font-semibold">${totalMoneyInPlay}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Players</p>
+                <p className="text-xl font-semibold">{players.length}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Repeat className="w-5 h-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm text-muted-foreground">Total Rebuys</p>
-              <p className="text-xl font-semibold">{totalRebuys}</p>
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Money</p>
+                <p className="text-xl font-semibold">${totalMoneyInPlay}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Repeat className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Rebuys</p>
+                <p className="text-xl font-semibold">{totalRebuys}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -119,6 +157,29 @@ export const GameSummary = ({
         </div>
       </Card>
 
+      {/* Game Statistics */}
+      <Card className="p-6">
+        <h3 className="text-xl font-semibold mb-4">Game Statistics</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Highest Single Win</p>
+            <p className="text-xl font-semibold text-green-500">${highestSingleWin}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Most Rebuys</p>
+            <p className="text-xl font-semibold">{playerWithMostRebuys?.player.name} ({mostRebuys})</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Total Money in Play</p>
+            <p className="text-xl font-semibold">${totalMoneyInPlay}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Total Rebuys</p>
+            <p className="text-xl font-semibold">{totalRebuys}</p>
+          </div>
+        </div>
+      </Card>
+
       {/* Rankings */}
       <div>
         <h3 className="text-xl font-semibold mb-4">Final Rankings</h3>
@@ -126,6 +187,7 @@ export const GameSummary = ({
           {sortedPlayers.map((player, index) => {
             const result = calculateFinalResult(player);
             const roi = ((result / (player.initial_buyin + (player.total_rebuys * player.initial_buyin))) * 100).toFixed(2);
+            const totalBuyIn = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
             
             return (
               <Card 
@@ -148,9 +210,15 @@ export const GameSummary = ({
                       </span>
                       <div>
                         <p className="font-medium">{player.player.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ROI: {roi}%
-                        </p>
+                        <div className="flex gap-2 text-sm text-muted-foreground">
+                          <span>Buy-in: ${player.initial_buyin}</span>
+                          <span>•</span>
+                          <span>Rebuys: {player.total_rebuys}</span>
+                          <span>•</span>
+                          <span>Total: ${totalBuyIn}</span>
+                          <span>•</span>
+                          <span>ROI: {roi}%</span>
+                        </div>
                       </div>
                     </div>
                     <p className={`font-semibold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
