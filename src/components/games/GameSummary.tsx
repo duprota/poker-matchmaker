@@ -89,26 +89,41 @@ export const GameSummary = ({
       ).join('\n')}`;
 
     try {
-      if (navigator.share) {
-        await navigator.share({
+      // Primeiro tenta usar a API nativa de compartilhamento
+      if (navigator.share && navigator.canShare) {
+        const shareData = {
           title: name || 'Poker Game Summary',
           text: summaryText
-        });
-      } else {
-        // Fallback para copiar para a área de transferência
+        };
+        
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+      
+      // Se não puder usar a API de compartilhamento, usa o fallback de copiar
+      await navigator.clipboard.writeText(summaryText);
+      toast({
+        title: "Copiado para área de transferência",
+        description: "O texto foi copiado para sua área de transferência"
+      });
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+      // Tenta o fallback de copiar mesmo se o compartilhamento falhar
+      try {
         await navigator.clipboard.writeText(summaryText);
         toast({
           title: "Copiado para área de transferência",
           description: "O texto foi copiado para sua área de transferência"
         });
+      } catch (clipboardError) {
+        toast({
+          title: "Erro ao compartilhar",
+          description: "Não foi possível compartilhar o conteúdo",
+          variant: "destructive"
+        });
       }
-    } catch (error) {
-      console.error('Erro ao compartilhar:', error);
-      toast({
-        title: "Erro ao compartilhar",
-        description: "Não foi possível compartilhar o conteúdo",
-        variant: "destructive"
-      });
     }
   };
 
@@ -252,7 +267,7 @@ export const GameSummary = ({
                       playerId={player.player.id} 
                     />
                     <PlayerFeedback 
-                      playerId={player.player.id}
+                      playerId={player.player.name}
                       playerName={player.player.name}
                       onFeedbackSubmitted={handleFeedbackSubmitted}
                     />

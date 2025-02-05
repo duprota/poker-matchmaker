@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { LeaderboardEntry, RankingType } from "@/types/leaderboard";
-import { Share2 } from "lucide-react";
+import { Share2, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LeaderboardShareProps {
@@ -43,26 +43,41 @@ ${leaderboard
   .map(player => `📊 ${player.player_name}: ${player.roi_percentage.toFixed(1)}% ROI`).join('\n')}`;
 
     try {
-      if (navigator.share) {
-        await navigator.share({
+      // Primeiro tenta usar a API nativa de compartilhamento
+      if (navigator.share && navigator.canShare) {
+        const shareData = {
           title: 'Poker Leaderboard',
           text: summaryText
-        });
-      } else {
-        // Fallback para copiar para a área de transferência
+        };
+        
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+      
+      // Se não puder usar a API de compartilhamento, usa o fallback de copiar
+      await navigator.clipboard.writeText(summaryText);
+      toast({
+        title: "Copiado para área de transferência",
+        description: "O texto foi copiado para sua área de transferência"
+      });
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+      // Tenta o fallback de copiar mesmo se o compartilhamento falhar
+      try {
         await navigator.clipboard.writeText(summaryText);
         toast({
           title: "Copiado para área de transferência",
           description: "O texto foi copiado para sua área de transferência"
         });
+      } catch (clipboardError) {
+        toast({
+          title: "Erro ao compartilhar",
+          description: "Não foi possível compartilhar o conteúdo",
+          variant: "destructive"
+        });
       }
-    } catch (error) {
-      console.error('Erro ao compartilhar:', error);
-      toast({
-        title: "Erro ao compartilhar",
-        description: "Não foi possível compartilhar o conteúdo",
-        variant: "destructive"
-      });
     }
   };
 
