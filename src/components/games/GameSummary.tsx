@@ -1,4 +1,4 @@
-import { Trophy, ArrowRight, Check, X } from "lucide-react";
+import { Trophy, ArrowRight, Check, X, DollarSign, Share2, WhatsApp, Users, Repeat } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
@@ -7,6 +7,7 @@ import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
 import { PlayerFeedback } from "@/components/players/PlayerFeedback";
 import { PlayerFeedbackStats } from "@/components/players/PlayerFeedbackStats";
 import { useState } from "react";
+import { Separator } from "@/components/ui/separator";
 
 interface GameSummaryProps {
   players: GamePlayer[];
@@ -35,6 +36,8 @@ export const GameSummary = ({
     return acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin);
   }, 0);
 
+  const totalRebuys = players.reduce((acc, player) => acc + player.total_rebuys, 0);
+
   const playerBalances = players.map(player => ({
     playerId: player.id,
     playerName: player.player.name,
@@ -54,8 +57,7 @@ export const GameSummary = ({
         `${players.find(p => p.id === t.from)?.player.name} → ${players.find(p => p.id === t.to)?.player.name}: $${t.amount}`
       ).join('\n')}`;
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(summaryText)}`;
-    window.open(whatsappUrl);
+    window.open(`https://wa.me/?text=${encodeURIComponent(summaryText)}`);
   };
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -66,6 +68,33 @@ export const GameSummary = ({
 
   return (
     <div className="space-y-8 animate-fade-in">
+      {/* Game Overview */}
+      <Card className="p-6 bg-gradient-to-r from-card/50 to-card shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-center gap-3">
+            <Users className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm text-muted-foreground">Players</p>
+              <p className="text-xl font-semibold">{players.length}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm text-muted-foreground">Total Money</p>
+              <p className="text-xl font-semibold">${totalMoneyInPlay}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Repeat className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm text-muted-foreground">Total Rebuys</p>
+              <p className="text-xl font-semibold">{totalRebuys}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Winner Section */}
       <Card className="p-6 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 dark:from-yellow-500/10 dark:to-amber-500/10 border-yellow-500/50">
         <div className="flex items-center justify-between">
@@ -148,17 +177,6 @@ export const GameSummary = ({
         </div>
       </div>
 
-      {/* Game Statistics */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Game Statistics</h3>
-        <Card className="p-6 bg-gradient-to-r from-primary/10 to-secondary/10">
-          <p className="text-sm text-muted-foreground">Total Money in Play</p>
-          <p className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            ${totalMoneyInPlay}
-          </p>
-        </Card>
-      </div>
-
       {/* Payment Instructions */}
       <div>
         <h3 className="text-xl font-semibold mb-4">Payment Instructions</h3>
@@ -225,6 +243,7 @@ export const GameSummary = ({
           className="w-full md:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
           onClick={handleShareWhatsApp}
         >
+          <WhatsApp className="w-5 h-5 mr-2" />
           Share on WhatsApp
         </Button>
       </div>
