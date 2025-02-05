@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Games from "./pages/Games";
 import NewGame from "./pages/Games/NewGame";
@@ -11,7 +11,14 @@ import Players from "./pages/Players";
 import Leaderboard from "./pages/Leaderboard";
 import Financials from "./pages/Financials";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -27,6 +34,7 @@ const App = () => (
           <Route path="/players" element={<Players />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/financials" element={<Financials />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
