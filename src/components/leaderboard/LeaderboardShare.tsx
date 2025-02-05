@@ -1,5 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { LeaderboardEntry, RankingType } from "@/types/leaderboard";
+import { Share2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface LeaderboardShareProps {
   leaderboard: LeaderboardEntry[];
@@ -8,7 +11,9 @@ interface LeaderboardShareProps {
 }
 
 export const LeaderboardShare = ({ leaderboard, timeFilter, rankingType }: LeaderboardShareProps) => {
-  const handleShareWhatsApp = () => {
+  const { toast } = useToast();
+
+  const handleShare = async () => {
     const totalMoneyWon = leaderboard.reduce((acc, player) => acc + Math.max(0, player.net_earnings), 0);
     const totalGamesPlayed = leaderboard.reduce((acc, player) => acc + player.games_played, 0);
 
@@ -37,7 +42,28 @@ ${leaderboard
   .slice(0, 3)
   .map(player => `📊 ${player.player_name}: ${player.roi_percentage.toFixed(1)}% ROI`).join('\n')}`;
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(summaryText)}`);
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Poker Leaderboard',
+          text: summaryText
+        });
+      } else {
+        // Fallback para copiar para a área de transferência
+        await navigator.clipboard.writeText(summaryText);
+        toast({
+          title: "Copiado para área de transferência",
+          description: "O texto foi copiado para sua área de transferência"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+      toast({
+        title: "Erro ao compartilhar",
+        description: "Não foi possível compartilhar o conteúdo",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -45,9 +71,10 @@ ${leaderboard
       <Button
         size="lg"
         className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity animate-fade-in"
-        onClick={handleShareWhatsApp}
+        onClick={handleShare}
       >
-        Share on WhatsApp
+        <Share2 className="w-5 h-5 mr-2" />
+        Compartilhar
       </Button>
     </div>
   );
