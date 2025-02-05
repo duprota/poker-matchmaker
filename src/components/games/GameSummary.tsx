@@ -1,12 +1,10 @@
+
 import { Trophy, ArrowRight, Check, X, DollarSign, Share2, Users, Repeat, Clock, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "./GameCalculations";
 import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
-import { PlayerFeedback } from "@/components/players/PlayerFeedback";
-import { PlayerFeedbackStats } from "@/components/players/PlayerFeedbackStats";
-import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -61,12 +59,6 @@ export const GameSummary = ({
   }));
 
   const transactions = calculateMinimumTransactions(playerBalances);
-
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleFeedbackSubmitted = () => {
-    setRefreshKey(prev => prev + 1);
-  };
 
   const { toast } = useToast();
 
@@ -237,41 +229,26 @@ export const GameSummary = ({
                   index === 2 ? 'bg-gradient-to-r from-amber-700/10 to-amber-800/10' : ''
                 }`}
               >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className={`text-lg font-bold ${
-                        index === 0 ? 'text-yellow-500' :
-                        index === 1 ? 'text-slate-400' :
-                        index === 2 ? 'text-amber-700' : ''
-                      }`}>
-                        #{index + 1}
-                      </span>
-                      <div className="space-y-1">
-                        <p className="font-medium">{player.player.name}</p>
-                        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                          <span>Total In Game: ${totalAmountInGame}</span>
-                          <span>ROI: {roi}%</span>
-                        </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className={`text-lg font-bold ${
+                      index === 0 ? 'text-yellow-500' :
+                      index === 1 ? 'text-slate-400' :
+                      index === 2 ? 'text-amber-700' : ''
+                    }`}>
+                      #{index + 1}
+                    </span>
+                    <div className="space-y-1">
+                      <p className="font-medium">{player.player.name}</p>
+                      <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                        <span>Total In Game: ${totalAmountInGame}</span>
+                        <span>ROI: {roi}%</span>
                       </div>
                     </div>
-                    <p className={`font-semibold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {result >= 0 ? '+' : ''}{result}
-                    </p>
                   </div>
-                  
-                  {/* Player Feedback Section */}
-                  <div className="pt-2 flex items-center justify-between border-t border-border">
-                    <PlayerFeedbackStats 
-                      key={`stats-${player.player.id}-${refreshKey}`} 
-                      playerId={player.player.id} 
-                    />
-                    <PlayerFeedback 
-                      playerId={player.player.name}
-                      playerName={player.player.name}
-                      onFeedbackSubmitted={handleFeedbackSubmitted}
-                    />
-                  </div>
+                  <p className={`font-semibold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {result >= 0 ? '+' : ''}{result}
+                  </p>
                 </div>
               </Card>
             );
@@ -352,3 +329,4 @@ export const GameSummary = ({
     </div>
   );
 };
+
