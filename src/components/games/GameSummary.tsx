@@ -107,27 +107,11 @@ export const GameSummary = ({
               </>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3">
-              <Users className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Players</p>
-                <p className="text-xl font-semibold">{players.length}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <DollarSign className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Money</p>
-                <p className="text-xl font-semibold">${totalMoneyInPlay}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Repeat className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Rebuys</p>
-                <p className="text-xl font-semibold">{totalRebuys}</p>
-              </div>
+          <div className="flex items-center gap-3 justify-center">
+            <Users className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm text-muted-foreground">Players</p>
+              <p className="text-xl font-semibold">{players.length}</p>
             </div>
           </div>
         </div>
