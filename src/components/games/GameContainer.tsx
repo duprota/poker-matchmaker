@@ -1,8 +1,9 @@
 import { Game, GamePlayer } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
+import { GameSummary } from "./GameSummary";
 import { Button } from "@/components/ui/button";
-import { Plus, UserMinus, Search } from "lucide-react";
+import { Plus, UserMinus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,6 +123,42 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
       });
     }
   };
+
+  if (game.status === "completed") {
+    return (
+      <GameSummary 
+        players={game.players}
+        gameHistory={[]}
+        date={game.date}
+        name={game.name}
+        place={game.place}
+        startedAt={game.started_at}
+        onUpdatePaymentStatus={async (playerId: string, status: string) => {
+          try {
+            console.log(`Updating payment status for player ${playerId} to ${status}`);
+            const { error } = await supabase
+              .from("game_players")
+              .update({ payment_status: status })
+              .eq("id", playerId);
+
+            if (error) throw error;
+
+            toast({
+              description: "Payment status updated successfully",
+            });
+
+            refreshGame();
+          } catch (error) {
+            console.error("Error updating payment status:", error);
+            toast({
+              description: "Failed to update payment status",
+              variant: "destructive",
+            });
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="grid gap-8">
