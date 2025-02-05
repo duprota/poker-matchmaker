@@ -32,58 +32,101 @@ interface PaymentDetail {
 export const calculateOptimizedPayments = (games: Game[]): Transaction[] => {
   console.log('Starting payment optimization for games:', games);
   
-  // Step 1: Create a map to store transactions between player pairs
-  const transactionMap = new Map<string, Transaction>();
-
-  // Process each game
+  // Step 1: Calculate total balances for each player across all games
+  const playerBalances = new Map<string, { balance: number; name: string }>();
+  
   games.forEach(game => {
-    // Calculate net positions for this game using the same logic as in GameCalculations
-    const gameResults = new Map<string, number>();
-    
-    // Calculate final results for each player using the same logic as in game details
     game.players.forEach(player => {
       const result = calculateFinalResult(player);
-      if (result !== 0) {
-        gameResults.set(player.player.id, result);
+      const currentBalance = playerBalances.get(player.player.id);
+      
+      if (currentBalance) {
+        currentBalance.balance += result;
+      } else {
+        playerBalances.set(player.player.id, {
+          balance: result,
+          name: player.player.name
+        });
       }
     });
+  });
 
-    // Create transactions for this game
-    const losers = Array.from(gameResults.entries())
-      .filter(([_, amount]) => amount < 0)
-      .sort((a, b) => a[1] - b[1]); // Sort by loss amount (ascending)
+  console.log('Player balances:', Array.from(playerBalances.entries()));
 
-    const winners = Array.from(gameResults.entries())
-      .filter(([_, amount]) => amount > 0)
-      .sort((a, b) => b[1] - a[1]); // Sort by win amount (descending)
+  // Step 2: Separate players into debtors and creditors
+  const debtors = Array.from(playerBalances.entries())
+    .filter(([_, data]) => data.balance < 0)
+    .map(([id, data]) => ({
+      id,
+      name: data.name,
+      amount: Math.abs(data.balance)
+    }))
+    .sort((a, b) => b.amount - a.amount);
 
-    losers.forEach(([loserId, lossAmount]) => {
-      const loser = game.players.find(p => p.player.id === loserId)!;
-      let remainingLoss = Math.abs(lossAmount);
+  const creditors = Array.from(playerBalances.entries())
+    .filter(([_, data]) => data.balance > 0)
+    .map(([id, data]) => ({
+      id,
+      name: data.name,
+      amount: data.balance
+    }))
+    .sort((a, b) => b.amount - a.amount);
 
-      winners.forEach(([winnerId, winAmount]) => {
-        if (remainingLoss <= 0) return;
+  console.log('Debtors:', debtors);
+  console.log('Creditors:', creditors);
 
-        const winner = game.players.find(p => p.player.id === winnerId)!;
-        const transactionAmount = Math.min(remainingLoss, winAmount);
-        
-        if (transactionAmount > 0) {
-          const key = `${loserId}-${winnerId}`;
+  // Step 3: Create a map to store transactions between player pairs
+  const transactionMap = new Map<string, Transaction>();
+
+  // Step 4: For each game, create detailed transaction records
+  games.forEach(game => {
+    const gameDebtors = game.players
+      .filter(p => calculateFinalResult(p) < 0)
+      .map(p => ({
+        id: p.player.id,
+        name: p.player.name,
+        gamePlayerId: p.id,
+        amount: Math.abs(calculateFinalResult(p)),
+        paymentStatus: p.payment_status
+      }));
+
+    const gameCreditors = game.players
+      .filter(p => calculateFinalResult(p) > 0)
+      .map(p => ({
+        id: p.player.id,
+        name: p.player.name,
+        amount: calculateFinalResult(p)
+      }));
+
+    // Distribute each debtor's amount among creditors proportionally
+    gameDebtors.forEach(debtor => {
+      let remainingDebt = debtor.amount;
+      const totalCredits = gameCreditors.reduce((sum, c) => sum + c.amount, 0);
+
+      gameCreditors.forEach(creditor => {
+        if (remainingDebt <= 0) return;
+
+        // Calculate this creditor's share of the debt
+        const share = (creditor.amount / totalCredits) * debtor.amount;
+        const amount = Math.min(remainingDebt, share);
+
+        if (amount > 0) {
+          const key = `${debtor.id}-${creditor.id}`;
           
           // Create or update transaction detail
           const detail: PaymentDetail = {
             gameId: game.id,
             gameName: game.name || null,
             gameDate: game.date,
-            amount: Number(transactionAmount.toFixed(2)),
-            gamePlayerId: loser.id,
-            paymentStatus: loser.payment_status
+            amount: Number(amount.toFixed(2)),
+            gamePlayerId: debtor.gamePlayerId,
+            paymentStatus: debtor.paymentStatus
           };
 
           if (!transactionMap.has(key)) {
             transactionMap.set(key, {
-              fromPlayer: { id: loserId, name: loser.player.name },
-              toPlayer: { id: winnerId, name: winner.player.name },
+              fromPlayer: { id: debtor.id, name: debtor.name },
+              toPlayer: { id: creditor.id, name: creditor.name },
               totalAmount: 0,
               details: []
             });
@@ -91,9 +134,9 @@ export const calculateOptimizedPayments = (games: Game[]): Transaction[] => {
 
           const transaction = transactionMap.get(key)!;
           transaction.details.push(detail);
-          transaction.totalAmount = Number((transaction.totalAmount + transactionAmount).toFixed(2));
+          transaction.totalAmount = Number((transaction.totalAmount + amount).toFixed(2));
           
-          remainingLoss -= transactionAmount;
+          remainingDebt -= amount;
         }
       });
     });
