@@ -32,7 +32,10 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
       
       const { error } = await supabase
         .from("game_players")
-        .update({ payment_status: newStatus })
+        .update({ 
+          payment_status: newStatus,
+          payment_date: newStatus === 'paid' ? new Date().toISOString() : null
+        })
         .eq("id", gamePlayerId);
 
       if (error) throw error;
@@ -52,15 +55,25 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
     }
   };
 
+  // Get aggregated payments and filter by status
   const aggregatedPayments = calculateOptimizedPayments(games);
-  console.log('Aggregated payments:', aggregatedPayments);
-
+  
   const filteredPayments = aggregatedPayments.filter(payment => {
-    const hasMatchingDetails = payment.details.some(detail => 
+    // Only include transactions where ALL details match the filter status
+    const relevantDetails = payment.details.filter(detail => 
       filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
     );
-    return hasMatchingDetails;
-  });
+    
+    return relevantDetails.length > 0;
+  }).map(payment => ({
+    ...payment,
+    details: payment.details.filter(detail =>
+      filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
+    ),
+    totalAmount: payment.details
+      .filter(detail => filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending')
+      .reduce((sum, detail) => sum + detail.amount, 0)
+  }));
 
   if (filteredPayments.length === 0) {
     return (
@@ -76,12 +89,6 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
         const key = `${payment.fromPlayer.id}-${payment.toPlayer.id}`;
         const isExpanded = expandedRows.has(key);
         
-        const filteredDetails = payment.details.filter(detail => 
-          filterStatus === 'paid' ? detail.paymentStatus === 'paid' : detail.paymentStatus === 'pending'
-        );
-
-        const totalAmount = filteredDetails.reduce((sum, detail) => sum + detail.amount, 0);
-        
         return (
           <div key={key} className="space-y-2 animate-fade-in">
             <Card 
@@ -94,16 +101,16 @@ export const AggregatedPaymentsTable = ({ games, filterStatus }: Props) => {
               <PaymentRowHeader
                 fromPlayerName={payment.fromPlayer.name}
                 toPlayerName={payment.toPlayer.name}
-                totalAmount={totalAmount}
+                totalAmount={payment.totalAmount}
                 isExpanded={isExpanded}
-                detailsCount={filteredDetails.length}
+                detailsCount={payment.details.length}
                 onToggle={() => toggleRowExpansion(key)}
               />
             </Card>
 
             {isExpanded && (
               <div className="pl-4 space-y-2">
-                {filteredDetails.map((detail, index) => (
+                {payment.details.map((detail, index) => (
                   <PaymentDetail
                     key={`${key}-detail-${index}`}
                     gameName={detail.gameName}

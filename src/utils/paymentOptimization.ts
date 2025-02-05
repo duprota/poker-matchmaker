@@ -38,105 +38,62 @@ const calculateFinalResult = (player: GamePlayer) => {
 export const calculateOptimizedPayments = (games: Game[]): Transaction[] => {
   console.log('Starting payment optimization for games:', games);
   
-  // Step 1: Calculate net balances between all player pairs across all games
-  const playerBalances = new Map<string, number>();
-  const playerNames = new Map<string, string>();
-  const gameDetails = new Map<string, Map<string, PaymentDetail[]>>();
+  // Step 1: Create a map to store transactions between player pairs
+  const transactionMap = new Map<string, Transaction>();
 
-  // First, calculate total balance for each player across all games
+  // Process each game
   games.forEach(game => {
+    const gameTransactions = new Map<string, number>();
+
+    // Calculate net positions for this game
     game.players.forEach(player => {
-      const playerId = player.player.id;
-      playerNames.set(playerId, player.player.name);
-      
       const result = calculateFinalResult(player);
-      const currentBalance = playerBalances.get(playerId) || 0;
-      playerBalances.set(playerId, currentBalance + result);
+      if (result !== 0) {
+        // For negative results (losses), create transactions to players with positive results
+        if (result < 0) {
+          const loserId = player.player.id;
+          const loserName = player.player.name;
+          const lossAmount = Math.abs(result);
 
-      // Store game details for later use
-      if (result < 0) {
-        const detail: PaymentDetail = {
-          gameId: game.id,
-          gameName: game.name,
-          gameDate: game.date,
-          amount: Math.abs(result),
-          gamePlayerId: player.id,
-          paymentStatus: player.payment_status
-        };
+          // Find winners to distribute the loss to
+          const winners = game.players.filter(p => calculateFinalResult(p) > 0);
+          const totalWinnings = winners.reduce((sum, p) => sum + calculateFinalResult(p), 0);
 
-        game.players.forEach(otherPlayer => {
-          if (otherPlayer.player.id !== playerId && calculateFinalResult(otherPlayer) > 0) {
-            const key = `${playerId}-${otherPlayer.player.id}`;
-            if (!gameDetails.has(key)) {
-              gameDetails.set(key, new Map());
+          winners.forEach(winner => {
+            const winnerShare = (calculateFinalResult(winner) / totalWinnings) * lossAmount;
+            const key = `${loserId}-${winner.player.id}`;
+            
+            // Create or update transaction detail
+            const detail: PaymentDetail = {
+              gameId: game.id,
+              gameName: game.name || 'Unnamed Game',
+              gameDate: game.date,
+              amount: Number(winnerShare.toFixed(2)),
+              gamePlayerId: player.id,
+              paymentStatus: player.payment_status
+            };
+
+            if (!transactionMap.has(key)) {
+              transactionMap.set(key, {
+                fromPlayer: { id: loserId, name: loserName },
+                toPlayer: { id: winner.player.id, name: winner.player.name },
+                totalAmount: 0,
+                details: []
+              });
             }
-            const details = gameDetails.get(key)!.get(game.id) || [];
-            details.push(detail);
-            gameDetails.get(key)!.set(game.id, details);
-          }
-        });
+
+            const transaction = transactionMap.get(key)!;
+            transaction.details.push(detail);
+            transaction.totalAmount = Number((transaction.totalAmount + winnerShare).toFixed(2));
+          });
+        }
       }
     });
   });
 
-  console.log('Player balances:', Object.fromEntries(playerBalances));
-
-  // Convert to array for sorting
-  const sortedPlayers = Array.from(playerBalances.entries())
-    .map(([playerId, balance]) => ({
-      playerId,
-      playerName: playerNames.get(playerId) || 'Unknown',
-      balance
-    }))
-    .sort((a, b) => a.balance - b.balance);
-
-  const debtors = sortedPlayers.filter(p => p.balance < 0);
-  const creditors = sortedPlayers.filter(p => p.balance > 0);
-
-  console.log('Debtors:', debtors);
-  console.log('Creditors:', creditors);
-
-  const transactions: Transaction[] = [];
-  let debtorIdx = 0;
-  let creditorIdx = 0;
-
-  while (debtorIdx < debtors.length && creditorIdx < creditors.length) {
-    const debtor = debtors[debtorIdx];
-    const creditor = creditors[creditorIdx];
-    
-    const amount = Math.min(Math.abs(debtor.balance), creditor.balance);
-    
-    if (amount > 0) {
-      const key = `${debtor.playerId}-${creditor.playerId}`;
-      const details: PaymentDetail[] = [];
-      
-      // Collect all game details for this pair
-      gameDetails.get(key)?.forEach((gameDetailList, gameId) => {
-        details.push(...gameDetailList);
-      });
-
-      transactions.push({
-        fromPlayer: {
-          id: debtor.playerId,
-          name: debtor.playerName
-        },
-        toPlayer: {
-          id: creditor.playerId,
-          name: creditor.playerName
-        },
-        totalAmount: Number(amount.toFixed(2)), // Round to 2 decimal places
-        details
-      });
-
-      // Update balances
-      debtor.balance += amount;
-      creditor.balance -= amount;
-    }
-    
-    // Move to next player if their balance is settled
-    if (Math.abs(debtor.balance) < 0.01) debtorIdx++;
-    if (Math.abs(creditor.balance) < 0.01) creditorIdx++;
-  }
+  // Convert map to array and sort by amount
+  const transactions = Array.from(transactionMap.values())
+    .sort((a, b) => b.totalAmount - a.totalAmount);
 
   console.log('Generated transactions:', transactions);
   return transactions;
