@@ -62,8 +62,8 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
           amount,
           created_at,
           game_player_id,
-          game_players!fk_game_history_game_player (
-            player:players (
+          game_players!inner (
+            player:players!inner (
               name
             ),
             initial_buyin,
@@ -75,7 +75,18 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
 
       if (error) throw error;
       console.log("Game history data:", data);
-      setHistory(data || []);
+
+      // Transform the data to match our types
+      const transformedHistory: GameHistoryEntry[] = data.map(entry => ({
+        ...entry,
+        game_players: {
+          player: entry.game_players[0].player[0],
+          initial_buyin: entry.game_players[0].initial_buyin,
+          total_rebuys: entry.game_players[0].total_rebuys
+        }
+      }));
+
+      setHistory(transformedHistory);
     } catch (error) {
       console.error('Error fetching game history:', error);
       toast({
