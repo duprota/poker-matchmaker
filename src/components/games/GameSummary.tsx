@@ -186,8 +186,8 @@ export const GameSummary = ({
         <div className="space-y-2">
           {sortedPlayers.map((player, index) => {
             const result = calculateFinalResult(player);
-            const roi = ((result / (player.initial_buyin + (player.total_rebuys * player.initial_buyin))) * 100).toFixed(2);
-            const totalBuyIn = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
+            const roi = ((result / (player.initial_buyin + (player.total_rebuys * player.initial_buyin))) * 100).toFixed(0);
+            const totalAmountInGame = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
             
             return (
               <Card 
@@ -208,15 +208,10 @@ export const GameSummary = ({
                       }`}>
                         #{index + 1}
                       </span>
-                      <div>
+                      <div className="space-y-1">
                         <p className="font-medium">{player.player.name}</p>
-                        <div className="flex gap-2 text-sm text-muted-foreground">
-                          <span>Buy-in: ${player.initial_buyin}</span>
-                          <span>•</span>
-                          <span>Rebuys: {player.total_rebuys}</span>
-                          <span>•</span>
-                          <span>Total: ${totalBuyIn}</span>
-                          <span>•</span>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <span>Total In Game: ${totalAmountInGame}</span>
                           <span>ROI: {roi}%</span>
                         </div>
                       </div>
