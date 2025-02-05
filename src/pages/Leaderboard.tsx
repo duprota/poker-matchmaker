@@ -19,7 +19,7 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   const { data, error } = await supabase
     .from('game_players')
     .select(`
-      player:players(name),
+      player:players!inner(name),
       game:games(id, date),
       final_result,
       initial_buyin,
@@ -33,7 +33,7 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   }
 
   const playerStats = data.reduce((acc: { [key: string]: LeaderboardEntry }, entry) => {
-    const playerName = entry.player.name;
+    const playerName = entry.player[0].name; // Access the first element of the player array
     const spent = entry.initial_buyin * (1 + entry.total_rebuys);
     const result = entry.final_result || 0;
     const gameRoi = calculateROI(result, spent);
