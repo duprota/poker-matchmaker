@@ -23,18 +23,3 @@ export interface Game {
   name?: string;
   place?: string;
 }
-
-export interface GameHistoryEntry {
-  id: string;
-  event_type: 'rebuy' | 'result_update';
-  amount: number;
-  created_at: string;
-  game_player_id: string;
-  game_players: {
-    player: {
-      name: string;
-    };
-    initial_buyin: number;
-    total_rebuys: number;
-  };
-}

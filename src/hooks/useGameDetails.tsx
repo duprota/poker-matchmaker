@@ -30,7 +30,7 @@ export const useGameDetails = (gameId: string | undefined) => {
           final_result,
           payment_status,
           payment_amount,
-          player:players!inner (
+          player:players (
             id,
             name,
             email
@@ -43,24 +43,18 @@ export const useGameDetails = (gameId: string | undefined) => {
       console.log("Game data:", gameData);
       console.log("Players data:", playersData);
 
-      // Transform the data to match our types
-      const transformedPlayers: GamePlayer[] = playersData.map(p => ({
-        ...p,
-        player: p.player[0] // Access first element since it returns an array
-      }));
-
       const gameWithPlayers: Game = {
         ...gameData,
         status: gameData.status,
-        players: transformedPlayers,
+        players: playersData as GamePlayer[],
       };
 
       setGame(gameWithPlayers);
 
       // Check balance after setting game data
-      const totalBuyIns = transformedPlayers.reduce((acc, player) => 
+      const totalBuyIns = playersData.reduce((acc, player) => 
         acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
-      const totalResults = transformedPlayers.reduce((acc, player) => 
+      const totalResults = playersData.reduce((acc, player) => 
         acc + (player.final_result || 0), 0);
       setHasBalanceError(totalBuyIns !== totalResults);
 

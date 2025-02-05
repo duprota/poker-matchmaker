@@ -42,7 +42,7 @@ const Index = () => {
           name,
           date,
           game_players (
-            player:players!inner (
+            player:players (
               name
             ),
             final_result
@@ -60,10 +60,6 @@ const Index = () => {
       const processedGames = data?.map(game => ({
         ...game,
         game_players: game.game_players
-          .map(gp => ({
-            ...gp,
-            player: gp.player[0] // Access the first element of the player array
-          }))
           .filter(player => player.final_result !== null)
           .sort((a, b) => (b.final_result || 0) - (a.final_result || 0))
           .slice(0, 3) // Get top 3 players
