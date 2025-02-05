@@ -1,3 +1,4 @@
+
 import { GamePlayer } from "@/types/game";
 
 interface GameInformationProps {
@@ -15,12 +16,5 @@ export const GameInformation = ({
   status,
   name,
 }: GameInformationProps) => {
-  return (
-    <div className="mb-4">
-      <h2 className="text-xl font-semibold mb-2">Game Information</h2>
-      {name && <p>Name: {name}</p>}
-      <p>Date: {new Date(date).toLocaleDateString()}</p>
-      <p>Status: {status}</p>
-    </div>
-  );
+  return null; // Component no longer renders any UI
 };
