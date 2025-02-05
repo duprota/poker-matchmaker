@@ -1,3 +1,4 @@
+
 export interface GamePlayer {
   id: string;
   game_id: string;
@@ -22,4 +23,5 @@ export interface Game {
   players: GamePlayer[];
   name?: string;
   place?: string;
+  started_at?: string;
 }
