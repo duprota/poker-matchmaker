@@ -1,4 +1,4 @@
-import { Trophy, ArrowRight, Check, X, DollarSign, Share2, WhatsApp, Users, Repeat } from "lucide-react";
+import { Trophy, ArrowRight, Check, X, DollarSign, Share2, Users, Repeat } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
@@ -243,7 +243,7 @@ export const GameSummary = ({
           className="w-full md:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
           onClick={handleShareWhatsApp}
         >
-          <WhatsApp className="w-5 h-5 mr-2" />
+          <Share2 className="w-5 h-5 mr-2" />
           Share on WhatsApp
         </Button>
       </div>
