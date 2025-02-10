@@ -32,6 +32,7 @@ export const PaymentInstructions = ({ players, onUpdatePaymentStatus }: PaymentI
     id: players[0]?.game_id || '',
     date: new Date().toISOString(),
     name: null,
+    status: 'completed',
     players: formattedPlayers
   }]);
 

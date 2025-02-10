@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -50,6 +49,7 @@ export const PaymentManagement = ({
     id: formattedPlayers[0]?.game_id || '',
     date: new Date().toISOString(),
     name: null,
+    status: 'completed',
     players: formattedPlayers
   }]).map(t => ({
     from: players.find(p => p.player.id === t.fromPlayer.id)?.id || '',

@@ -1,4 +1,3 @@
-
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +55,7 @@ export const ShareButton = ({ players, date, name, place }: ShareButtonProps) =>
       id: players[0]?.game_id || '',
       date: new Date().toISOString(),
       name: null,
+      status: 'completed',
       players: formattedPlayers
     }]);
 
