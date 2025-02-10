@@ -125,6 +125,61 @@ export type Database = {
           },
         ]
       }
+      game_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          from_player_id: string | null
+          game_id: string | null
+          id: string
+          payment_date: string | null
+          payment_status: string | null
+          to_player_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          from_player_id?: string | null
+          game_id?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_status?: string | null
+          to_player_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          from_player_id?: string | null
+          game_id?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_status?: string | null
+          to_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_transactions_from_player_id_fkey"
+            columns: ["from_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_transactions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_transactions_to_player_id_fkey"
+            columns: ["to_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           created_at: string
