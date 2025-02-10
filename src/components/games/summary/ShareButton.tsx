@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
+import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
 import { format } from "date-fns";
-import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
 
 interface ShareButtonProps {
   players: GamePlayer[];
@@ -37,13 +37,23 @@ export const ShareButton = ({ players, date, name, place }: ShareButtonProps) =>
     const playerWithMostRebuys = players.find(player => player.total_rebuys === mostRebuys);
     const highestSingleWin = Math.max(...players.map(player => calculateFinalResult(player)));
 
-    const playerBalances = players.map(player => ({
-      playerId: player.id,
-      playerName: player.player.name,
-      balance: calculateFinalResult(player)
+    const formattedPlayers = players.map(player => ({
+      id: player.id,
+      game_id: player.game_id,
+      player: {
+        id: player.player.id,
+        name: player.player.name
+      },
+      final_result: calculateFinalResult(player),
+      payment_status: player.payment_status
     }));
 
-    const transactions = calculateMinimumTransactions(playerBalances);
+    const transactions = calculateOptimizedPayments([{
+      id: players[0]?.game_id || '',
+      date: new Date().toISOString(),
+      name: null,
+      players: formattedPlayers
+    }]);
 
     const summaryText = `🎰 ${name ? name + ' - ' : ''}${format(new Date(date), 'PPp')}\n` +
       `${place ? `📍 ${place}\n` : ''}` +
@@ -59,7 +69,7 @@ export const ShareButton = ({ players, date, name, place }: ShareButtonProps) =>
       `• Highest Win: $${highestSingleWin}\n` +
       `• Most Rebuys: ${playerWithMostRebuys?.player.name} (${mostRebuys})\n\n` +
       `💸 Required Payments:\n${transactions.map(t => 
-        `${players.find(p => p.id === t.from)?.player.name} → ${players.find(p => p.id === t.to)?.player.name}: $${t.amount}`
+        `${t.fromPlayer.name} → ${t.toPlayer.name}: $${t.totalAmount}`
       ).join('\n')}`;
 
     try {

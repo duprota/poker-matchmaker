@@ -20,8 +20,11 @@ export const PaymentInstructions = ({ players, onUpdatePaymentStatus }: PaymentI
       id: player.player.id,
       name: player.player.name
     },
+    initial_buyin: player.initial_buyin,
+    total_rebuys: player.total_rebuys,
     final_result: calculateFinalResult(player),
-    payment_status: player.payment_status
+    payment_status: player.payment_status,
+    payment_amount: player.payment_amount
   }));
 
   const transactions = calculateOptimizedPayments([{

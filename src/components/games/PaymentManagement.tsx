@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -7,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
+import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
 import { TransactionsList } from "./TransactionsList";
 
 interface GamePlayer {
@@ -40,15 +41,29 @@ export const PaymentManagement = ({
     return "No Payment Needed";
   };
 
-  // Calculate player balances for transaction calculation
-  const playerBalances = players.map(player => ({
-    playerId: player.id,
-    playerName: player.player.name,
-    balance: calculateFinalResult(player)
+  // Format players data for transaction calculation
+  const formattedPlayers = players.map(player => ({
+    id: player.id,
+    game_id: players[0]?.game_id || '',
+    player: {
+      id: player.player.id,
+      name: player.player.name
+    },
+    final_result: calculateFinalResult(player),
+    payment_status: player.payment_status
   }));
 
-  // Calculate minimum transactions
-  const transactions = calculateMinimumTransactions(playerBalances);
+  // Calculate transactions using the optimization function
+  const transactions = calculateOptimizedPayments([{
+    id: players[0]?.game_id || '',
+    date: new Date().toISOString(),
+    name: null,
+    players: formattedPlayers
+  }]).map(t => ({
+    from: players.find(p => p.player.id === t.fromPlayer.id)?.id || '',
+    to: players.find(p => p.player.id === t.toPlayer.id)?.id || '',
+    amount: t.totalAmount
+  }));
 
   return (
     <div className="mt-6">
