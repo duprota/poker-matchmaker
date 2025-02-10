@@ -3,7 +3,7 @@ import { ArrowRight, Check, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GamePlayer } from "@/types/game";
-import { calculateMinimumTransactions } from "@/utils/paymentCalculations";
+import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
 import { calculateFinalResult } from "../GameCalculations";
 
 interface PaymentInstructionsProps {
@@ -12,26 +12,36 @@ interface PaymentInstructionsProps {
 }
 
 export const PaymentInstructions = ({ players, onUpdatePaymentStatus }: PaymentInstructionsProps) => {
-  const playerBalances = players.map(player => ({
-    playerId: player.id,
-    playerName: player.player.name,
-    balance: calculateFinalResult(player)
+  // Format players data for the optimization function
+  const formattedPlayers = players.map(player => ({
+    id: player.id,
+    game_id: player.game_id,
+    player: {
+      id: player.player.id,
+      name: player.player.name
+    },
+    final_result: calculateFinalResult(player),
+    payment_status: player.payment_status
   }));
 
-  const transactions = calculateMinimumTransactions(playerBalances);
+  const transactions = calculateOptimizedPayments([{
+    id: players[0]?.game_id || '',
+    date: new Date().toISOString(),
+    name: null,
+    players: formattedPlayers
+  }]);
 
   return (
     <div>
       <h3 className="text-xl font-semibold mb-4">Payment Instructions</h3>
       <div className="space-y-3">
         {transactions.map((transaction, index) => {
-          const fromPlayer = players.find(p => p.id === transaction.from);
-          const toPlayer = players.find(p => p.id === transaction.to);
+          const fromPlayer = players.find(p => p.player.id === transaction.fromPlayer.id);
           const isPaid = fromPlayer?.payment_status === 'paid';
           
           return (
             <Card 
-              key={index} 
+              key={`${transaction.fromPlayer.id}-${transaction.toPlayer.id}-${index}`}
               className={`p-4 transition-all duration-300 ${
                 isPaid 
                   ? 'bg-green-500/10 hover:bg-green-500/20' 
@@ -40,10 +50,10 @@ export const PaymentInstructions = ({ players, onUpdatePaymentStatus }: PaymentI
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium whitespace-nowrap">{fromPlayer?.player.name}</span>
+                  <span className="font-medium whitespace-nowrap">{transaction.fromPlayer.name}</span>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium whitespace-nowrap">{toPlayer?.player.name}</span>
-                  <span className="font-semibold text-lg ml-2">${transaction.amount}</span>
+                  <span className="font-medium whitespace-nowrap">{transaction.toPlayer.name}</span>
+                  <span className="font-semibold text-lg ml-2">${transaction.totalAmount}</span>
                 </div>
                 {onUpdatePaymentStatus && fromPlayer && (
                   <Button
