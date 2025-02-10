@@ -42,10 +42,14 @@ export const ShareButton = ({ players, date, name, place }: ShareButtonProps) =>
       game_id: player.game_id,
       player: {
         id: player.player.id,
-        name: player.player.name
+        name: player.player.name,
+        email: player.player.email
       },
+      initial_buyin: player.initial_buyin,
+      total_rebuys: player.total_rebuys,
       final_result: calculateFinalResult(player),
-      payment_status: player.payment_status
+      payment_status: player.payment_status,
+      payment_amount: player.payment_amount
     }));
 
     const transactions = calculateOptimizedPayments([{

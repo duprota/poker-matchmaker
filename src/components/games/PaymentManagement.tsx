@@ -10,19 +10,7 @@ import {
 } from "@/components/ui/table";
 import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
 import { TransactionsList } from "./TransactionsList";
-
-interface GamePlayer {
-  id: string;
-  player: {
-    name: string;
-    email: string;
-  };
-  initial_buyin: number;
-  total_rebuys: number;
-  final_result: number | null;
-  payment_status: string;
-  payment_amount: number;
-}
+import { GamePlayer } from "@/types/game";
 
 interface PaymentManagementProps {
   players: GamePlayer[];
@@ -44,18 +32,22 @@ export const PaymentManagement = ({
   // Format players data for transaction calculation
   const formattedPlayers = players.map(player => ({
     id: player.id,
-    game_id: players[0]?.game_id || '',
+    game_id: player.game_id,
     player: {
       id: player.player.id,
-      name: player.player.name
+      name: player.player.name,
+      email: player.player.email
     },
+    initial_buyin: player.initial_buyin,
+    total_rebuys: player.total_rebuys,
     final_result: calculateFinalResult(player),
-    payment_status: player.payment_status
+    payment_status: player.payment_status,
+    payment_amount: player.payment_amount
   }));
 
   // Calculate transactions using the optimization function
   const transactions = calculateOptimizedPayments([{
-    id: players[0]?.game_id || '',
+    id: formattedPlayers[0]?.game_id || '',
     date: new Date().toISOString(),
     name: null,
     players: formattedPlayers
