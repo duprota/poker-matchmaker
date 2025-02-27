@@ -1,7 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GamePlayer } from "@/types/game";
 import { calculateTotalBuyInsAndRebuys } from "./GameCalculations";
@@ -131,11 +131,15 @@ export const FinalizeGameForm = ({
             {players.map((player) => (
               <div key={player.id} className="flex items-center gap-4">
                 <span className="min-w-[150px]">{player.player.name}</span>
-                <Input
+                <input
                   type="number"
-                  value={results[player.id] || 0}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={results[player.id] || ""}
                   onChange={(e) => handleResultChange(player.id, e.target.value)}
-                  className="max-w-[120px]"
+                  className="max-w-[120px] border border-input rounded-md px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  style={{ appearance: 'textfield' }}
+                  placeholder="Enter amount"
                 />
               </div>
             ))}
