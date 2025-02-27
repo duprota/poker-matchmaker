@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -62,6 +63,14 @@ export const CompletedGameTable = ({
     }
   };
 
+  // Helper function to format the final result display
+  const formatFinalResult = (value: number | null): string => {
+    if (value === null || value === 0) {
+      return "-";
+    }
+    return `$${value}`;
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Final Results</h2>
@@ -91,7 +100,7 @@ export const CompletedGameTable = ({
                     className="w-24 inline-block"
                   />
                 ) : (
-                  `$${gamePlayer.final_result || 0}`
+                  formatFinalResult(gamePlayer.final_result)
                 )}
               </TableCell>
               <TableCell className={`text-right ${calculateFinalResult(gamePlayer) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
