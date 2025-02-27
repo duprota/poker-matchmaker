@@ -138,8 +138,7 @@ export const FinalizeGameForm = ({
                   value={results[player.id] || ""}
                   onChange={(e) => handleResultChange(player.id, e.target.value)}
                   className="max-w-[120px] border border-input rounded-md px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  style={{ appearance: 'textfield' }}
-                  placeholder="Enter amount"
+                  style={{ appearance: 'textfield', MozAppearance: 'textfield', WebkitAppearance: 'none' }}
                 />
               </div>
             ))}
