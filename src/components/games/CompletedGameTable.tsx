@@ -8,7 +8,6 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -47,7 +46,7 @@ export const CompletedGameTable = ({
 
   const handleEdit = (player: GamePlayer) => {
     setEditingPlayer(player.id);
-    setEditValue(String(player.final_result || 0));
+    setEditValue(String(player.final_result || ""));
   };
 
   const handleSave = async (playerId: string) => {
@@ -93,11 +92,15 @@ export const CompletedGameTable = ({
               <TableCell className="text-right">${gamePlayer.total_rebuys * gamePlayer.initial_buyin}</TableCell>
               <TableCell className="text-right">
                 {editingPlayer === gamePlayer.id ? (
-                  <Input
+                  <input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-24 inline-block"
+                    className="w-24 inline-block border border-input bg-background px-3 py-2 text-base rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    style={{ appearance: 'textfield' }}
+                    placeholder="Enter amount"
                   />
                 ) : (
                   formatFinalResult(gamePlayer.final_result)
