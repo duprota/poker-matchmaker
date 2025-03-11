@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback } from 'react';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -45,7 +44,6 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
   
   const captureFromCamera = async () => {
     try {
-      // Check if getUserMedia is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         toast({
           title: "Erro",
@@ -57,31 +55,24 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
       
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
       
-      // Create video and canvas elements
       const video = document.createElement('video');
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       
-      // Set up video element
       video.srcObject = stream;
       video.play();
       
-      // Wait for video to load metadata
       video.onloadedmetadata = () => {
-        // Set canvas dimensions
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        // Draw video frame on canvas
         if (context) {
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
         }
         
-        // Get image data
         const imageDataUrl = canvas.toDataURL('image/jpeg');
         setSourceImg(imageDataUrl);
         
-        // Stop all video streams
         stream.getTracks().forEach(track => track.stop());
       };
     } catch (error) {
@@ -99,37 +90,33 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
     
     const image = imgRef.current;
     const canvas = document.createElement('canvas');
+    
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     
-    // Calculate the center of the crop
     const cropX = crop.x * scaleX;
     const cropY = crop.y * scaleY;
     const cropWidth = crop.width * scaleX;
     const cropHeight = crop.height * scaleY;
     
-    // Set canvas dimensions to match crop size (make it square)
-    const size = Math.max(cropWidth, cropHeight);
+    const finalSize = Math.max(cropWidth, cropHeight);
+    
     const pixelRatio = window.devicePixelRatio;
-    canvas.width = size * pixelRatio;
-    canvas.height = size * pixelRatio;
+    canvas.width = finalSize;
+    canvas.height = finalSize;
     
-    // Apply device pixel ratio scaling
-    ctx.scale(pixelRatio, pixelRatio);
-    ctx.imageSmoothingQuality = 'high';
-    
-    // Fill with transparent background
     ctx.fillStyle = 'transparent';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Center the crop in the canvas (if needed)
-    const offsetX = (size - cropWidth) / 2 / pixelRatio;
-    const offsetY = (size - cropHeight) / 2 / pixelRatio;
+    const offsetX = (finalSize - cropWidth) / 2;
+    const offsetY = (finalSize - cropHeight) / 2;
     
-    // Draw cropped image
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
     ctx.drawImage(
       image,
       cropX,
@@ -138,11 +125,10 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
       cropHeight,
       offsetX,
       offsetY,
-      crop.width,
-      crop.height
+      cropWidth,
+      cropHeight
     );
     
-    // Convert canvas to blob
     return new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
@@ -153,7 +139,7 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
           resolve(blob);
         },
         'image/jpeg',
-        0.95 // JPEG quality
+        1.0
       );
     });
   }, [crop]);
@@ -164,29 +150,24 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
       
       setIsUploading(true);
       
-      // Get cropped image blob
       const croppedImgBlob = await getCroppedImg();
       if (!croppedImgBlob) {
         throw new Error('Failed to crop image');
       }
       
-      // Create a file from the blob
       const fileName = `avatar-${playerId}-${Date.now()}.jpg`;
       const file = new File([croppedImgBlob], fileName, { type: 'image/jpeg' });
       
-      // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('player-avatars')
         .upload(fileName, file);
       
       if (error) throw error;
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('player-avatars')
         .getPublicUrl(fileName);
       
-      // Update player's avatar_url
       await onAvatarChange(publicUrl);
       
       toast({
@@ -194,7 +175,6 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
         description: "Foto de perfil atualizada com sucesso"
       });
       
-      // Close dialog and reset state
       setIsDialogOpen(false);
       setSourceImg(null);
       setIsCropping(false);
@@ -230,6 +210,7 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
               src={currentAvatar}
               alt="Avatar"
               className="w-full h-full object-cover"
+              style={{ objectFit: 'cover' }}
             />
           ) : (
             <div className="text-2xl font-bold text-muted-foreground">
@@ -323,8 +304,9 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
                     src={sourceImg}
                     alt="Crop"
                     ref={imgRef}
-                    className="max-w-full max-h-[60vh]"
+                    className="max-w-full max-h-[60vh] mx-auto"
                     crossOrigin="anonymous"
+                    style={{ objectFit: 'contain' }}
                   />
                 </ReactCrop>
               </div>
