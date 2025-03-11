@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from 'react';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface AvatarUploaderProps {
   playerId: string;
@@ -15,15 +17,15 @@ interface AvatarUploaderProps {
 
 export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: AvatarUploaderProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [sourceImg, setSourceImg] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>({
     unit: '%',
-    width: 90,
-    height: 90,
-    x: 5,
-    y: 5,
+    width: 80,
+    height: 80,
+    x: 10,
+    y: 10,
   });
-  const [isCropping, setIsCropping] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +38,8 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
       
       reader.addEventListener('load', () => {
         setSourceImg(reader.result as string);
+        setIsDialogOpen(false);
+        setIsCropperOpen(true);
       });
       
       reader.readAsDataURL(file);
@@ -74,6 +78,9 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
         setSourceImg(imageDataUrl);
         
         stream.getTracks().forEach(track => track.stop());
+        
+        setIsDialogOpen(false);
+        setIsCropperOpen(true);
       };
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -91,32 +98,36 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
     const image = imgRef.current;
     const canvas = document.createElement('canvas');
     
+    // Calculate scaling factors based on actual image dimensions
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
+    
+    // Calculate crop dimensions in pixels
+    const cropX = crop.x * image.width * scaleX / 100;
+    const cropY = crop.y * image.height * scaleY / 100;
+    const cropWidth = crop.width * image.width * scaleX / 100;
+    const cropHeight = crop.height * image.height * scaleY / 100;
+    
+    // Set final canvas size (square using the largest dimension)
+    const finalSize = Math.max(cropWidth, cropHeight);
+    canvas.width = finalSize;
+    canvas.height = finalSize;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
-    const cropWidth = crop.width * scaleX;
-    const cropHeight = crop.height * scaleY;
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const finalSize = Math.max(cropWidth, cropHeight);
-    
-    const pixelRatio = window.devicePixelRatio;
-    canvas.width = finalSize;
-    canvas.height = finalSize;
-    
-    ctx.fillStyle = 'transparent';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+    // Center the cropped area on the canvas
     const offsetX = (finalSize - cropWidth) / 2;
     const offsetY = (finalSize - cropHeight) / 2;
     
+    // Enable high quality image rendering
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     
+    // Draw the cropped portion
     ctx.drawImage(
       image,
       cropX,
@@ -129,6 +140,7 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
       cropHeight
     );
     
+    // Convert canvas to blob
     return new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
@@ -139,7 +151,7 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
           resolve(blob);
         },
         'image/jpeg',
-        1.0
+        0.95 // High quality
       );
     });
   }, [crop]);
@@ -175,9 +187,8 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
         description: "Foto de perfil atualizada com sucesso"
       });
       
-      setIsDialogOpen(false);
+      setIsCropperOpen(false);
       setSourceImg(null);
-      setIsCropping(false);
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
@@ -188,14 +199,6 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
     } finally {
       setIsUploading(false);
     }
-  };
-  
-  const handleCancelCrop = () => {
-    setIsCropping(false);
-  };
-  
-  const handleStartCrop = () => {
-    setIsCropping(true);
   };
   
   return (
@@ -210,7 +213,6 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
               src={currentAvatar}
               alt="Avatar"
               className="w-full h-full object-cover"
-              style={{ objectFit: 'cover' }}
             />
           ) : (
             <div className="text-2xl font-bold text-muted-foreground">
@@ -228,93 +230,81 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
         </Button>
       </div>
       
+      {/* Dialog para escolher método de upload */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Foto de perfil</DialogTitle>
           </DialogHeader>
           
-          {!sourceImg && (
-            <div className="flex flex-col gap-4">
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full py-8 flex flex-col items-center justify-center h-auto gap-2"
-              >
-                <Upload className="h-8 w-8" />
-                <span>Fazer upload de uma imagem</span>
-              </Button>
-              
-              <Button
-                onClick={captureFromCamera}
-                variant="outline"
-                className="w-full py-8 flex flex-col items-center justify-center h-auto gap-2"
-              >
-                <Camera className="h-8 w-8" />
-                <span>Tirar uma foto</span>
-              </Button>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
-          )}
+          <div className="flex flex-col gap-4">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-8 flex flex-col items-center justify-center h-auto gap-2"
+            >
+              <Upload className="h-8 w-8" />
+              <span>Fazer upload de uma imagem</span>
+            </Button>
+            
+            <Button
+              onClick={captureFromCamera}
+              variant="outline"
+              className="w-full py-8 flex flex-col items-center justify-center h-auto gap-2"
+            >
+              <Camera className="h-8 w-8" />
+              <span>Tirar uma foto</span>
+            </Button>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Tela de corte de imagem em tela cheia */}
+      <Sheet open={isCropperOpen} onOpenChange={setIsCropperOpen}>
+        <SheetContent side="bottom" className="h-[90vh] sm:max-w-full">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Ajustar foto de perfil</SheetTitle>
+          </SheetHeader>
           
-          {sourceImg && !isCropping && (
-            <div className="flex flex-col gap-4">
-              <div className="relative max-h-80 overflow-hidden">
-                <img
-                  src={sourceImg}
-                  alt="Uploaded"
-                  className="w-full h-auto"
-                  ref={imgRef}
-                />
-              </div>
-              
-              <div className="flex justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => { setSourceImg(null); }}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar
-                </Button>
-                <Button onClick={handleStartCrop}>
-                  <Scissors className="mr-2 h-4 w-4" />
-                  Cortar imagem
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {sourceImg && isCropping && (
-            <div className="flex flex-col gap-4">
-              <div className="max-h-80 overflow-auto">
+          {sourceImg && (
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-auto flex items-center justify-center pb-20">
                 <ReactCrop
                   crop={crop}
                   onChange={(c) => setCrop(c)}
                   aspect={1}
                   circularCrop
-                  className="mx-auto"
+                  className="max-w-full max-h-full"
                 >
                   <img
                     src={sourceImg}
                     alt="Crop"
                     ref={imgRef}
-                    className="max-w-full max-h-[60vh] mx-auto"
                     crossOrigin="anonymous"
-                    style={{ objectFit: 'contain' }}
+                    className="max-w-full max-h-[70vh]"
+                    style={{ 
+                      objectFit: 'contain',
+                      width: 'auto',
+                      height: 'auto'
+                    }}
                   />
                 </ReactCrop>
               </div>
               
-              <div className="flex justify-between">
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t flex justify-between">
                 <Button
                   variant="outline"
-                  onClick={handleCancelCrop}
+                  onClick={() => {
+                    setIsCropperOpen(false);
+                    setSourceImg(null);
+                  }}
                 >
                   <X className="mr-2 h-4 w-4" />
                   Cancelar
@@ -335,8 +325,8 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
