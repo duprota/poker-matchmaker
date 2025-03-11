@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { Camera, Upload, Scissors, Save, X } from 'lucide-react';
+import { Camera, Upload, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,10 +21,10 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
   const [sourceImg, setSourceImg] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>({
     unit: '%',
-    width: 80,
-    height: 80,
-    x: 10,
-    y: 10,
+    width: 90,
+    height: 90,
+    x: 5,
+    y: 5,
   });
   const [isUploading, setIsUploading] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -98,46 +98,45 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
     const image = imgRef.current;
     const canvas = document.createElement('canvas');
     
-    // Calculate scaling factors based on actual image dimensions
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
+    // Get image dimensions
+    const { naturalWidth, naturalHeight } = image;
     
-    // Calculate crop dimensions in pixels
-    const cropX = crop.x * image.width * scaleX / 100;
-    const cropY = crop.y * image.height * scaleY / 100;
-    const cropWidth = crop.width * image.width * scaleX / 100;
-    const cropHeight = crop.height * image.height * scaleY / 100;
+    // Calculate crop dimensions in pixels based on percentages
+    const cropWidthPx = (crop.width * naturalWidth) / 100;
+    const cropHeightPx = (crop.height * naturalHeight) / 100;
+    const cropXPx = (crop.x * naturalWidth) / 100;
+    const cropYPx = (crop.y * naturalHeight) / 100;
     
-    // Set final canvas size (square using the largest dimension)
-    const finalSize = Math.max(cropWidth, cropHeight);
-    canvas.width = finalSize;
-    canvas.height = finalSize;
+    // Set canvas size to be square (using the maximum dimension)
+    const size = Math.max(cropWidthPx, cropHeightPx);
+    canvas.width = size;
+    canvas.height = size;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     
-    // Clear the canvas
+    // Fill the canvas with a transparent background
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Center the cropped area on the canvas
-    const offsetX = (finalSize - cropWidth) / 2;
-    const offsetY = (finalSize - cropHeight) / 2;
     
     // Enable high quality image rendering
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     
-    // Draw the cropped portion
+    // Calculate offsets to center the cropped portion
+    const offsetX = (size - cropWidthPx) / 2;
+    const offsetY = (size - cropHeightPx) / 2;
+    
+    // Draw the cropped portion of the image onto the canvas
     ctx.drawImage(
       image,
-      cropX,
-      cropY,
-      cropWidth,
-      cropHeight,
+      cropXPx,
+      cropYPx,
+      cropWidthPx,
+      cropHeightPx,
       offsetX,
       offsetY,
-      cropWidth,
-      cropHeight
+      cropWidthPx,
+      cropHeightPx
     );
     
     // Convert canvas to blob
@@ -268,63 +267,61 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
       
       {/* Tela de corte de imagem em tela cheia */}
       <Sheet open={isCropperOpen} onOpenChange={setIsCropperOpen}>
-        <SheetContent side="bottom" className="h-[90vh] sm:max-w-full">
-          <SheetHeader className="mb-4">
-            <SheetTitle>Ajustar foto de perfil</SheetTitle>
-          </SheetHeader>
-          
-          {sourceImg && (
-            <div className="flex flex-col h-full">
-              <div className="flex-1 overflow-auto flex items-center justify-center pb-20">
-                <ReactCrop
-                  crop={crop}
-                  onChange={(c) => setCrop(c)}
-                  aspect={1}
-                  circularCrop
-                  className="max-w-full max-h-full"
-                >
-                  <img
-                    src={sourceImg}
-                    alt="Crop"
-                    ref={imgRef}
-                    crossOrigin="anonymous"
-                    className="max-w-full max-h-[70vh]"
-                    style={{ 
-                      objectFit: 'contain',
-                      width: 'auto',
-                      height: 'auto'
+        <SheetContent side="bottom" className="h-[95vh] sm:max-w-full p-0 overflow-hidden">
+          <div className="flex flex-col h-full">
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle>Ajustar foto de perfil</SheetTitle>
+            </SheetHeader>
+            
+            {sourceImg && (
+              <>
+                <div className="flex-1 overflow-auto flex items-center justify-center bg-black/60 p-2">
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(newCrop) => setCrop(newCrop)}
+                    aspect={1}
+                    circularCrop
+                    className="max-h-full flex items-center justify-center"
+                  >
+                    <img
+                      src={sourceImg}
+                      alt="Crop"
+                      ref={imgRef}
+                      className="max-w-full max-h-[80vh] w-auto h-auto object-contain"
+                      style={{ display: 'block' }}
+                      crossOrigin="anonymous"
+                    />
+                  </ReactCrop>
+                </div>
+                
+                <div className="p-4 bg-background border-t flex justify-between items-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsCropperOpen(false);
+                      setSourceImg(null);
                     }}
-                  />
-                </ReactCrop>
-              </div>
-              
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t flex justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsCropperOpen(false);
-                    setSourceImg(null);
-                  }}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={uploadImage} 
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <span>Salvando...</span>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Salvar
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={uploadImage} 
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <span>Salvando...</span>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Salvar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </SheetContent>
       </Sheet>
     </>
