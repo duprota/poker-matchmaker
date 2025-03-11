@@ -105,29 +105,39 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     
-    // Set canvas dimensions to match crop size
-    const pixelRatio = window.devicePixelRatio;
-    canvas.width = crop.width * scaleX * pixelRatio;
-    canvas.height = crop.height * scaleY * pixelRatio;
-    
-    // Apply device pixel ratio scaling
-    ctx.scale(pixelRatio, pixelRatio);
-    ctx.imageSmoothingQuality = 'high';
-    
-    // Draw cropped image
+    // Calculate the center of the crop
     const cropX = crop.x * scaleX;
     const cropY = crop.y * scaleY;
     const cropWidth = crop.width * scaleX;
     const cropHeight = crop.height * scaleY;
     
+    // Set canvas dimensions to match crop size (make it square)
+    const size = Math.max(cropWidth, cropHeight);
+    const pixelRatio = window.devicePixelRatio;
+    canvas.width = size * pixelRatio;
+    canvas.height = size * pixelRatio;
+    
+    // Apply device pixel ratio scaling
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.imageSmoothingQuality = 'high';
+    
+    // Fill with transparent background
+    ctx.fillStyle = 'transparent';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Center the crop in the canvas (if needed)
+    const offsetX = (size - cropWidth) / 2 / pixelRatio;
+    const offsetY = (size - cropHeight) / 2 / pixelRatio;
+    
+    // Draw cropped image
     ctx.drawImage(
       image,
       cropX,
       cropY,
       cropWidth,
       cropHeight,
-      0,
-      0,
+      offsetX,
+      offsetY,
       crop.width,
       crop.height
     );
@@ -212,7 +222,7 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
     <>
       <div className="flex items-center gap-4">
         <div 
-          className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center cursor-pointer border-2 border-primary"
+          className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center cursor-pointer border-2 border-primary relative"
           onClick={() => setIsDialogOpen(true)}
         >
           {currentAvatar ? (
@@ -223,7 +233,6 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
             />
           ) : (
             <div className="text-2xl font-bold text-muted-foreground">
-              {/* Display first letter of player name if available */}
               ?
             </div>
           )}
@@ -308,12 +317,14 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: Avat
                   onChange={(c) => setCrop(c)}
                   aspect={1}
                   circularCrop
+                  className="mx-auto"
                 >
                   <img
                     src={sourceImg}
                     alt="Crop"
                     ref={imgRef}
-                    className="w-full h-auto"
+                    className="max-w-full max-h-[60vh]"
+                    crossOrigin="anonymous"
                   />
                 </ReactCrop>
               </div>

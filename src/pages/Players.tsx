@@ -1,4 +1,3 @@
-
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -190,12 +189,10 @@ const Players = () => {
         throw error;
       }
 
-      // Update local state
       setPlayers(players.map(p => 
         p.id === playerId ? { ...p, avatar_url: avatarUrl } : p
       ));
       
-      // Update editing player if relevant
       if (editingPlayer?.id === playerId) {
         setEditingPlayer({ ...editingPlayer, avatar_url: avatarUrl });
       }
