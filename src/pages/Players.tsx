@@ -1,3 +1,4 @@
+
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { AvatarUploader } from "@/components/players/AvatarUploader";
 
 type Player = Tables<"players">;
 
@@ -176,6 +178,35 @@ const Players = () => {
     }
   };
 
+  const updatePlayerAvatar = async (playerId: string, avatarUrl: string) => {
+    try {
+      console.log("Updating player avatar:", playerId, avatarUrl);
+      const { error } = await supabase
+        .from("players")
+        .update({ avatar_url: avatarUrl })
+        .eq("id", playerId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
+      setPlayers(players.map(p => 
+        p.id === playerId ? { ...p, avatar_url: avatarUrl } : p
+      ));
+      
+      // Update editing player if relevant
+      if (editingPlayer?.id === playerId) {
+        setEditingPlayer({ ...editingPlayer, avatar_url: avatarUrl });
+      }
+
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error updating player avatar:", error);
+      return Promise.reject(error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
@@ -231,10 +262,17 @@ const Players = () => {
               className="p-6 bg-card/80 backdrop-blur-sm border-primary/10 hover:border-primary/20 transition-all duration-200 hover:shadow-lg group"
             >
               <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {player.name}
-                  </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <AvatarUploader
+                      playerId={player.id}
+                      currentAvatar={player.avatar_url}
+                      onAvatarChange={(url) => updatePlayerAvatar(player.id, url)}
+                    />
+                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {player.name}
+                    </h3>
+                  </div>
                   {player.email && (
                     <p className="text-muted-foreground">{player.email}</p>
                   )}
@@ -262,6 +300,13 @@ const Players = () => {
                         <DialogTitle>Edit Player</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
+                        <div className="flex justify-center mb-4">
+                          <AvatarUploader
+                            playerId={editingPlayer?.id || ''}
+                            currentAvatar={editingPlayer?.avatar_url}
+                            onAvatarChange={(url) => updatePlayerAvatar(editingPlayer?.id || '', url)}
+                          />
+                        </div>
                         <Input
                           placeholder="Player name"
                           value={editingPlayer?.name || ""}
