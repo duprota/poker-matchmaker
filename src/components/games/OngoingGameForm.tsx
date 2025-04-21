@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
 import { PlayerGameCard } from "./PlayerGameCard";
+import { supabase } from "@/integrations/supabase/client"; // Add supabase client import
 
 export interface OngoingGameFormProps {
   players: any[];
