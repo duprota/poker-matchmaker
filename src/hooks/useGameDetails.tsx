@@ -30,6 +30,7 @@ export const useGameDetails = (gameId: string | undefined) => {
           final_result,
           payment_status,
           payment_amount,
+          special_hands,
           player:players (
             id,
             name,
@@ -150,12 +151,50 @@ export const useGameDetails = (gameId: string | undefined) => {
     }
   };
 
+  const updateSpecialHands = async (playerId: string, specialHands: { [key: string]: number }) => {
+    try {
+      console.log(`Updating special hands for player ${playerId}`, specialHands);
+      
+      const { error } = await supabase
+        .from("game_players")
+        .update({ special_hands: specialHands })
+        .eq("id", playerId);
+
+      if (error) throw error;
+
+      setGame(prevGame => {
+        if (!prevGame) return null;
+        return {
+          ...prevGame,
+          players: prevGame.players.map(player =>
+            player.id === playerId
+              ? { ...player, special_hands: specialHands }
+              : player
+          )
+        };
+      });
+
+      toast({
+        title: "Success",
+        description: "Special hands updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating special hands:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update special hands",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     game,
     loading,
     hasBalanceError,
     updatePlayerResult,
     updatePaymentStatus,
+    updateSpecialHands,
     refreshGame: fetchGame
   };
 };

@@ -12,7 +12,7 @@ export interface GamePlayer {
   final_result: number | null;
   payment_status: string;
   payment_amount: number;
-  special_hands?: { [key: string]: number };
+  special_hands?: { [key: string]: number } | null;
 }
 
 export type GameStatus = string;

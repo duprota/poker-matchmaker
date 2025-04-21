@@ -5,7 +5,6 @@ import { Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 
 type SpecialHandType = "full_house" | "four_of_a_kind" | "straight_flush" | "royal_flush";
 
@@ -66,22 +65,25 @@ export interface PlayerSpecialHandReactionProps {
 export function PlayerSpecialHandReaction({ value = {}, onChange }: PlayerSpecialHandReactionProps) {
   const [open, setOpen] = useState(false);
   
+  // Ensure value is never null - if it is, use empty object
+  const safeValue = value || {};
+  
   // Calculate total hands count
-  const totalHandsCount = Object.values(value || {}).reduce((sum, count) => sum + count, 0);
+  const totalHandsCount = Object.values(safeValue).reduce((sum, count) => sum + count, 0);
   
   // Function to increment a hand count
   const incrementHand = (handType: SpecialHandType) => {
-    const currentCount = value[handType] || 0;
-    const newValue = { ...value, [handType]: currentCount + 1 };
+    const currentCount = safeValue[handType] || 0;
+    const newValue = { ...safeValue, [handType]: currentCount + 1 };
     onChange(newValue);
   };
   
   // Function to decrement a hand count
   const decrementHand = (handType: SpecialHandType) => {
-    const currentCount = value[handType] || 0;
+    const currentCount = safeValue[handType] || 0;
     if (currentCount <= 0) return;
     
-    const newValue = { ...value };
+    const newValue = { ...safeValue };
     newValue[handType] = currentCount - 1;
     
     // Remove the key if count becomes 0
@@ -134,7 +136,8 @@ export function PlayerSpecialHandReaction({ value = {}, onChange }: PlayerSpecia
                   {/* Hand options with counters */}
                   <div className="grid grid-cols-2 gap-3">
                     {specialHandOptions.map((option) => {
-                      const handCount = value[option.value] || 0;
+                      // Safely access the hand count, default to 0 if undefined
+                      const handCount = safeValue[option.value] || 0;
                       
                       return (
                         <div 
