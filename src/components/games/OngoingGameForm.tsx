@@ -1,12 +1,15 @@
-import { useState } from "react";
+
+import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
 import { PlayerGameCard } from "./PlayerGameCard";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 export interface OngoingGameFormProps {
   players: any[];
   rebuys: Record<string, number>;
@@ -15,87 +18,26 @@ export interface OngoingGameFormProps {
   savingRebuys: boolean;
   setRebuys: (rebuys: Record<string, number>) => void;
   onRemovePlayer?: (playerId: string) => void;
+  onAddPlayer?: () => void;
 }
+
 export const OngoingGameForm = ({
   players,
-  onRemovePlayer
+  onRemovePlayer,
+  onAddPlayer
 }: OngoingGameFormProps) => {
-  const {
-    toast: toastNotification
-  } = useToast();
-  const [updatingPlayer, setUpdatingPlayer] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Sort players by name
   const sortedPlayers = [...players].sort((a, b) => a.player.name.localeCompare(b.player.name));
 
   // Filter players by search term
-  const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const handleRebuyChange = async (playerId: string, newRebuys: number) => {
-    try {
-      setUpdatingPlayer(playerId);
-      const {
-        error: updateError
-      } = await supabase.from("game_players").update({
-        total_rebuys: newRebuys
-      }).eq("id", playerId);
-      if (updateError) throw updateError;
+  const filteredPlayers = sortedPlayers.filter(player => 
+    player.player.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-      // Find the player in the current list
-      const player = players.find(p => p.id === playerId);
-      if (!player) {
-        throw new Error("Player not found");
-      }
-
-      // Add entry to game history
-      const {
-        error: historyError
-      } = await supabase.from("game_history").insert({
-        game_id: player.game_id,
-        game_player_id: playerId,
-        event_type: "rebuy",
-        amount: newRebuys
-      });
-      if (historyError) throw historyError;
-
-      // Toast notification will now be handled in the PlayerGameCard component
-      // because of the realtime updates
-    } catch (error) {
-      console.error("Error updating rebuys:", error);
-      toast.error("Erro ao atualizar rebuys", {
-        description: "Não foi possível registrar o rebuy. Tente novamente."
-      });
-    } finally {
-      setUpdatingPlayer(null);
-    }
-  };
-  const handleSpecialHandUpdate = async (playerId: string, specialHands: {
-    [key: string]: number;
-  }) => {
-    try {
-      setUpdatingPlayer(playerId);
-      const {
-        error
-      } = await supabase.from("game_players").update({
-        special_hands: specialHands
-      }).eq("id", playerId);
-      if (error) throw error;
-
-      // Toast notification will now be handled in the PlayerGameCard component
-      // because of the realtime updates
-    } catch (error) {
-      console.error("Error updating special hands:", error);
-      toast.error("Erro ao registrar mãos especiais", {
-        description: "Não foi possível registrar as mãos especiais. Tente novamente."
-      });
-    } finally {
-      setUpdatingPlayer(null);
-    }
-  };
   const container = {
-    hidden: {
-      opacity: 0
-    },
+    hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
@@ -103,35 +45,60 @@ export const OngoingGameForm = ({
       }
     }
   };
+
   const item = {
-    hidden: {
-      y: 20,
-      opacity: 0
-    },
-    show: {
-      y: 0,
-      opacity: 1
-    }
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1 }
   };
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text flex-grow">
           Mesa de Jogo
         </h2>
         
-        <div className="relative w-full sm:w-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <div className="flex items-center gap-4">
+          {onAddPlayer && (
+            <Button 
+              onClick={onAddPlayer} 
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar Jogador
+            </Button>
+          )}
           
+          <div className="relative w-full sm:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input 
+              placeholder="Buscar jogadores..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full sm:w-48"
+            />
+          </div>
         </div>
       </div>
       
-      <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
-        {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRebuyChange={handleRebuyChange} onSpecialHandsChange={handleSpecialHandUpdate} onRemovePlayer={onRemovePlayer} isProcessing={updatingPlayer === gamePlayer.id} />
-          </motion.div>)}
+      <motion.div 
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" 
+        variants={container} 
+        initial="hidden" 
+        animate="show"
+      >
+        {filteredPlayers.map(gamePlayer => (
+          <motion.div key={gamePlayer.id} variants={item}>
+            <PlayerGameCard 
+              player={gamePlayer} 
+              onRemovePlayer={onRemovePlayer} 
+            />
+          </motion.div>
+        ))}
       </motion.div>
       
-      {filteredPlayers.length === 0 && <div className="flex flex-col items-center justify-center py-12 text-center">
+      {filteredPlayers.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="rounded-full bg-muted p-6 mb-4">
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -139,6 +106,9 @@ export const OngoingGameForm = ({
           <p className="text-muted-foreground">
             Tente buscar com outro termo ou verifique se há jogadores na mesa.
           </p>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
+
