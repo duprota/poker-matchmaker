@@ -26,7 +26,7 @@ export const FinalizeGameForm = ({
 }: FinalizeGameFormProps) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [results, setResults] = useState<Record<string, number>>({});
+  const [results, setResults] = useState<Record<string, number | undefined>>({});
   const [updating, setUpdating] = useState(false);
   
   const totalMoneyInGame = calculateTotalBuyInsAndRebuys(players);
@@ -34,8 +34,8 @@ export const FinalizeGameForm = ({
   const difference = totalMoneyInGame - totalResults;
   
   const handleResultChange = (playerId: string, value: string) => {
-    // Allow empty strings to be converted to 0
-    const numericValue = value === "" ? 0 : parseInt(value) || 0;
+    // Allow empty strings, handle zero as a valid input
+    const numericValue = value === "" ? undefined : parseInt(value) === 0 ? 0 : (parseInt(value) || undefined);
     setResults(prev => ({
       ...prev,
       [playerId]: numericValue
@@ -93,10 +93,10 @@ export const FinalizeGameForm = ({
   };
 
   useEffect(() => {
-    // Initialize results with 0 for each player
-    const initialResults: Record<string, number> = {};
+    // Initialize results with undefined for each player
+    const initialResults: Record<string, undefined> = {};
     players.forEach(player => {
-      initialResults[player.id] = 0;
+      initialResults[player.id] = undefined;
     });
     setResults(initialResults);
   }, [players]);
@@ -130,7 +130,7 @@ export const FinalizeGameForm = ({
                   <Input
                     type="number"
                     inputMode="numeric"
-                    value={results[player.id] === 0 ? "0" : results[player.id] || ""}
+                    value={results[player.id] === 0 ? "0" : (results[player.id] || "")}
                     onChange={e => handleResultChange(player.id, e.target.value)}
                     className="max-w-[120px] h-12"
                   />
