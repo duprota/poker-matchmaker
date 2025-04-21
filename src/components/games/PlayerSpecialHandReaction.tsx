@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { hand } from "lucide-react";
+import { Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type SpecialHandType = "full_house" | "four_of_a_kind" | "straight_flush" | "royal_flush" | null;
@@ -71,7 +71,7 @@ export function PlayerSpecialHandReaction({ value, onChange }: PlayerSpecialHand
               selected.icon
             ) : (
               <span className="text-slate-500">
-                <hand size={20} aria-hidden="true" />
+                <Hand size={20} aria-hidden="true" />
               </span>
             )}
           </Button>
@@ -103,7 +103,7 @@ export function PlayerSpecialHandReaction({ value, onChange }: PlayerSpecialHand
               }}
               type="button"
             >
-              <svg width="18" height="18" aria-hidden="true">
+              <svg width="18" height="18" aria-hidden="true" focusable="false">
                 <circle cx="9" cy="9" r="8" fill="#ececec" />
                 <text x="9" y="13" textAnchor="middle" fontSize="12" fill="#666">
                   –
@@ -147,3 +147,4 @@ export const EmojiSVGDefs = () => (
     </symbol>
   </svg>
 );
+
