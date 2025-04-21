@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 
 interface FinalizeGameFormProps {
   isOpen: boolean;
@@ -33,9 +34,11 @@ export const FinalizeGameForm = ({
   const difference = totalMoneyInGame - totalResults;
   
   const handleResultChange = (playerId: string, value: string) => {
+    // Allow empty strings to be converted to 0
+    const numericValue = value === "" ? 0 : parseInt(value) || 0;
     setResults(prev => ({
       ...prev,
-      [playerId]: parseInt(value) || 0
+      [playerId]: numericValue
     }));
   };
 
@@ -124,18 +127,12 @@ export const FinalizeGameForm = ({
                   <span className={`${isMobile ? 'min-w-[100px]' : 'min-w-[150px]'} text-sm sm:text-base`}>
                     {player.player.name}
                   </span>
-                  <input 
-                    type="number" 
-                    inputMode="numeric" 
-                    pattern="[0-9]*" 
-                    value={results[player.id] || ""} 
-                    onChange={e => handleResultChange(player.id, e.target.value)} 
-                    style={{
-                      appearance: 'textfield',
-                      MozAppearance: 'textfield',
-                      WebkitAppearance: 'none'
-                    }} 
-                    className="max-w-[120px] h-12 border border-input px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md bg-transparent" 
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    value={results[player.id] === 0 ? "0" : results[player.id] || ""}
+                    onChange={e => handleResultChange(player.id, e.target.value)}
+                    className="max-w-[120px] h-12"
                   />
                 </div>
               ))}
@@ -164,4 +161,3 @@ export const FinalizeGameForm = ({
     </Dialog>
   );
 };
-
