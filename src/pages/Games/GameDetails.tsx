@@ -108,7 +108,10 @@ const GameDetails = () => {
         <div className="mb-8">
           <GameHeader 
             status={game.status}
+            name={game.name}
+            gameId={game.id}
             onDeleteGame={handleDeleteGame}
+            onNameUpdated={refreshGame}
           />
         </div>
 
