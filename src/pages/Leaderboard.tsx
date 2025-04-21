@@ -1,3 +1,4 @@
+
 import { Navigation } from "@/components/Navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +8,8 @@ import { LeaderboardEntry, RankingType } from "@/types/leaderboard";
 import { LeaderboardHeader } from "@/components/leaderboard/LeaderboardHeader";
 import { LeaderboardCard } from "@/components/leaderboard/LeaderboardCard";
 import { LeaderboardShare } from "@/components/leaderboard/LeaderboardShare";
+import { PlayerProgressChart } from "@/components/leaderboard/PlayerProgressChart";
+import { format } from "date-fns";
 
 const calculateROI = (winnings: number, spent: number) => {
   if (spent === 0) return 0;
@@ -94,6 +97,83 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   return Object.values(playerStats);
 };
 
+// Função para buscar dados para o gráfico de evolução de jogadores
+const fetchPlayerProgressData = async () => {
+  console.log("Fetching player progress data...");
+  
+  // Obtém o primeiro dia do ano atual
+  const currentYear = new Date().getFullYear();
+  const firstDayOfYear = new Date(currentYear, 0, 1).toISOString();
+
+  const { data, error } = await supabase
+    .from('games')
+    .select(`
+      id,
+      date,
+      game_players:game_players(
+        final_result,
+        initial_buyin,
+        total_rebuys,
+        player:players(id, name)
+      )
+    `)
+    .gte('date', firstDayOfYear)
+    .eq('status', 'completed')
+    .order('date', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching player progress data:", error);
+    throw error;
+  }
+
+  // Organizar dados por jogador
+  const playerProgressMap = new Map();
+  
+  data.forEach(game => {
+    const gameDate = game.date;
+    const formattedDate = format(new Date(gameDate), 'yyyy-MM-dd');
+    
+    game.game_players.forEach((gamePlayer: any) => {
+      if (!gamePlayer.final_result) return; // Ignora jogos sem resultado
+
+      const playerName = gamePlayer.player.name;
+      const spent = gamePlayer.initial_buyin * (1 + gamePlayer.total_rebuys);
+      const netEarnings = gamePlayer.final_result - spent;
+      
+      if (!playerProgressMap.has(playerName)) {
+        playerProgressMap.set(playerName, {
+          player_name: playerName,
+          games_data: []
+        });
+      }
+      
+      const playerData = playerProgressMap.get(playerName);
+      // Adicionar dados deste jogo
+      playerData.games_data.push({
+        game_id: game.id,
+        game_date: formattedDate,
+        net_earnings: netEarnings
+      });
+    });
+  });
+
+  // Calcular o running total para cada jogador
+  for (const playerData of playerProgressMap.values()) {
+    let runningTotal = 0;
+    playerData.games_data = playerData.games_data
+      .sort((a: any, b: any) => new Date(a.game_date).getTime() - new Date(b.game_date).getTime())
+      .map((gameData: any) => {
+        runningTotal += gameData.net_earnings;
+        return {
+          ...gameData,
+          running_total: runningTotal
+        };
+      });
+  }
+
+  return Array.from(playerProgressMap.values());
+};
+
 const Leaderboard = () => {
   const [timeFilter, setTimeFilter] = useState("All Time");
   const [rankingType, setRankingType] = useState<RankingType>("total");
@@ -101,6 +181,11 @@ const Leaderboard = () => {
   const { data: leaderboard, isLoading, error } = useQuery({
     queryKey: ['leaderboard', timeFilter],
     queryFn: fetchLeaderboardData,
+  });
+
+  const { data: playerProgressData, isLoading: isLoadingProgress } = useQuery({
+    queryKey: ['player-progress'],
+    queryFn: fetchPlayerProgressData,
   });
 
   const sortedLeaderboard = leaderboard?.sort((a, b) => {
@@ -157,16 +242,26 @@ const Leaderboard = () => {
           onRankingTypeChange={setRankingType}
         />
         
-        <ScrollArea className="h-[calc(100vh-320px)]">
-          {sortedLeaderboard?.map((entry, index) => (
-            <LeaderboardCard 
-              key={entry.player_name} 
-              entry={entry} 
-              position={index + 1}
-              rankingType={rankingType}
-            />
-          ))}
-        </ScrollArea>
+        {/* Gráfico de evolução dos jogadores */}
+        {isLoadingProgress ? (
+          <div className="text-center py-6">Carregando dados do gráfico...</div>
+        ) : playerProgressData && playerProgressData.length > 0 ? (
+          <PlayerProgressChart playersData={playerProgressData} />
+        ) : null}
+        
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Classificação</h2>
+          <ScrollArea className="h-[calc(100vh-500px)]">
+            {sortedLeaderboard?.map((entry, index) => (
+              <LeaderboardCard 
+                key={entry.player_name} 
+                entry={entry} 
+                position={index + 1}
+                rankingType={rankingType}
+              />
+            ))}
+          </ScrollArea>
+        </div>
 
         {sortedLeaderboard && (
           <LeaderboardShare
