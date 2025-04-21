@@ -1,4 +1,3 @@
-
 import { Game, GamePlayer } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
@@ -10,12 +9,10 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-
 interface GameContainerProps {
   game: Game;
   refreshGame: () => void;
 }
-
 export const GameContainer = ({
   game,
   refreshGame
@@ -27,7 +24,6 @@ export const GameContainer = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [players, setPlayers] = useState<any[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
-
   const fetchPlayers = async () => {
     try {
       console.log("Fetching available players...");
@@ -49,7 +45,6 @@ export const GameContainer = ({
       });
     }
   };
-
   const handleAddPlayer = async () => {
     if (!selectedPlayer) {
       toast({
@@ -94,7 +89,6 @@ export const GameContainer = ({
       setIsProcessing(false);
     }
   };
-
   const handleRemovePlayer = async (playerId: string) => {
     try {
       console.log("Removing player from game:", playerId);
@@ -114,7 +108,6 @@ export const GameContainer = ({
       });
     }
   };
-
   if (game.status === "completed") {
     return <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} onUpdatePaymentStatus={async (playerId: string, status: string) => {
       try {
@@ -143,9 +136,7 @@ export const GameContainer = ({
   const allowAddingPlayers = game.status === "created" || game.status === "ongoing";
   return <div className="grid gap-8">
       {allowAddingPlayers && <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">
-            {game.status === "ongoing" ? "Adicionar jogadores atrasados" : "Manage Players"}
-          </h3>
+          
           <Button onClick={() => {
         setShowAddPlayerDialog(true);
         fetchPlayers();
