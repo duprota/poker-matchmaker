@@ -100,7 +100,7 @@ export const FinalizeGameForm = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`${isMobile ? 'max-h-[90vh] w-[95vw] p-4' : 'max-w-2xl'}`}>
+      <DialogContent className={`${isMobile ? 'max-h-[90vh] w-[95vw] p-4' : 'max-w-2xl'} flex flex-col`}>
         <DialogHeader>
           <DialogTitle>Finalize Game</DialogTitle>
           <DialogDescription>
@@ -108,7 +108,7 @@ export const FinalizeGameForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className={`${isMobile ? 'h-[60vh]' : 'max-h-[60vh]'} pr-4`}>
+        <ScrollArea className={`${isMobile ? 'h-[60vh]' : 'max-h-[60vh]'} pr-4 flex-grow overflow-auto`}>
           <div className="space-y-6">
             <div className="p-4 bg-muted rounded-lg">
               <p className="font-semibold">Total Money in Game: ${totalMoneyInGame}</p>
@@ -152,7 +152,7 @@ export const FinalizeGameForm = ({
           </Alert>
         )}
 
-        <div className="flex justify-between pt-4 sticky bottom-0 bg-background">
+        <div className="flex justify-between pt-4 mt-auto border-t border-border bg-background">
           <Button variant="outline" onClick={onClose} className="h-12">
             Back
           </Button>
@@ -164,3 +164,4 @@ export const FinalizeGameForm = ({
     </Dialog>
   );
 };
+
