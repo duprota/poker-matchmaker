@@ -1,18 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
-
-type SpecialHandType = "full_house" | "four_of_a_kind" | "straight_flush" | "royal_flush";
-
-interface SpecialHandOption {
-  value: SpecialHandType;
-  label: string;
-  icon: React.ReactNode;
-  color: string;
-  description: string;
-}
+import { SpecialHandIcon, SpecialHandType } from "@/components/shared/SpecialHandIcon";
 
 interface PlayerSpecialHandPanelProps {
   specialHands: { [key: string]: number };
@@ -30,35 +20,11 @@ export function PlayerSpecialHandPanel({
   const totalHandsCount = Object.values(localHands).reduce((sum, count) => sum + count, 0);
   const hasChanges = JSON.stringify(localHands) !== JSON.stringify(specialHands);
 
-  const specialHandOptions: SpecialHandOption[] = [
-    {
-      value: "full_house",
-      label: "Full House",
-      icon: "🏠",
-      color: "from-yellow-500/20 to-yellow-600/10",
-      description: "Três cartas de um valor e duas de outro"
-    }, 
-    {
-      value: "four_of_a_kind",
-      label: "Quadra",
-      icon: "4️⃣",
-      color: "from-pink-500/20 to-pink-600/10",
-      description: "Quatro cartas do mesmo valor"
-    }, 
-    {
-      value: "straight_flush",
-      label: "Straight Flush",
-      icon: "🔄",
-      color: "from-blue-500/20 to-blue-600/10",
-      description: "Cinco cartas sequenciais do mesmo naipe"
-    }, 
-    {
-      value: "royal_flush",
-      label: "Royal Flush",
-      icon: "👑",
-      color: "from-amber-500/20 to-amber-600/10",
-      description: "A, K, Q, J, 10 do mesmo naipe"
-    }
+  const specialHandOptions: { value: SpecialHandType }[] = [
+    { value: "full_house" },
+    { value: "four_of_a_kind" },
+    { value: "straight_flush" },
+    { value: "royal_flush" }
   ];
 
   const incrementHand = (handType: SpecialHandType) => {
@@ -130,18 +96,16 @@ export function PlayerSpecialHandPanel({
               key={option.value}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`bg-gradient-to-r ${option.color} p-4 rounded-lg ${
+              className={`p-4 rounded-lg ${
                 hasChanged ? "ring-2 ring-blue-500/40" : ""
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{option.icon}</div>
-                  <div>
-                    <h3 className="font-semibold">{option.label}</h3>
-                    <p className="text-xs text-muted-foreground">{option.description}</p>
-                  </div>
-                </div>
+                <SpecialHandIcon 
+                  type={option.value} 
+                  showLabel 
+                  showDescription
+                />
                 
                 <div className="flex items-center">
                   <Button 
