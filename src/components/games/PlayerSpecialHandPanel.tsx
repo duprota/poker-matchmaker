@@ -1,7 +1,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 type SpecialHandType = "full_house" | "four_of_a_kind" | "straight_flush" | "royal_flush";
 
@@ -25,7 +26,9 @@ export function PlayerSpecialHandPanel({
   playerName
 }: PlayerSpecialHandPanelProps) {
   const [localHands, setLocalHands] = useState<{ [key: string]: number }>(specialHands || {});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const totalHandsCount = Object.values(localHands).reduce((sum, count) => sum + count, 0);
+  const hasChanges = JSON.stringify(localHands) !== JSON.stringify(specialHands);
 
   const specialHandOptions: SpecialHandOption[] = [
     {
@@ -83,8 +86,23 @@ export function PlayerSpecialHandPanel({
     setLocalHands({});
   };
 
-  const saveChanges = () => {
-    onChange(localHands);
+  const saveChanges = async () => {
+    setIsSubmitting(true);
+    try {
+      await onChange(localHands);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
   };
 
   return (
@@ -96,16 +114,25 @@ export function PlayerSpecialHandPanel({
         </p>
       </div>
       
-      <div className="space-y-4">
+      <motion.div 
+        className="space-y-4"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
         {specialHandOptions.map((option) => {
           const handCount = localHands[option.value] || 0;
+          const originalCount = specialHands[option.value] || 0;
+          const hasChanged = handCount !== originalCount;
           
           return (
             <motion.div 
               key={option.value}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`bg-gradient-to-r ${option.color} p-4 rounded-lg`}
+              className={`bg-gradient-to-r ${option.color} p-4 rounded-lg ${
+                hasChanged ? "ring-2 ring-blue-500/40" : ""
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -121,20 +148,29 @@ export function PlayerSpecialHandPanel({
                     variant="outline"
                     size="icon"
                     onClick={() => decrementHand(option.value)}
-                    disabled={!handCount}
+                    disabled={!handCount || isSubmitting}
                     className="h-8 w-8 rounded-full"
                   >
                     -
                   </Button>
                   
-                  <span className="w-10 text-center font-bold text-lg">
-                    {handCount}
-                  </span>
+                  <AnimatePresence mode="wait">
+                    <motion.span 
+                      key={handCount}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="w-10 text-center font-bold text-lg"
+                    >
+                      {handCount}
+                    </motion.span>
+                  </AnimatePresence>
                   
                   <Button 
                     variant="outline"
                     size="icon"
                     onClick={() => incrementHand(option.value)}
+                    disabled={isSubmitting}
                     className="h-8 w-8 rounded-full"
                   >
                     +
@@ -144,7 +180,7 @@ export function PlayerSpecialHandPanel({
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
       
       <div className="border-t border-border pt-4 flex justify-between items-center px-2">
         <div>
@@ -156,7 +192,7 @@ export function PlayerSpecialHandPanel({
             variant="outline"
             size="sm"
             onClick={clearAllHands}
-            disabled={totalHandsCount === 0}
+            disabled={totalHandsCount === 0 || isSubmitting}
           >
             Limpar
           </Button>
@@ -165,8 +201,16 @@ export function PlayerSpecialHandPanel({
             size="sm"
             className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
             onClick={saveChanges}
+            disabled={!hasChanges || isSubmitting}
           >
-            Salvar Alterações
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar Alterações"
+            )}
           </Button>
         </div>
       </div>

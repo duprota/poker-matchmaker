@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, User, Award, Trash2, Hand } from "lucide-react";
-import { motion } from "framer-motion";
+import { Plus, Loader2, Trash2, Hand, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PlayerSpecialHandPanel } from "./PlayerSpecialHandPanel";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -12,6 +12,7 @@ import type { GamePlayer } from "@/types/game";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 interface PlayerGameCardProps {
   player: GamePlayer;
@@ -36,20 +37,53 @@ export function PlayerGameCard({
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [openSpecialHands, setOpenSpecialHands] = useState(false);
   const [openRebuyPanel, setOpenRebuyPanel] = useState(false);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
 
   const handleQuickRebuy = async () => {
-    if (isProcessing) return;
-    await onRebuyChange(player.id, player.total_rebuys + 1);
+    if (isProcessing || processingAction) return;
+    
+    setProcessingAction('rebuy');
+    try {
+      await onRebuyChange(player.id, player.total_rebuys + 1);
+      toast.success("Rebuy adicionado com sucesso!", {
+        description: `${player.player.name} agora tem ${player.total_rebuys + 1} rebuys`,
+        position: "top-center",
+      });
+    } finally {
+      setProcessingAction(null);
+    }
   };
 
-  const handleSpecialHandsChange = (specialHands: { [key: string]: number }) => {
-    onSpecialHandsChange(player.id, specialHands);
-    setOpenSpecialHands(false);
+  const handleSpecialHandsChange = async (specialHands: { [key: string]: number }) => {
+    if (isProcessing || processingAction) return;
+    
+    setProcessingAction('hands');
+    try {
+      await onSpecialHandsChange(player.id, specialHands);
+      toast.success("Mãos especiais atualizadas!", {
+        description: `Jogadas de ${player.player.name} foram registradas`,
+        position: "top-center",
+      });
+      setOpenSpecialHands(false);
+    } finally {
+      setProcessingAction(null);
+    }
   };
 
   const handleSetRebuyValue = async (value: number) => {
-    await onRebuyChange(player.id, value);
-    setOpenRebuyPanel(false);
+    if (isProcessing || processingAction) return;
+    
+    setProcessingAction('rebuy-set');
+    try {
+      await onRebuyChange(player.id, value);
+      toast.success("Rebuys atualizados!", {
+        description: `${player.player.name} agora tem ${value} rebuys`,
+        position: "top-center",
+      });
+      setOpenRebuyPanel(false);
+    } finally {
+      setProcessingAction(null);
+    }
   };
 
   const handleRemovePlayer = () => {
@@ -115,6 +149,7 @@ export function PlayerGameCard({
                 onClick={() => handleSetRebuyValue(value)}
                 variant={player.total_rebuys === value ? "default" : "outline"}
                 className={player.total_rebuys === value ? "bg-blue-500 hover:bg-blue-600" : ""}
+                disabled={processingAction === 'rebuy-set'}
               >
                 {value}
               </Button>
@@ -191,23 +226,57 @@ export function PlayerGameCard({
               </div>
               
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-3 rounded-lg">
+                <motion.div 
+                  className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-3 rounded-lg"
+                  key={`total-${totalAmount}`}
+                  initial={{ scale: 1 }}
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
                   <p className="text-xs text-muted-foreground mb-1">Total</p>
-                  <p className="text-2xl font-bold text-blue-500">${totalAmount}</p>
-                </div>
-                <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-3 rounded-lg">
+                  <AnimatePresence mode="wait">
+                    <motion.p 
+                      key={totalAmount}
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-2xl font-bold text-blue-500"
+                    >
+                      ${totalAmount}
+                    </motion.p>
+                  </AnimatePresence>
+                </motion.div>
+                <motion.div 
+                  className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-3 rounded-lg"
+                  key={`rebuys-${player.total_rebuys}`}
+                  initial={{ scale: 1 }}
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
                   <p className="text-xs text-muted-foreground mb-1">Rebuys</p>
-                  <p className="text-2xl font-bold text-purple-500">{player.total_rebuys}</p>
-                </div>
+                  <AnimatePresence mode="wait">
+                    <motion.p 
+                      key={player.total_rebuys}
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-2xl font-bold text-purple-500"
+                    >
+                      {player.total_rebuys}
+                    </motion.p>
+                  </AnimatePresence>
+                </motion.div>
               </div>
               
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={handleQuickRebuy}
-                  disabled={isProcessing}
+                  disabled={isProcessing || processingAction !== null}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
                 >
-                  {isProcessing ? (
+                  {isProcessing || processingAction === 'rebuy' ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Plus className="h-4 w-4 mr-2" />

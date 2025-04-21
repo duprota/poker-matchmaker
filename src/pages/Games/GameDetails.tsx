@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -10,11 +11,12 @@ import { FinalizeGameForm } from "@/components/games/FinalizeGameForm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: toastNotification } = useToast();
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const { game, loading, hasBalanceError, refreshGame } = useGameDetails(id);
 
@@ -30,18 +32,15 @@ const GameDetails = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Game deleted successfully",
+      toast.success("Jogo excluído", {
+        description: "O jogo foi excluído com sucesso",
       });
       
       navigate("/games");
     } catch (error) {
       console.error("Error deleting game:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete game",
-        variant: "destructive",
+      toast.error("Erro ao excluir jogo", {
+        description: "Não foi possível excluir o jogo. Tente novamente.",
       });
     }
   };
@@ -61,18 +60,15 @@ const GameDetails = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Game started successfully",
+      toast.success("Jogo iniciado", {
+        description: "O jogo foi iniciado com sucesso",
       });
       
       refreshGame();
     } catch (error) {
       console.error("Error starting game:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start game",
-        variant: "destructive",
+      toast.error("Erro ao iniciar jogo", {
+        description: "Não foi possível iniciar o jogo. Tente novamente.",
       });
     }
   };

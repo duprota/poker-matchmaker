@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export interface OngoingGameFormProps {
   players: any[];
@@ -22,7 +23,7 @@ export const OngoingGameForm = ({
   players,
   onRemovePlayer,
 }: OngoingGameFormProps) => {
-  const { toast } = useToast();
+  const { toast: toastNotification } = useToast();
   const [updatingPlayer, setUpdatingPlayer] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -65,20 +66,13 @@ export const OngoingGameForm = ({
 
       if (historyError) throw historyError;
       
-      toast({
-        title: "Rebuy registrado!",
-        description: "Alteração salva com sucesso",
-      });
-
-      // We'll refresh only the affected player instead of the whole page
-      // window.location.reload(); 
+      // Toast notification will now be handled in the PlayerGameCard component
+      // because of the realtime updates
       
     } catch (error) {
       console.error("Error updating rebuys:", error);
-      toast({
-        title: "Erro",
+      toast.error("Erro ao atualizar rebuys", {
         description: "Não foi possível registrar o rebuy. Tente novamente.",
-        variant: "destructive",
       });
     } finally {
       setUpdatingPlayer(null);
@@ -96,17 +90,13 @@ export const OngoingGameForm = ({
 
       if (error) throw error;
       
-      toast({
-        title: "Mãos registradas!",
-        description: "Jogadas especiais salvas com sucesso",
-      });
+      // Toast notification will now be handled in the PlayerGameCard component
+      // because of the realtime updates
       
     } catch (error) {
       console.error("Error updating special hands:", error);
-      toast({
-        title: "Erro",
+      toast.error("Erro ao registrar mãos especiais", {
         description: "Não foi possível registrar as mãos especiais. Tente novamente.",
-        variant: "destructive",
       });
     } finally {
       setUpdatingPlayer(null);

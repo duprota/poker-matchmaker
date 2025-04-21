@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -77,6 +78,30 @@ export const useGameDetails = (gameId: string | undefined) => {
   useEffect(() => {
     if (gameId) {
       fetchGame();
+
+      // Subscribe to real-time updates for game_players table
+      const channel = supabase
+        .channel('game-player-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'game_players',
+            filter: `game_id=eq.${gameId}`
+          },
+          (payload) => {
+            console.log('Realtime update received:', payload);
+            // Refresh game data when changes are detected
+            fetchGame();
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        channel.unsubscribe();
+      };
     }
   }, [gameId]);
 
