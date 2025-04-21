@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2, Pencil, X, Check } from "lucide-react";
+import { ArrowLeft, Pencil, X, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   AlertDialog,
@@ -57,24 +57,21 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
 
   return (
     <div className="mb-8">
-      <div className="flex items-center gap-4 mb-2">
-        <Link to="/games">
+      <div className="flex items-center justify-between">
+        <Link to="/games" className="mr-4">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold">Game Details</h1>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        
+        <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="flex items-center gap-2">
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter game name"
-                className="w-[200px] text-xl font-semibold"
+                className="w-full text-2xl font-bold"
                 autoFocus
               />
               <Button
@@ -98,10 +95,10 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold truncate">
                 {name || "Unnamed Game"}
-              </h2>
+              </h1>
               {canEdit && (
                 <Button
                   variant="ghost"
@@ -114,9 +111,6 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
               )}
             </div>
           )}
-          <span className="text-sm text-muted-foreground">
-            Status: {status.charAt(0).toUpperCase() + status.slice(1)}
-          </span>
         </div>
         
         {onDeleteGame && (
@@ -149,6 +143,10 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
             </AlertDialogContent>
           </AlertDialog>
         )}
+      </div>
+
+      <div className="mt-2 text-sm text-muted-foreground flex items-center justify-between">
+        <span>Game Status: {status.charAt(0).toUpperCase() + status.slice(1)}</span>
       </div>
     </div>
   );
