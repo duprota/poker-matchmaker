@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from "recharts";
 import { format } from "date-fns";
 import { RotateCw } from "lucide-react";
@@ -118,7 +117,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   const chartData = prepareChartData();
 
-  // Chart configuration
+  // Chart configuration with colors
   const chartConfig = selectedPlayers.reduce((config, player, index) => {
     config[player] = {
       label: player,
@@ -143,11 +142,19 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
         )}
 
         <div className="flex flex-wrap gap-2 mb-2">
-          {playersData.map((player) => (
+          {playersData.map((player, index) => (
             <Badge 
               key={player.player_name}
               variant={selectedPlayers.includes(player.player_name) ? "default" : "outline"}
               className="cursor-pointer"
+              style={{
+                backgroundColor: selectedPlayers.includes(player.player_name) 
+                  ? CHART_COLORS[index % CHART_COLORS.length] 
+                  : undefined,
+                color: selectedPlayers.includes(player.player_name) 
+                  ? 'white' 
+                  : undefined
+              }}
               onClick={() => {
                 if (selectedPlayers.includes(player.player_name)) {
                   setSelectedPlayers(selectedPlayers.filter(p => p !== player.player_name));
@@ -184,7 +191,6 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                     labelFormatter={(date) => `Game: ${date}`}
                   />} 
                 />
-                <Legend wrapperStyle={{ paddingTop: 10 }} />
                 {selectedPlayers.map((player, index) => (
                   <Line
                     key={player}
