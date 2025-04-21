@@ -9,12 +9,10 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-
 interface GameContainerProps {
   game: Game;
   refreshGame: () => void;
 }
-
 export const GameContainer = ({
   game,
   refreshGame
@@ -139,38 +137,23 @@ export const GameContainer = ({
   return <div className="grid gap-8">
       {allowAddingPlayers && <div className="flex justify-between items-center">
           
-          <Button onClick={() => {
-        setShowAddPlayerDialog(true);
-        fetchPlayers();
-      }} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Adicionar Jogador
-          </Button>
+          
         </div>}
 
       <div className="grid gap-4">
-        {game.status === "ongoing" && <OngoingGameForm 
-          players={game.players} 
-          rebuys={{}} 
-          onRebuyChange={() => {
-            console.log("Rebuy change detected");
-            refreshGame();
-          }} 
-          onSaveRebuys={() => {
-            console.log("Rebuys saved");
-            refreshGame();
-          }} 
-          savingRebuys={false} 
-          setRebuys={() => {
-            console.log("Rebuys updated");
-            refreshGame();
-          }} 
-          onRemovePlayer={handleRemovePlayer}
-          onAddPlayer={() => {
-            setShowAddPlayerDialog(true);
-            fetchPlayers();
-          }}
-        />}
+        {game.status === "ongoing" && <OngoingGameForm players={game.players} rebuys={{}} onRebuyChange={() => {
+        console.log("Rebuy change detected");
+        refreshGame();
+      }} onSaveRebuys={() => {
+        console.log("Rebuys saved");
+        refreshGame();
+      }} savingRebuys={false} setRebuys={() => {
+        console.log("Rebuys updated");
+        refreshGame();
+      }} onRemovePlayer={handleRemovePlayer} onAddPlayer={() => {
+        setShowAddPlayerDialog(true);
+        fetchPlayers();
+      }} />}
 
         {game.status === "created" && null}
       </div>
