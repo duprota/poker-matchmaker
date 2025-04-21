@@ -27,10 +27,33 @@ export const OngoingGameForm = ({
   onAddPlayer
 }: OngoingGameFormProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const sortedPlayers = [...players].sort((a, b) => a.player.name.localeCompare(b.player.name));
 
   const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const handleRebuyChange = async (playerId: string, newRebuys: number) => {
+    setIsProcessing(true);
+    try {
+      // In a real implementation, you would update the rebuys in the database
+      console.log(`Updated player ${playerId} rebuys to ${newRebuys}`);
+      return Promise.resolve();
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSpecialHandsChange = async (playerId: string, specialHands: { [key: string]: number }) => {
+    setIsProcessing(true);
+    try {
+      // In a real implementation, you would update the special hands in the database
+      console.log(`Updated player ${playerId} special hands`, specialHands);
+      return Promise.resolve();
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const container = {
     hidden: {
@@ -76,7 +99,13 @@ export const OngoingGameForm = ({
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} />
+            <PlayerGameCard 
+              player={gamePlayer} 
+              onRemovePlayer={onRemovePlayer} 
+              onRebuyChange={handleRebuyChange}
+              onSpecialHandsChange={handleSpecialHandsChange}
+              isProcessing={isProcessing}
+            />
           </motion.div>)}
       </motion.div>
       
