@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+
 interface PlayerGameCardProps {
   player: GamePlayer;
   onRebuyChange: (playerId: string, newRebuys: number) => Promise<void>;
@@ -21,6 +23,7 @@ interface PlayerGameCardProps {
   onRemovePlayer?: (playerId: string) => void;
   isProcessing: boolean;
 }
+
 export function PlayerGameCard({
   player,
   onRebuyChange,
@@ -35,6 +38,7 @@ export function PlayerGameCard({
   const [openSpecialHands, setOpenSpecialHands] = useState(false);
   const [openRebuyPanel, setOpenRebuyPanel] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
+
   const handleQuickRebuy = async () => {
     if (isProcessing || processingAction) return;
     setProcessingAction('rebuy');
@@ -48,6 +52,7 @@ export function PlayerGameCard({
       setProcessingAction(null);
     }
   };
+
   const handleSpecialHandsChange = async (specialHands: {
     [key: string]: number;
   }) => {
@@ -64,6 +69,7 @@ export function PlayerGameCard({
       setProcessingAction(null);
     }
   };
+
   const handleSetRebuyValue = async (value: number) => {
     if (isProcessing || processingAction) return;
     setProcessingAction('rebuy-set');
@@ -78,6 +84,7 @@ export function PlayerGameCard({
       setProcessingAction(null);
     }
   };
+
   const handleRemovePlayer = () => {
     if (onRemovePlayer) {
       onRemovePlayer(player.id);
@@ -85,13 +92,14 @@ export function PlayerGameCard({
     setConfirmRemove(false);
   };
 
-  // Get player initials for avatar
   const getInitials = (name: string) => {
     return name.split(' ').map(part => part[0]).join('').toUpperCase().substring(0, 2);
   };
+
   const ControlComponent = isMobile ? Drawer : Dialog;
   const TriggerComponent = isMobile ? DrawerTrigger : DialogTrigger;
   const ContentComponent = isMobile ? DrawerContent : DialogContent;
+
   const ConfirmDialog = () => <ControlComponent open={confirmRemove} onOpenChange={setConfirmRemove}>
       <ContentComponent className="sm:max-w-[425px]">
         <div className="p-6">
@@ -110,6 +118,7 @@ export function PlayerGameCard({
         </div>
       </ContentComponent>
     </ControlComponent>;
+
   const RebuyPanel = () => <ControlComponent open={openRebuyPanel} onOpenChange={setOpenRebuyPanel}>
       <TriggerComponent asChild>
         <Button variant="outline" size="sm" className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 border-blue-500/20">
@@ -131,6 +140,7 @@ export function PlayerGameCard({
         </div>
       </ContentComponent>
     </ControlComponent>;
+
   const SpecialHandsPanel = () => <Sheet open={openSpecialHands} onOpenChange={setOpenSpecialHands}>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className={`relative bg-gradient-to-r ${specialHandsCount > 0 ? "from-amber-500/10 to-purple-500/10 hover:from-amber-500/20 hover:to-purple-500/20 border-amber-500/20" : "border-muted"}`}>
@@ -142,6 +152,7 @@ export function PlayerGameCard({
         <PlayerSpecialHandPanel specialHands={player.special_hands || {}} onChange={handleSpecialHandsChange} playerName={player.player.name} />
       </SheetContent>
     </Sheet>;
+
   return <>
       <motion.div whileHover={{
       y: -5
@@ -151,7 +162,6 @@ export function PlayerGameCard({
     }}>
         <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-zinc-900/40 to-zinc-900/10 backdrop-blur-md">
           <div className="relative">
-            {/* Top gradient accent */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
             
             <div className="p-5">
@@ -226,9 +236,13 @@ export function PlayerGameCard({
               </div>
               
               <div className="flex flex-wrap gap-2">
-                <Button onClick={handleQuickRebuy} disabled={isProcessing || processingAction !== null} className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0">
+                <Button 
+                  onClick={handleQuickRebuy} 
+                  disabled={isProcessing || processingAction !== null} 
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
+                >
                   {isProcessing || processingAction === 'rebuy' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-                  Rebuy Rápido
+                  + Rebuy
                 </Button>
                 
                 <RebuyPanel />
