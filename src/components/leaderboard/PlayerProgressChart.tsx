@@ -126,6 +126,13 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
     return config;
   }, {} as Record<string, { label: string; color: string }>);
 
+  // Get color for player badge
+  const getPlayerColor = (playerName: string) => {
+    // Find the index of the player in the selectedPlayers array
+    const playerIndex = playersData.findIndex(p => p.player_name === playerName);
+    return CHART_COLORS[playerIndex % CHART_COLORS.length];
+  };
+
   return (
     <Card className="w-full mt-8">
       <CardHeader className="pb-2">
@@ -142,30 +149,33 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
         )}
 
         <div className="flex flex-wrap gap-2 mb-2">
-          {playersData.map((player, index) => (
-            <Badge 
-              key={player.player_name}
-              variant={selectedPlayers.includes(player.player_name) ? "default" : "outline"}
-              className="cursor-pointer"
-              style={{
-                backgroundColor: selectedPlayers.includes(player.player_name) 
-                  ? CHART_COLORS[index % CHART_COLORS.length] 
-                  : undefined,
-                color: selectedPlayers.includes(player.player_name) 
-                  ? 'white' 
-                  : undefined
-              }}
-              onClick={() => {
-                if (selectedPlayers.includes(player.player_name)) {
-                  setSelectedPlayers(selectedPlayers.filter(p => p !== player.player_name));
-                } else {
-                  setSelectedPlayers([...selectedPlayers, player.player_name]);
-                }
-              }}
-            >
-              {player.player_name} ({player.games_data.length} games)
-            </Badge>
-          ))}
+          {playersData.map((player) => {
+            const playerColor = getPlayerColor(player.player_name);
+            return (
+              <Badge 
+                key={player.player_name}
+                variant={selectedPlayers.includes(player.player_name) ? "default" : "outline"}
+                className="cursor-pointer"
+                style={{
+                  backgroundColor: selectedPlayers.includes(player.player_name) 
+                    ? playerColor
+                    : undefined,
+                  color: selectedPlayers.includes(player.player_name) 
+                    ? 'white' 
+                    : undefined
+                }}
+                onClick={() => {
+                  if (selectedPlayers.includes(player.player_name)) {
+                    setSelectedPlayers(selectedPlayers.filter(p => p !== player.player_name));
+                  } else {
+                    setSelectedPlayers([...selectedPlayers, player.player_name]);
+                  }
+                }}
+              >
+                {player.player_name} ({player.games_data.length} games)
+              </Badge>
+            );
+          })}
         </div>
       </CardHeader>
 
@@ -191,19 +201,22 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                     labelFormatter={(date) => `Game: ${date}`}
                   />} 
                 />
-                {selectedPlayers.map((player, index) => (
-                  <Line
-                    key={player}
-                    type="monotone"
-                    dataKey={player}
-                    name={player}
-                    stroke={CHART_COLORS[index % CHART_COLORS.length]}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                    connectNulls
-                  />
-                ))}
+                {selectedPlayers.map((player, index) => {
+                  const playerIndex = playersData.findIndex(p => p.player_name === player);
+                  return (
+                    <Line
+                      key={player}
+                      type="monotone"
+                      dataKey={player}
+                      name={player}
+                      stroke={CHART_COLORS[playerIndex % CHART_COLORS.length]}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      connectNulls
+                    />
+                  );
+                })}
               </LineChart>
             </ResponsiveContainer>
           </ChartContainer>
