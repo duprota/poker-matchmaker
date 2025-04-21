@@ -8,6 +8,7 @@ import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 export interface OngoingGameFormProps {
   players: any[];
   rebuys: Record<string, number>;
@@ -18,6 +19,7 @@ export interface OngoingGameFormProps {
   onRemovePlayer?: (playerId: string) => void;
   onAddPlayer?: () => void;
 }
+
 export const OngoingGameForm = ({
   players,
   onRemovePlayer,
@@ -25,11 +27,10 @@ export const OngoingGameForm = ({
 }: OngoingGameFormProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Sort players by name
   const sortedPlayers = [...players].sort((a, b) => a.player.name.localeCompare(b.player.name));
 
-  // Filter players by search term
   const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
   const container = {
     hidden: {
       opacity: 0
@@ -41,6 +42,7 @@ export const OngoingGameForm = ({
       }
     }
   };
+
   const item = {
     hidden: {
       y: 20,
@@ -51,6 +53,7 @@ export const OngoingGameForm = ({
       opacity: 1
     }
   };
+
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text flex-grow">
@@ -60,7 +63,7 @@ export const OngoingGameForm = ({
         <div className="flex items-center gap-4">
           {onAddPlayer && <Button onClick={onAddPlayer} className="gap-2">
               <Plus className="w-4 h-4" />
-              Adicionar Jogador
+              + Jogador
             </Button>}
           
           <div className="relative w-full sm:w-auto">
