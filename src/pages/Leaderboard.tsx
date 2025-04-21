@@ -1,4 +1,3 @@
-
 import { Navigation } from "@/components/Navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -100,9 +99,6 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
 const fetchPlayerProgressData = async () => {
   console.log("Fetching player progress data...");
   
-  const currentYear = new Date().getFullYear();
-  const firstDayOfYear = new Date(currentYear, 0, 1).toISOString();
-
   const { data, error } = await supabase
     .from('games')
     .select(`
@@ -115,7 +111,6 @@ const fetchPlayerProgressData = async () => {
         player:players(id, name)
       )
     `)
-    .gte('date', firstDayOfYear)
     .eq('status', 'completed')
     .order('date', { ascending: true });
 
