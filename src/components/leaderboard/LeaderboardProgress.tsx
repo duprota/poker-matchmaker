@@ -7,8 +7,7 @@ interface LeaderboardProgressProps {
 
 export const LeaderboardProgress = ({ playerProgressData }: LeaderboardProgressProps) => {
   return (
-    <div className="mt-8">
-      <h2 className="text-xl font-semibold mb-4">Players Progress</h2>
+    <div className="mt-4 md:mt-8">
       {playerProgressData && playerProgressData.length > 0 ? (
         <PlayerProgressChart playersData={playerProgressData} />
       ) : (

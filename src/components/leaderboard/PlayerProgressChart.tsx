@@ -14,6 +14,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type PlayerData = {
   player_name: string;
@@ -138,9 +139,9 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
   }, {} as Record<string, { label: string; color: string }>);
 
   return (
-    <Card className="w-full mt-8">
+    <Card className="w-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl">Players Progress</CardTitle>
+        <CardTitle className="text-lg md:text-xl">Players Progress</CardTitle>
         <div className="text-sm text-muted-foreground mb-2">
           Track players' financial performance over time
         </div>
@@ -152,54 +153,65 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2 mb-2">
-          {playersData.map((player) => {
-            const playerColor = getPlayerColor(player.player_name);
-            const gamesCount = player.games_count || player.games_data.length;
-            
-            return (
-              <Badge 
-                key={player.player_name}
-                variant={selectedPlayers.includes(player.player_name) ? "default" : "outline"}
-                className="cursor-pointer"
-                style={{
-                  backgroundColor: selectedPlayers.includes(player.player_name) 
-                    ? playerColor
-                    : undefined,
-                  color: selectedPlayers.includes(player.player_name) 
-                    ? 'white' 
-                    : undefined
-                }}
-                onClick={() => {
-                  if (selectedPlayers.includes(player.player_name)) {
-                    setSelectedPlayers(selectedPlayers.filter(p => p !== player.player_name));
-                  } else {
-                    setSelectedPlayers([...selectedPlayers, player.player_name]);
-                  }
-                }}
-              >
-                {player.player_name} ({gamesCount} games)
-              </Badge>
-            );
-          })}
-        </div>
+        <ScrollArea className="w-full pb-4">
+          <div className="flex flex-nowrap gap-2 min-w-full">
+            {playersData.map((player) => {
+              const playerColor = getPlayerColor(player.player_name);
+              const gamesCount = player.games_count || player.games_data.length;
+              
+              return (
+                <Badge 
+                  key={player.player_name}
+                  variant={selectedPlayers.includes(player.player_name) ? "default" : "outline"}
+                  className="cursor-pointer whitespace-nowrap"
+                  style={{
+                    backgroundColor: selectedPlayers.includes(player.player_name) 
+                      ? playerColor
+                      : undefined,
+                    color: selectedPlayers.includes(player.player_name) 
+                      ? 'white' 
+                      : undefined
+                  }}
+                  onClick={() => {
+                    if (selectedPlayers.includes(player.player_name)) {
+                      setSelectedPlayers(selectedPlayers.filter(p => p !== player.player_name));
+                    } else {
+                      setSelectedPlayers([...selectedPlayers, player.player_name]);
+                    }
+                  }}
+                >
+                  {player.player_name} ({gamesCount})
+                </Badge>
+              );
+            })}
+          </div>
+        </ScrollArea>
       </CardHeader>
 
       <CardContent>
-        <div className="w-full" style={{ height: isMobile ? '300px' : '400px' }}>
+        <div className="w-full" style={{ height: isMobile ? '280px' : '400px' }}>
           <ChartContainer config={chartConfig} className="h-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <LineChart 
+                data={chartData} 
+                margin={{ 
+                  top: 20, 
+                  right: isMobile ? 10 : 30, 
+                  left: 0, 
+                  bottom: 5 
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" opacity={0.1} />
                 <XAxis 
                   dataKey="formattedDate" 
-                  tick={{ fontSize: 12 }} 
-                  tickMargin={10}
+                  tick={{ fontSize: isMobile ? 10 : 12 }} 
+                  tickMargin={8}
+                  interval={isMobile ? 1 : 0}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }} 
+                  tick={{ fontSize: isMobile ? 10 : 12 }} 
                   tickFormatter={(value) => `$${value}`}
-                  width={isMobile ? 40 : 60} 
+                  width={40}
                 />
                 <Tooltip 
                   content={<ChartTooltipContent 
@@ -215,8 +227,8 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                     name={player}
                     stroke={getPlayerColor(player)}
                     strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
+                    dot={{ r: isMobile ? 2 : 3 }}
+                    activeDot={{ r: isMobile ? 4 : 5 }}
                     connectNulls
                   />
                 ))}

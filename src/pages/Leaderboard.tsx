@@ -226,7 +226,7 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-4 px-2 md:py-8 md:px-4">
         <LeaderboardHeader
           timeFilter={timeFilter}
           onTimeFilterChange={setTimeFilter}
@@ -234,13 +234,13 @@ const Leaderboard = () => {
           onRankingTypeChange={setRankingType}
         />
 
-        <Tabs defaultValue="rankings" className="mt-8">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="rankings">Rankings</TabsTrigger>
-            <TabsTrigger value="progress">Progress Chart</TabsTrigger>
+        <Tabs defaultValue="rankings" className="mt-4 md:mt-8">
+          <TabsList className="w-full grid grid-cols-2 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <TabsTrigger value="rankings" className="text-sm md:text-base">Rankings</TabsTrigger>
+            <TabsTrigger value="progress" className="text-sm md:text-base">Progress Chart</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="rankings">
+          <TabsContent value="rankings" className="mt-2 md:mt-4">
             {sortedLeaderboard && (
               <LeaderboardRankings 
                 leaderboard={sortedLeaderboard} 
@@ -249,7 +249,7 @@ const Leaderboard = () => {
             )}
           </TabsContent>
           
-          <TabsContent value="progress">
+          <TabsContent value="progress" className="mt-2 md:mt-4">
             {isLoadingProgress ? (
               <div className="text-center py-6">Loading chart data...</div>
             ) : (
