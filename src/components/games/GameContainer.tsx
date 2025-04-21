@@ -1,4 +1,3 @@
-
 import { Game, GamePlayer } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
@@ -209,8 +208,9 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
                 console.log("Rebuys updated");
                 refreshGame();
               }}
+              onRemovePlayer={handleRemovePlayer}
             />
-            {/* Lista jogadores já adicionados (somente leitura/remover) */}
+            {/* Lista jogadores já adicionados (somente leitura, sem botão de remoção aqui) */}
             <div className="grid gap-4">
               {game.players.map((player) => (
                 <div
@@ -223,14 +223,7 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
                       <p className="text-sm text-muted-foreground">{player.player.email}</p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemovePlayer(player.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <UserMinus className="w-4 h-4" />
-                  </Button>
+                  {/* Removido o botão de remoção daqui */}
                 </div>
               ))}
             </div>

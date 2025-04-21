@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Plus, History, Edit2, Loader2 } from "lucide-react";
+import { Plus, Edit2, Loader2, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,9 +11,10 @@ interface PlayerRebuysCardProps {
   player: GamePlayer;
   onRebuyChange: (playerId: string, newRebuys: number) => Promise<void>;
   isUpdating: boolean;
+  onRemovePlayer?: (playerId: string) => void; // nova prop
 }
 
-export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRebuysCardProps) => {
+export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating, onRemovePlayer }: PlayerRebuysCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
   const totalAmount = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
@@ -64,6 +66,12 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRe
     }
   };
 
+  const handleRemove = () => {
+    if(onRemovePlayer) {
+      onRemovePlayer(player.id);
+    }
+  };
+
   return (
     <>
       <Card className="p-4 hover:bg-accent/5 transition-colors">
@@ -94,6 +102,18 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating }: PlayerRe
                 )}
                 Rebuy
               </Button>
+              {onRemovePlayer && (
+                <Button
+                  onClick={handleRemove}
+                  disabled={isProcessing}
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  title="Remover jogador"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
 

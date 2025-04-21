@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
 import { Card } from "@/components/ui/card";
 import { PlayerRebuysCard } from "./PlayerRebuysCard";
+import { Trash2 } from "lucide-react";
 
 export interface OngoingGameFormProps {
   players: any[];
@@ -12,15 +13,16 @@ export interface OngoingGameFormProps {
   onSaveRebuys: () => void;
   savingRebuys: boolean;
   setRebuys: (rebuys: Record<string, number>) => void;
+  onRemovePlayer?: (playerId: string) => void;
 }
 
 export const OngoingGameForm = ({
   players,
+  onRemovePlayer,
 }: OngoingGameFormProps) => {
   const { toast } = useToast();
   const [updatingPlayer, setUpdatingPlayer] = useState<string | null>(null);
   
-  // Sort players by name and memoize the sorted array
   const sortedPlayers = [...players].sort((a, b) => 
     a.player.name.localeCompare(b.player.name)
   );
@@ -30,7 +32,6 @@ export const OngoingGameForm = ({
       console.log("Starting rebuy change:", { playerId, newRebuys });
       setUpdatingPlayer(playerId);
 
-      // First update game_players table
       const { error: updateError } = await supabase
         .from("game_players")
         .update({ total_rebuys: newRebuys })
@@ -40,13 +41,11 @@ export const OngoingGameForm = ({
 
       console.log("Successfully updated game_players table");
 
-      // Get the player info for the history entry
       const player = players.find(p => p.id === playerId);
       if (!player) {
         throw new Error("Player not found");
       }
       
-      // Then add to game history
       const { error: historyError } = await supabase
         .from("game_history")
         .insert({
@@ -66,7 +65,6 @@ export const OngoingGameForm = ({
         description: "Rebuy registered successfully",
       });
 
-      // Force a refresh of the game data after successful update
       window.location.reload();
       
     } catch (error) {
@@ -92,6 +90,7 @@ export const OngoingGameForm = ({
             player={gamePlayer}
             onRebuyChange={handleRebuyChange}
             isUpdating={updatingPlayer === gamePlayer.id}
+            onRemovePlayer={onRemovePlayer}
           />
         ))}
       </div>
