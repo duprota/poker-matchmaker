@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
-import { PlayerGameCard } from "./PlayerGameCard";
+import { PlayerGameCard } from "./player-card/PlayerGameCard";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Search, Plus } from "lucide-react";
@@ -12,7 +13,7 @@ import { toast } from "sonner";
 export interface OngoingGameFormProps {
   players: any[];
   rebuys: Record<string, number>;
-  onRebuyChange: (playerId: string, value: string) => void;
+  onRebuyChange: (playerId: string, value: number) => void; // Changed from string to number
   onSaveRebuys: () => void;
   savingRebuys: boolean;
   setRebuys: (rebuys: Record<string, number>) => void;
@@ -60,9 +61,16 @@ export const OngoingGameForm = ({
     }
   };
 
+  // Handle rebuy changes with proper Promise return type
+  const handleRebuyChange = async (playerId: string, newRebuys: number): Promise<void> => {
+    onRebuyChange(playerId, newRebuys);
+    // Return a resolved promise to satisfy the expected function signature
+    return Promise.resolve();
+  };
+
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text flex-grow text-center">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text text-center flex-grow">
           Mesa de Jogo
         </h2>
         
@@ -90,7 +98,7 @@ export const OngoingGameForm = ({
             <PlayerGameCard 
               player={gamePlayer} 
               onRemovePlayer={onRemovePlayer} 
-              onRebuyChange={onRebuyChange}
+              onRebuyChange={handleRebuyChange} // Use our updated handler
               onSpecialHandsChange={async (playerId, specialHands) => {
                 console.log('Special hands changed:', specialHands);
               }}
