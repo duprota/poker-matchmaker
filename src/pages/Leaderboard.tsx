@@ -64,7 +64,6 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
       };
     }
 
-    // Update special hands
     if (entry.special_hands) {
       Object.entries(entry.special_hands as { [key: string]: number }).forEach(([handType, count]) => {
         if (!acc[playerName].special_hands![handType]) {
@@ -85,7 +84,6 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     return acc;
   }, {});
 
-  // Calculate final ROI percentages and averages
   Object.values(playerStats).forEach(player => {
     player.roi_percentage = calculateROI(player.total_winnings, player.total_spent);
     player.average_roi = player.roi_percentage / player.games_played;
@@ -96,10 +94,10 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   return Object.values(playerStats);
 };
 
-const fetchPlayerProgressData = async () => {
-  console.log("Fetching player progress data...");
+const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[]) => {
+  console.log("Processing player progress data from leaderboard data...");
   
-  const { data, error } = await supabase
+  const { data: gamesData, error: gamesError } = await supabase
     .from('games')
     .select(`
       id,
@@ -114,14 +112,22 @@ const fetchPlayerProgressData = async () => {
     .eq('status', 'completed')
     .order('date', { ascending: true });
 
-  if (error) {
-    console.error("Error fetching player progress data:", error);
-    throw error;
+  if (gamesError) {
+    console.error("Error fetching games data:", gamesError);
+    throw gamesError;
   }
 
   const playerProgressMap = new Map();
   
-  data.forEach(game => {
+  leaderboardData.forEach(player => {
+    playerProgressMap.set(player.player_name, {
+      player_name: player.player_name,
+      games_data: [],
+      games_count: player.games_played
+    });
+  });
+  
+  gamesData.forEach(game => {
     const gameDate = game.date;
     const formattedDate = format(new Date(gameDate), 'yyyy-MM-dd');
     
@@ -129,15 +135,11 @@ const fetchPlayerProgressData = async () => {
       if (!gamePlayer.final_result) return;
 
       const playerName = gamePlayer.player.name;
+      
+      if (!playerProgressMap.has(playerName)) return;
+      
       const spent = gamePlayer.initial_buyin * (1 + gamePlayer.total_rebuys);
       const netEarnings = gamePlayer.final_result - spent;
-      
-      if (!playerProgressMap.has(playerName)) {
-        playerProgressMap.set(playerName, {
-          player_name: playerName,
-          games_data: []
-        });
-      }
       
       const playerData = playerProgressMap.get(playerName);
       playerData.games_data.push({
@@ -174,8 +176,9 @@ const Leaderboard = () => {
   });
 
   const { data: playerProgressData, isLoading: isLoadingProgress } = useQuery({
-    queryKey: ['player-progress'],
-    queryFn: fetchPlayerProgressData,
+    queryKey: ['player-progress', leaderboard],
+    queryFn: () => leaderboard ? fetchPlayerProgressData(leaderboard) : Promise.resolve([]),
+    enabled: !!leaderboard,
   });
 
   const sortedLeaderboard = leaderboard?.sort((a, b) => {
