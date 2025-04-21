@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
@@ -63,7 +64,7 @@ export const OngoingGameForm = ({
         <div className="flex items-center gap-4">
           {onAddPlayer && <Button onClick={onAddPlayer} className="gap-2">
               <Plus className="w-4 h-4" />
-              + Jogador
+              Jogador
             </Button>}
           
           <div className="relative w-full sm:w-auto">
