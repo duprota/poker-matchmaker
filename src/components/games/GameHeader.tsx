@@ -1,4 +1,5 @@
-import { ArrowLeft, Pencil, X, Check } from "lucide-react";
+
+import { ArrowLeft, Pencil, X, Check, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   AlertDialog,
