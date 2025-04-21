@@ -1,33 +1,25 @@
-
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
-import { PlayerGameCard } from "./player-card/PlayerGameCard";
+import { PlayerGameCard } from "./PlayerGameCard";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
 export interface OngoingGameFormProps {
   players: any[];
   rebuys: Record<string, number>;
-  onRebuyChange: (playerId: string, value: number) => void; // Changed from string to number
+  onRebuyChange: (playerId: string, value: string) => void;
   onSaveRebuys: () => void;
   savingRebuys: boolean;
   setRebuys: (rebuys: Record<string, number>) => void;
   onRemovePlayer?: (playerId: string) => void;
   onAddPlayer?: () => void;
 }
-
 export const OngoingGameForm = ({
   players,
-  rebuys,
-  onRebuyChange,
-  onSaveRebuys,
-  savingRebuys,
-  setRebuys,
   onRemovePlayer,
   onAddPlayer
 }: OngoingGameFormProps) => {
@@ -38,7 +30,6 @@ export const OngoingGameForm = ({
 
   // Filter players by search term
   const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
   const container = {
     hidden: {
       opacity: 0
@@ -60,17 +51,9 @@ export const OngoingGameForm = ({
       opacity: 1
     }
   };
-
-  // Handle rebuy changes with proper Promise return type
-  const handleRebuyChange = async (playerId: string, newRebuys: number): Promise<void> => {
-    onRebuyChange(playerId, newRebuys);
-    // Return a resolved promise to satisfy the expected function signature
-    return Promise.resolve();
-  };
-
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text text-center flex-grow">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text flex-grow">
           Mesa de Jogo
         </h2>
         
@@ -82,28 +65,14 @@ export const OngoingGameForm = ({
           
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              type="search"
-              placeholder="Buscar jogador..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            
           </div>
         </div>
       </div>
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard 
-              player={gamePlayer} 
-              onRemovePlayer={onRemovePlayer} 
-              onRebuyChange={handleRebuyChange} // Use our updated handler
-              onSpecialHandsChange={async (playerId, specialHands) => {
-                console.log('Special hands changed:', specialHands);
-              }}
-              isProcessing={savingRebuys}
-            />
+            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} />
           </motion.div>)}
       </motion.div>
       
