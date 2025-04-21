@@ -231,29 +231,7 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
         )}
 
         {game.status === "created" && (
-          <div className="grid gap-4">
-            {game.players.map((player) => (
-              <div 
-                key={player.id} 
-                className="flex justify-between items-center p-4 bg-card rounded-lg border"
-              >
-                <div>
-                  <p className="font-medium">{player.player.name}</p>
-                  {player.player.email && (
-                    <p className="text-sm text-muted-foreground">{player.player.email}</p>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemovePlayer(player.id)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <UserMinus className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+          null
         )}
       </div>
 
