@@ -82,6 +82,7 @@ export type Database = {
           payment_date: string | null
           payment_status: string | null
           player_id: string | null
+          special_hands_count: number | null
           total_rebuys: number
         }
         Insert: {
@@ -94,6 +95,7 @@ export type Database = {
           payment_date?: string | null
           payment_status?: string | null
           player_id?: string | null
+          special_hands_count?: number | null
           total_rebuys?: number
         }
         Update: {
@@ -106,6 +108,7 @@ export type Database = {
           payment_date?: string | null
           payment_status?: string | null
           player_id?: string | null
+          special_hands_count?: number | null
           total_rebuys?: number
         }
         Relationships: [
@@ -355,6 +358,51 @@ export type Database = {
         }
         Relationships: []
       }
+      poker_hands: {
+        Row: {
+          created_at: string
+          description: string | null
+          game_id: string
+          hand_type: Database["public"]["Enums"]["poker_hand_type"]
+          id: string
+          player_id: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          game_id: string
+          hand_type: Database["public"]["Enums"]["poker_hand_type"]
+          id?: string
+          player_id: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          game_id?: string
+          hand_type?: Database["public"]["Enums"]["poker_hand_type"]
+          id?: string
+          player_id?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poker_hands_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poker_hands_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -387,6 +435,11 @@ export type Database = {
       game_event_type: "rebuy" | "result_update"
       group_member_role: "admin" | "member"
       player_vote_type: "like" | "dislike"
+      poker_hand_type:
+        | "full_house"
+        | "four_of_a_kind"
+        | "straight_flush"
+        | "royal_flush"
       user_role: "user" | "manager"
     }
     CompositeTypes: {
@@ -506,6 +559,12 @@ export const Constants = {
       game_event_type: ["rebuy", "result_update"],
       group_member_role: ["admin", "member"],
       player_vote_type: ["like", "dislike"],
+      poker_hand_type: [
+        "full_house",
+        "four_of_a_kind",
+        "straight_flush",
+        "royal_flush",
+      ],
       user_role: ["user", "manager"],
     },
   },

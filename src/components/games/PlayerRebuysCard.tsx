@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Plus, Edit2, Loader2, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -6,17 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { GamePlayer } from "@/types/game";
 import { useToast } from "@/hooks/use-toast";
+import { PlayerSpecialHandReaction, EmojiSVGDefs } from "./PlayerSpecialHandReaction";
 
 interface PlayerRebuysCardProps {
   player: GamePlayer;
   onRebuyChange: (playerId: string, newRebuys: number) => Promise<void>;
   isUpdating: boolean;
-  onRemovePlayer?: (playerId: string) => void; // nova prop
+  onRemovePlayer?: (playerId: string) => void;
 }
 
-export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating, onRemovePlayer }: PlayerRebuysCardProps) => {
+export const PlayerRebuysCard = ({
+  player,
+  onRebuyChange,
+  isUpdating,
+  onRemovePlayer,
+}: PlayerRebuysCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [specialHand, setSpecialHand] = useState(null);
   const { toast } = useToast();
   const totalAmount = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -84,10 +90,17 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating, onRemovePl
 
   return (
     <>
+      <EmojiSVGDefs />
       <Card className="p-4 hover:bg-accent/5 transition-colors">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-lg">{player.player.name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg">{player.player.name}</h3>
+              <PlayerSpecialHandReaction
+                value={specialHand}
+                onChange={setSpecialHand}
+              />
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
