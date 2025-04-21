@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -101,10 +100,10 @@ const GameDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       <Navigation />
       
-      <div className="container mx-auto py-8 px-4 pb-32">
+      <div className="container mx-auto py-8 px-4">
         <div className="mb-8">
           <GameHeader 
             status={game.status}
