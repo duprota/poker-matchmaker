@@ -16,9 +16,9 @@ export const useGameDetails = (gameId: string | undefined) => {
         .from("games")
         .select("*")
         .eq("id", gameId)
-        .single();
+        .maybeSingle();
 
-      if (gameError) throw gameError;
+      if (gameError || !gameData) throw gameError ?? new Error("Game not found");
 
       const { data: playersData, error: playersError } = await supabase
         .from("game_players")
@@ -39,7 +39,7 @@ export const useGameDetails = (gameId: string | undefined) => {
         `)
         .eq("game_id", gameId);
 
-      if (playersError) throw playersError;
+      if (playersError || !playersData) throw playersError ?? new Error("Players not found");
 
       console.log("Game data:", gameData);
       console.log("Players data:", playersData);
@@ -47,15 +47,18 @@ export const useGameDetails = (gameId: string | undefined) => {
       const gameWithPlayers: Game = {
         ...gameData,
         status: gameData.status,
-        players: playersData as GamePlayer[],
+        players: (playersData as GamePlayer[]).map((p) => ({
+          ...p,
+          special_hands: p.special_hands ?? {}, // Ensure special_hands is at least an empty object
+        })),
       };
 
       setGame(gameWithPlayers);
 
       // Check balance after setting game data
-      const totalBuyIns = playersData.reduce((acc, player) => 
+      const totalBuyIns = playersData.reduce((acc, player: any) =>
         acc + player.initial_buyin + (player.total_rebuys * player.initial_buyin), 0);
-      const totalResults = playersData.reduce((acc, player) => 
+      const totalResults = playersData.reduce((acc, player: any) =>
         acc + (player.final_result || 0), 0);
       setHasBalanceError(totalBuyIns !== totalResults);
 

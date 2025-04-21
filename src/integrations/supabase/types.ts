@@ -82,6 +82,7 @@ export type Database = {
           payment_date: string | null
           payment_status: string | null
           player_id: string | null
+          special_hands: Json | null
           special_hands_count: number | null
           total_rebuys: number
         }
@@ -95,6 +96,7 @@ export type Database = {
           payment_date?: string | null
           payment_status?: string | null
           player_id?: string | null
+          special_hands?: Json | null
           special_hands_count?: number | null
           total_rebuys?: number
         }
@@ -108,6 +110,7 @@ export type Database = {
           payment_date?: string | null
           payment_status?: string | null
           player_id?: string | null
+          special_hands?: Json | null
           special_hands_count?: number | null
           total_rebuys?: number
         }
