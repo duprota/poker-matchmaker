@@ -25,6 +25,19 @@ const GameDetails = () => {
 
     try {
       console.log("Deleting game:", game.id);
+      
+      // Primeiro, excluir as transações relacionadas ao jogo
+      const { error: transactionsError } = await supabase
+        .from("game_transactions")
+        .delete()
+        .eq("game_id", game.id);
+
+      if (transactionsError) {
+        console.error("Error deleting game transactions:", transactionsError);
+        throw transactionsError;
+      }
+
+      // Depois, excluir o jogo
       const { error } = await supabase
         .from("games")
         .delete()
