@@ -242,7 +242,7 @@ export function PlayerGameCard({
                   className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
                 >
                   {isProcessing || processingAction === 'rebuy' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-                  + Rebuy
+                  Rebuy
                 </Button>
                 
                 <RebuyPanel />
