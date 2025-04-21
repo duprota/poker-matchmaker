@@ -8,6 +8,7 @@ import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 export interface OngoingGameFormProps {
   players: any[];
   rebuys: Record<string, number>;
@@ -18,8 +19,14 @@ export interface OngoingGameFormProps {
   onRemovePlayer?: (playerId: string) => void;
   onAddPlayer?: () => void;
 }
+
 export const OngoingGameForm = ({
   players,
+  rebuys,
+  onRebuyChange,
+  onSaveRebuys,
+  savingRebuys,
+  setRebuys,
   onRemovePlayer,
   onAddPlayer
 }: OngoingGameFormProps) => {
@@ -30,6 +37,7 @@ export const OngoingGameForm = ({
 
   // Filter players by search term
   const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
   const container = {
     hidden: {
       opacity: 0
@@ -51,9 +59,10 @@ export const OngoingGameForm = ({
       opacity: 1
     }
   };
+
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text flex-grow">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text flex-grow text-center">
           Mesa de Jogo
         </h2>
         
@@ -65,14 +74,28 @@ export const OngoingGameForm = ({
           
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            
+            <Input
+              type="search"
+              placeholder="Buscar jogador..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
       </div>
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} />
+            <PlayerGameCard 
+              player={gamePlayer} 
+              onRemovePlayer={onRemovePlayer} 
+              onRebuyChange={onRebuyChange}
+              onSpecialHandsChange={async (playerId, specialHands) => {
+                console.log('Special hands changed:', specialHands);
+              }}
+              isProcessing={savingRebuys}
+            />
           </motion.div>)}
       </motion.div>
       
