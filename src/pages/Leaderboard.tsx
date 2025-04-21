@@ -1,3 +1,4 @@
+
 import { Navigation } from "@/components/Navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -7,6 +8,8 @@ import { LeaderboardShare } from "@/components/leaderboard/LeaderboardShare";
 import { LeaderboardRankings } from "@/components/leaderboard/LeaderboardRankings";
 import { LeaderboardProgress } from "@/components/leaderboard/LeaderboardProgress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 const calculateROI = (winnings: number, spent: number) => {
   if (spent === 0) return 0;
@@ -64,11 +67,11 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
 
     // Update special hands
     if (entry.special_hands) {
-      Object.entries(entry.special_hands).forEach(([handType, count]) => {
+      Object.entries(entry.special_hands as { [key: string]: number }).forEach(([handType, count]) => {
         if (!acc[playerName].special_hands![handType]) {
           acc[playerName].special_hands![handType] = 0;
         }
-        acc[playerName].special_hands![handType] += count;
+        acc[playerName].special_hands![handType] += count as number;
       });
     }
 

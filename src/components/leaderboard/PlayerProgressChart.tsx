@@ -11,12 +11,9 @@ import {
   Legend,
 } from "recharts";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
-import { RotateCw, RotateCcw } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -33,18 +30,18 @@ interface PlayerProgressChartProps {
   playersData: PlayerData[];
 }
 
-// Cores para as linhas do gráfico
+// Chart colors
 const CHART_COLORS = [
   "#3f51b5", // indigo
-  "#f44336", // vermelho
-  "#4caf50", // verde
-  "#ff9800", // laranja
-  "#9c27b0", // roxo
+  "#f44336", // red
+  "#4caf50", // green
+  "#ff9800", // orange
+  "#9c27b0", // purple
   "#009688", // teal
-  "#795548", // marrom
-  "#607d8b", // azul cinza
-  "#e91e63", // rosa
-  "#2196f3", // azul
+  "#795548", // brown
+  "#607d8b", // blue-gray
+  "#e91e63", // pink
+  "#2196f3", // blue
 ];
 
 export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) => {
@@ -54,7 +51,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   useEffect(() => {
     if (isMobile) {
-      // Detecta a orientação inicial e mostra a dica se estiver em modo retrato
+      // Detect initial orientation and show hint if in portrait mode
       const checkOrientation = () => {
         if (window.innerHeight > window.innerWidth) {
           setShowRotationHint(true);
@@ -73,7 +70,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
   }, [isMobile]);
 
   useEffect(() => {
-    // Selecionar os 5 jogadores com mais jogos por padrão
+    // Select the 5 players with the most games by default
     if (playersData.length > 0 && selectedPlayers.length === 0) {
       const sortedByGamesCount = [...playersData]
         .sort((a, b) => b.games_data.length - a.games_data.length)
@@ -84,9 +81,9 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
     }
   }, [playersData, selectedPlayers.length]);
 
-  // Preparar dados para o gráfico
+  // Prepare data for the chart
   const prepareChartData = () => {
-    // Encontrar todas as datas de jogos únicas
+    // Find all unique game dates
     const allDates = new Set<string>();
     playersData.forEach(player => {
       player.games_data.forEach(game => {
@@ -94,19 +91,19 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
       });
     });
 
-    // Ordenar as datas cronologicamente
+    // Sort dates chronologically
     const sortedDates = Array.from(allDates).sort((a, b) => 
       new Date(a).getTime() - new Date(b).getTime()
     );
 
-    // Criar um objeto para cada data com o valor de cada jogador selecionado
+    // Create an object for each date with the value of each selected player
     return sortedDates.map(date => {
       const dataPoint: any = {
         date,
-        formattedDate: format(new Date(date), "d MMM", { locale: ptBR }),
+        formattedDate: format(new Date(date), "d MMM"),
       };
 
-      // Adicionar o valor para cada jogador selecionado nesta data
+      // Add the value for each selected player on this date
       selectedPlayers.forEach(playerName => {
         const player = playersData.find(p => p.player_name === playerName);
         if (player) {
@@ -121,7 +118,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   const chartData = prepareChartData();
 
-  // Configuração para o gráfico
+  // Chart configuration
   const chartConfig = selectedPlayers.reduce((config, player, index) => {
     config[player] = {
       label: player,
@@ -133,15 +130,15 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
   return (
     <Card className="w-full mt-8">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl">Evolução dos Jogadores</CardTitle>
+        <CardTitle className="text-xl">Players Progress</CardTitle>
         <div className="text-sm text-muted-foreground mb-2">
-          Acompanhe o desempenho financeiro dos jogadores ao longo do tempo
+          Track players' financial performance over time
         </div>
 
         {showRotationHint && (
           <div className="flex items-center justify-center bg-muted/50 p-3 rounded-md mb-4 animate-pulse">
             <RotateCw className="h-5 w-5 mr-2" />
-            <span>Gire seu celular para visualizar melhor o gráfico</span>
+            <span>Rotate your phone for better chart viewing</span>
           </div>
         )}
 
@@ -159,7 +156,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                 }
               }}
             >
-              {player.player_name} ({player.games_data.length} jogos)
+              {player.player_name} ({player.games_data.length} games)
             </Badge>
           ))}
         </div>
@@ -178,13 +175,13 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }} 
-                  tickFormatter={(value) => `R$${value}`}
+                  tickFormatter={(value) => `$${value}`}
                   width={isMobile ? 40 : 60} 
                 />
                 <Tooltip 
                   content={<ChartTooltipContent 
-                    formatter={(value, name) => [`R$ ${Number(value).toFixed(2)}`, name]}
-                    labelFormatter={(date) => `Jogo: ${date}`}
+                    formatter={(value, name) => [`$ ${Number(value).toFixed(2)}`, name]}
+                    labelFormatter={(date) => `Game: ${date}`}
                   />} 
                 />
                 <Legend wrapperStyle={{ paddingTop: 10 }} />
