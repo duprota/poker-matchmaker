@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -11,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
-import { SpecialHandsSummary } from "@/components/games/SpecialHandsSummary";
 
 const GameDetails = () => {
   const { id } = useParams();
@@ -133,10 +133,6 @@ const GameDetails = () => {
               totalResults={0}
               players={game.players}
             />
-
-            <div className="mt-8 mb-8">
-              <SpecialHandsSummary players={game.players} />
-            </div>
 
             <GameContainer 
               game={game}
