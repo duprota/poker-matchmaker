@@ -13,6 +13,10 @@ const calculateROI = (winnings: number, spent: number) => {
   return ((winnings - spent) / spent) * 100;
 };
 
+const calculateTotalSpecialHands = (specialHands: { [key: string]: number } = {}) => {
+  return Object.values(specialHands).reduce((sum, count) => sum + count, 0);
+};
+
 const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   console.log("Fetching leaderboard data...");
   
@@ -23,7 +27,8 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
       game:games(id, date),
       final_result,
       initial_buyin,
-      total_rebuys
+      total_rebuys,
+      special_hands
     `)
     .not('final_result', 'is', null);
 
@@ -52,8 +57,19 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
         worst_game_roi: Infinity,
         average_winnings: 0,
         net_earnings: 0,
-        average_net_earnings: 0
+        average_net_earnings: 0,
+        special_hands: {}
       };
+    }
+
+    // Update special hands
+    if (entry.special_hands) {
+      Object.entries(entry.special_hands).forEach(([handType, count]) => {
+        if (!acc[playerName].special_hands![handType]) {
+          acc[playerName].special_hands![handType] = 0;
+        }
+        acc[playerName].special_hands![handType] += count;
+      });
     }
 
     acc[playerName].games_played += 1;
@@ -87,11 +103,18 @@ const Leaderboard = () => {
     queryFn: fetchLeaderboardData,
   });
 
-  const sortedLeaderboard = leaderboard?.sort((a, b) => 
-    rankingType === "total" 
-      ? b.net_earnings - a.net_earnings
-      : b.average_net_earnings - a.average_net_earnings
-  );
+  const sortedLeaderboard = leaderboard?.sort((a, b) => {
+    if (rankingType === "total") {
+      return b.net_earnings - a.net_earnings;
+    }
+    if (rankingType === "average") {
+      return b.average_net_earnings - a.average_net_earnings;
+    }
+    // Special hands ranking
+    const totalHandsA = calculateTotalSpecialHands(a.special_hands);
+    const totalHandsB = calculateTotalSpecialHands(b.special_hands);
+    return totalHandsB - totalHandsA;
+  });
 
   if (isLoading) {
     return (
