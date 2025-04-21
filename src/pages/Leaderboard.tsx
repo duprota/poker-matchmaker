@@ -1,15 +1,12 @@
-
 import { Navigation } from "@/components/Navigation";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { LeaderboardEntry, RankingType } from "@/types/leaderboard";
 import { LeaderboardHeader } from "@/components/leaderboard/LeaderboardHeader";
-import { LeaderboardCard } from "@/components/leaderboard/LeaderboardCard";
 import { LeaderboardShare } from "@/components/leaderboard/LeaderboardShare";
-import { PlayerProgressChart } from "@/components/leaderboard/PlayerProgressChart";
-import { format } from "date-fns";
+import { LeaderboardRankings } from "@/components/leaderboard/LeaderboardRankings";
+import { LeaderboardProgress } from "@/components/leaderboard/LeaderboardProgress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const calculateROI = (winnings: number, spent: number) => {
   if (spent === 0) return 0;
@@ -97,11 +94,9 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   return Object.values(playerStats);
 };
 
-// Função para buscar dados para o gráfico de evolução de jogadores
 const fetchPlayerProgressData = async () => {
   console.log("Fetching player progress data...");
   
-  // Obtém o primeiro dia do ano atual
   const currentYear = new Date().getFullYear();
   const firstDayOfYear = new Date(currentYear, 0, 1).toISOString();
 
@@ -126,7 +121,6 @@ const fetchPlayerProgressData = async () => {
     throw error;
   }
 
-  // Organizar dados por jogador
   const playerProgressMap = new Map();
   
   data.forEach(game => {
@@ -134,7 +128,7 @@ const fetchPlayerProgressData = async () => {
     const formattedDate = format(new Date(gameDate), 'yyyy-MM-dd');
     
     game.game_players.forEach((gamePlayer: any) => {
-      if (!gamePlayer.final_result) return; // Ignora jogos sem resultado
+      if (!gamePlayer.final_result) return;
 
       const playerName = gamePlayer.player.name;
       const spent = gamePlayer.initial_buyin * (1 + gamePlayer.total_rebuys);
@@ -148,7 +142,6 @@ const fetchPlayerProgressData = async () => {
       }
       
       const playerData = playerProgressMap.get(playerName);
-      // Adicionar dados deste jogo
       playerData.games_data.push({
         game_id: game.id,
         game_date: formattedDate,
@@ -157,7 +150,6 @@ const fetchPlayerProgressData = async () => {
     });
   });
 
-  // Calcular o running total para cada jogador
   for (const playerData of playerProgressMap.values()) {
     let runningTotal = 0;
     playerData.games_data = playerData.games_data
@@ -195,7 +187,6 @@ const Leaderboard = () => {
     if (rankingType === "average") {
       return b.average_net_earnings - a.average_net_earnings;
     }
-    // Special hands ranking
     const totalHandsA = calculateTotalSpecialHands(a.special_hands);
     const totalHandsB = calculateTotalSpecialHands(b.special_hands);
     return totalHandsB - totalHandsA;
@@ -241,27 +232,30 @@ const Leaderboard = () => {
           rankingType={rankingType}
           onRankingTypeChange={setRankingType}
         />
-        
-        {/* Gráfico de evolução dos jogadores */}
-        {isLoadingProgress ? (
-          <div className="text-center py-6">Carregando dados do gráfico...</div>
-        ) : playerProgressData && playerProgressData.length > 0 ? (
-          <PlayerProgressChart playersData={playerProgressData} />
-        ) : null}
-        
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Classificação</h2>
-          <ScrollArea className="h-[calc(100vh-500px)]">
-            {sortedLeaderboard?.map((entry, index) => (
-              <LeaderboardCard 
-                key={entry.player_name} 
-                entry={entry} 
-                position={index + 1}
-                rankingType={rankingType}
+
+        <Tabs defaultValue="rankings" className="mt-8">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="rankings">Rankings</TabsTrigger>
+            <TabsTrigger value="progress">Progress Chart</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="rankings">
+            {sortedLeaderboard && (
+              <LeaderboardRankings 
+                leaderboard={sortedLeaderboard} 
+                rankingType={rankingType} 
               />
-            ))}
-          </ScrollArea>
-        </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="progress">
+            {isLoadingProgress ? (
+              <div className="text-center py-6">Loading chart data...</div>
+            ) : (
+              <LeaderboardProgress playerProgressData={playerProgressData || []} />
+            )}
+          </TabsContent>
+        </Tabs>
 
         {sortedLeaderboard && (
           <LeaderboardShare
