@@ -8,7 +8,6 @@ import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
 export interface OngoingGameFormProps {
   players: any[];
   rebuys: Record<string, number>;
@@ -19,7 +18,6 @@ export interface OngoingGameFormProps {
   onRemovePlayer?: (playerId: string) => void;
   onAddPlayer?: () => void;
 }
-
 export const OngoingGameForm = ({
   players,
   onRemovePlayer,
@@ -27,10 +25,8 @@ export const OngoingGameForm = ({
 }: OngoingGameFormProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-
   const sortedPlayers = [...players].sort((a, b) => a.player.name.localeCompare(b.player.name));
   const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
   const handleRebuyChange = async (playerId: string, newRebuys: number) => {
     setIsProcessing(true);
     try {
@@ -48,7 +44,6 @@ export const OngoingGameForm = ({
       setIsProcessing(false);
     }
   };
-
   const handleSpecialHandsChange = async (playerId: string, specialHands: {
     [key: string]: number;
   }) => {
@@ -68,7 +63,6 @@ export const OngoingGameForm = ({
       setIsProcessing(false);
     }
   };
-
   useEffect(() => {
     const gameId = players[0]?.game_id;
     if (!gameId) return;
@@ -84,7 +78,6 @@ export const OngoingGameForm = ({
       supabase.removeChannel(channel);
     };
   }, [players]);
-
   const container = {
     hidden: {
       opacity: 0
@@ -96,7 +89,6 @@ export const OngoingGameForm = ({
       }
     }
   };
-
   const item = {
     hidden: {
       y: 20,
@@ -107,27 +99,14 @@ export const OngoingGameForm = ({
       opacity: 1
     }
   };
-
-  return <div className="space-y-6 pb-24">
+  return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text flex-grow">
           Mesa de Jogo
         </h2>
         
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-auto">
-            <Input
-              type="text"
-              placeholder="Buscar jogador..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          </div>
-          {onAddPlayer && <Button onClick={onAddPlayer} className="gap-2 whitespace-nowrap">
-              <Plus className="h-4 w-4" /> Jogador
-            </Button>}
+        <div className="flex items-center gap-4">
+          {onAddPlayer && <Button onClick={onAddPlayer} className="gap-2">+ Jogador</Button>}
         </div>
       </div>
       

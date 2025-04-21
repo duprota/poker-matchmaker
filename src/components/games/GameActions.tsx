@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check } from "lucide-react";
+import { PlayIcon } from "lucide-react";
 
 interface GameActionsProps {
   status: string;
@@ -14,37 +13,25 @@ export const GameActions = ({
   onShowFinalizeForm 
 }: GameActionsProps) => {
   return (
-    <div className="fixed bottom-6 left-0 right-0 z-50">
-      <div className="container mx-auto flex justify-between gap-4 px-4">
-        <Button 
-          onClick={() => window.history.back()}
-          variant="outline"
-          className="shadow-lg hover:shadow-xl transition-all duration-200"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
-        </Button>
-        
-        <div>
-          {status === "created" && (
-            <Button 
-              onClick={onStartGame}
-              className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Iniciar Jogo
-            </Button>
-          )}
-          {status === "ongoing" && (
-            <Button 
-              onClick={onShowFinalizeForm}
-              className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Finalizar Jogo
-            </Button>
-          )}
-        </div>
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t border-border">
+      <div className="container mx-auto flex justify-end gap-4">
+        {status === "created" && (
+          <Button 
+            onClick={onStartGame}
+            className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            <PlayIcon className="w-4 h-4 mr-2" />
+            Start Game
+          </Button>
+        )}
+        {status === "ongoing" && (
+          <Button 
+            onClick={onShowFinalizeForm} 
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            Finalize Game
+          </Button>
+        )}
       </div>
     </div>
   );
