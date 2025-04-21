@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Hand } from "lucide-react";
@@ -61,13 +60,9 @@ export function PlayerSpecialHandReaction({
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  // Ensure value is never null - if it is, use empty object
   const safeValue = value || {};
-
-  // Calculate total hands count
   const totalHandsCount = Object.values(safeValue).reduce((sum, count) => sum + count, 0);
 
-  // Function to increment a hand count
   const incrementHand = (handType: SpecialHandType) => {
     const currentCount = safeValue[handType] || 0;
     const newValue = {
@@ -77,7 +72,6 @@ export function PlayerSpecialHandReaction({
     onChange(newValue);
   };
 
-  // Function to decrement a hand count
   const decrementHand = (handType: SpecialHandType) => {
     const currentCount = safeValue[handType] || 0;
     if (currentCount <= 0) return;
@@ -86,71 +80,62 @@ export function PlayerSpecialHandReaction({
     };
     newValue[handType] = currentCount - 1;
 
-    // Remove the key if count becomes 0
     if (newValue[handType] === 0) {
       delete newValue[handType];
     }
     onChange(newValue);
   };
 
-  // Function to clear all hand counts
   const clearAllHands = () => {
     onChange({});
     setOpen(false);
   };
-  
-  // Content shared between mobile and desktop versions
+
   const HandsContent = () => (
-    <>
-      <div className="flex flex-col gap-4">
-        <div className="text-sm font-medium">Jogadas Especiais</div>
-        
-        {/* Hand options with counters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {specialHandOptions.map(option => {
-            // Safely access the hand count, default to 0 if undefined
-            const handCount = safeValue[option.value] || 0;
-            return (
-              <div key={option.value} className="flex items-center justify-between bg-muted/30 rounded-md p-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-shrink-0">{option.icon}</div>
-                  <div className="text-xs font-medium">{option.label}</div>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-8 w-8 text-xs rounded-full" 
-                    onClick={() => decrementHand(option.value)} 
-                    disabled={handCount === 0}
-                    aria-label={`Diminuir ${option.label}`}
-                  >
-                    -
-                  </Button>
-                  
-                  <span className="w-6 text-center text-xs">
-                    {handCount}
-                  </span>
-                  
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-8 w-8 text-xs rounded-full" 
-                    onClick={() => incrementHand(option.value)}
-                    aria-label={`Aumentar ${option.label}`}
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+    <div className="space-y-4">
+      <div className="text-sm font-medium">Jogadas Especiais</div>
       
-      {/* Total count and clear button */}
-      <div className="flex items-center justify-between border-t pt-2 mt-1">
+      <div className="grid grid-cols-2 gap-3">
+        {specialHandOptions.map(option => {
+          const handCount = safeValue[option.value] || 0;
+          return (
+            <div key={option.value} 
+                 className="flex items-center justify-between bg-background/50 backdrop-blur-sm rounded-md p-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-shrink-0">{option.icon}</div>
+                <div className="text-xs font-medium">{option.label}</div>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-10 w-10 text-lg rounded-full" 
+                  onClick={() => decrementHand(option.value)} 
+                  disabled={handCount === 0}
+                >
+                  -
+                </Button>
+                
+                <span className="w-8 text-center text-lg font-bold">
+                  {handCount}
+                </span>
+                
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-10 w-10 text-lg rounded-full" 
+                  onClick={() => incrementHand(option.value)}
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-2">
         <div className="text-sm">
           Total: <span className="font-bold">{totalHandsCount}</span>
         </div>
@@ -161,12 +146,11 @@ export function PlayerSpecialHandReaction({
           className="text-xs text-muted-foreground hover:text-destructive" 
           onClick={clearAllHands} 
           disabled={totalHandsCount === 0}
-          aria-label="Limpar todas as jogadas"
         >
           Limpar
         </Button>
       </div>
-    </>
+    </div>
   );
 
   return (
@@ -181,12 +165,11 @@ export function PlayerSpecialHandReaction({
                   <Button 
                     size="icon" 
                     variant={totalHandsCount > 0 ? "outline" : "ghost"} 
-                    className="relative" 
-                    aria-label="Registrar jogadas especiais"
+                    className="relative h-10 w-10" 
                   >
                     {totalHandsCount > 0 ? (
                       <div className="flex items-center justify-center">
-                        <Hand size={18} className="text-primary" aria-hidden="true" />
+                        <Hand size={18} className="text-primary" />
                         <Badge 
                           variant="secondary" 
                           className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
@@ -195,9 +178,7 @@ export function PlayerSpecialHandReaction({
                         </Badge>
                       </div>
                     ) : (
-                      <span className="text-slate-500">
-                        <Hand size={20} aria-hidden="true" />
-                      </span>
+                      <Hand size={20} className="text-muted-foreground" />
                     )}
                   </Button>
                 </DrawerTrigger>
@@ -213,12 +194,11 @@ export function PlayerSpecialHandReaction({
                   <Button 
                     size="icon" 
                     variant={totalHandsCount > 0 ? "outline" : "ghost"} 
-                    className="relative" 
-                    aria-label="Registrar jogadas especiais"
+                    className="relative h-10 w-10" 
                   >
                     {totalHandsCount > 0 ? (
                       <div className="flex items-center justify-center">
-                        <Hand size={18} className="text-primary" aria-hidden="true" />
+                        <Hand size={18} className="text-primary" />
                         <Badge 
                           variant="secondary" 
                           className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
@@ -227,14 +207,12 @@ export function PlayerSpecialHandReaction({
                         </Badge>
                       </div>
                     ) : (
-                      <span className="text-slate-500">
-                        <Hand size={20} aria-hidden="true" />
-                      </span>
+                      <Hand size={20} className="text-muted-foreground" />
                     )}
                   </Button>
                 </PopoverTrigger>
                 
-                <PopoverContent className="w-auto flex flex-col gap-3 px-3 py-3 bg-zinc-900">
+                <PopoverContent className="w-80">
                   <HandsContent />
                 </PopoverContent>
               </Popover>
@@ -249,7 +227,6 @@ export function PlayerSpecialHandReaction({
   );
 }
 
-// SVG Sprites (normally imported as SVGs, but here inline for simplicity)
 export const EmojiSVGDefs = () => (
   <svg style={{
     display: "none"

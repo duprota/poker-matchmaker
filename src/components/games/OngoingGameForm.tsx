@@ -1,10 +1,8 @@
+
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { GameStatus } from "@/types/game";
-import { Card } from "@/components/ui/card";
-import { PlayerRebuysCard } from "./PlayerRebuysCard";
-import { Trash2 } from "lucide-react";
+import { PlayerGameCard } from "./PlayerGameCard";
 
 export interface OngoingGameFormProps {
   players: any[];
@@ -39,8 +37,6 @@ export const OngoingGameForm = ({
 
       if (updateError) throw updateError;
 
-      console.log("Successfully updated game_players table");
-
       const player = players.find(p => p.id === playerId);
       if (!player) {
         throw new Error("Player not found");
@@ -56,9 +52,6 @@ export const OngoingGameForm = ({
         });
 
       if (historyError) throw historyError;
-
-      console.log("Successfully added entry to game_history");
-      console.log("Rebuy change completed successfully");
       
       toast({
         title: "Success",
@@ -74,7 +67,6 @@ export const OngoingGameForm = ({
         description: "Failed to register rebuy. Please try again.",
         variant: "destructive",
       });
-      throw error;
     } finally {
       setUpdatingPlayer(null);
     }
@@ -85,12 +77,12 @@ export const OngoingGameForm = ({
       <h2 className="text-2xl font-semibold">Game Progress</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sortedPlayers.map((gamePlayer) => (
-          <PlayerRebuysCard
+          <PlayerGameCard
             key={gamePlayer.id}
             player={gamePlayer}
             onRebuyChange={handleRebuyChange}
-            isUpdating={updatingPlayer === gamePlayer.id}
             onRemovePlayer={onRemovePlayer}
+            isProcessing={updatingPlayer === gamePlayer.id}
           />
         ))}
       </div>
