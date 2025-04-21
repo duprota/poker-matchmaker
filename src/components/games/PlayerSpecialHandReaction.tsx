@@ -3,8 +3,15 @@ import { useState } from "react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 
-type SpecialHandType = "full_house" | "four_of_a_kind" | "straight_flush" | "royal_flush" | null;
+type SpecialHandType = "full_house" | "four_of_a_kind" | "straight_flush" | "royal_flush";
+
+interface SpecialHandCount {
+  [key: string]: number;
+}
 
 const specialHandOptions: {
   value: SpecialHandType;
@@ -52,71 +59,150 @@ const specialHandOptions: {
 ];
 
 export interface PlayerSpecialHandReactionProps {
-  value: SpecialHandType;
-  onChange: (v: SpecialHandType) => void;
+  value: SpecialHandCount;
+  onChange: (v: SpecialHandCount) => void;
 }
 
-export function PlayerSpecialHandReaction({ value, onChange }: PlayerSpecialHandReactionProps) {
+export function PlayerSpecialHandReaction({ value = {}, onChange }: PlayerSpecialHandReactionProps) {
   const [open, setOpen] = useState(false);
-
-  const selected = specialHandOptions.find((o) => o.value === value);
+  
+  // Calculate total hands count
+  const totalHandsCount = Object.values(value || {}).reduce((sum, count) => sum + count, 0);
+  
+  // Function to increment a hand count
+  const incrementHand = (handType: SpecialHandType) => {
+    const currentCount = value[handType] || 0;
+    const newValue = { ...value, [handType]: currentCount + 1 };
+    onChange(newValue);
+  };
+  
+  // Function to decrement a hand count
+  const decrementHand = (handType: SpecialHandType) => {
+    const currentCount = value[handType] || 0;
+    if (currentCount <= 0) return;
+    
+    const newValue = { ...value };
+    newValue[handType] = currentCount - 1;
+    
+    // Remove the key if count becomes 0
+    if (newValue[handType] === 0) {
+      delete newValue[handType];
+    }
+    
+    onChange(newValue);
+  };
+  
+  // Function to clear all hand counts
+  const clearAllHands = () => {
+    onChange({});
+    setOpen(false);
+  };
 
   return (
     <>
       <EmojiSVGDefs />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button size="icon" variant="ghost" aria-label="Registrar jogada especial">
-            {selected ? (
-              selected.icon
-            ) : (
-              <span className="text-slate-500">
-                <Hand size={20} aria-hidden="true" />
-              </span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto flex flex-col gap-2 px-2 py-2">
-          <div className="flex gap-3 items-center">
-            {specialHandOptions.map((option) => (
-              <button
-                key={option.value}
-                className={`transition hover:scale-105 bg-background p-1 rounded-full border border-transparent focus:outline-none ${
-                  value === option.value ? "ring-2 ring-primary" : ""
-                }`}
-                onClick={() => {
-                  onChange(option.value);
-                  setOpen(false);
-                }}
-                aria-label={option.label}
-                type="button"
-              >
-                {option.icon}
-              </button>
-            ))}
-            <button
-              aria-label="Limpar emoji"
-              className="text-muted-foreground px-1 rounded-full ml-2 hover:text-primary"
-              onClick={() => {
-                onChange(null);
-                setOpen(false);
-              }}
-              type="button"
-            >
-              <svg width="18" height="18" aria-hidden="true" focusable="false">
-                <circle cx="9" cy="9" r="8" fill="#ececec" />
-                <text x="9" y="13" textAnchor="middle" fontSize="12" fill="#666">
-                  –
-                </text>
-              </svg>
-            </button>
-          </div>
-          {/* Optional labels */}
-          <div className="flex flex-col gap-1 text-[0.8rem] text-muted-foreground pl-1">
-            {selected?.label || "Nenhuma jogada registrada"}
-          </div>
-        </PopoverContent>
-      </Popover>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant={totalHandsCount > 0 ? "outline" : "ghost"} 
+                  className="relative"
+                  aria-label="Registrar jogadas especiais"
+                >
+                  {totalHandsCount > 0 ? (
+                    <div className="flex items-center justify-center">
+                      <Hand size={18} className="text-primary" aria-hidden="true" />
+                      <Badge variant="secondary" className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1">
+                        {totalHandsCount}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <span className="text-slate-500">
+                      <Hand size={20} aria-hidden="true" />
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              
+              <PopoverContent className="w-auto flex flex-col gap-3 px-3 py-3">
+                <div className="flex flex-col gap-4">
+                  <div className="text-sm font-medium">Jogadas Especiais</div>
+                  
+                  {/* Hand options with counters */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {specialHandOptions.map((option) => {
+                      const handCount = value[option.value] || 0;
+                      
+                      return (
+                        <div 
+                          key={option.value}
+                          className="flex items-center justify-between bg-muted/30 rounded-md p-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="flex-shrink-0">{option.icon}</div>
+                            <div className="text-xs font-medium">{option.label}</div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-xs rounded-full"
+                              onClick={() => decrementHand(option.value)}
+                              disabled={handCount === 0}
+                              aria-label={`Diminuir ${option.label}`}
+                            >
+                              -
+                            </Button>
+                            
+                            <span className="w-4 text-center text-xs">
+                              {handCount}
+                            </span>
+                            
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-xs rounded-full"
+                              onClick={() => incrementHand(option.value)}
+                              aria-label={`Aumentar ${option.label}`}
+                            >
+                              +
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* Total count and clear button */}
+                <div className="flex items-center justify-between border-t pt-2 mt-1">
+                  <div className="text-sm">
+                    Total: <span className="font-bold">{totalHandsCount}</span>
+                  </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs text-muted-foreground hover:text-destructive"
+                    onClick={clearAllHands}
+                    disabled={totalHandsCount === 0}
+                    aria-label="Limpar todas as jogadas"
+                  >
+                    Limpar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {totalHandsCount > 0 ? `${totalHandsCount} jogadas especiais` : "Registrar jogadas especiais"}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </>
   );
 }
@@ -147,4 +233,3 @@ export const EmojiSVGDefs = () => (
     </symbol>
   </svg>
 );
-
