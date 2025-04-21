@@ -5,14 +5,16 @@ import { GameSummary } from "./GameSummary";
 import { Button } from "@/components/ui/button";
 import { Plus, UserMinus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+
 interface GameContainerProps {
   game: Game;
   refreshGame: () => void;
 }
+
 export const GameContainer = ({
   game,
   refreshGame
@@ -24,6 +26,33 @@ export const GameContainer = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [players, setPlayers] = useState<any[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+
+  useEffect(() => {
+    if (!game?.id) return;
+
+    // Subscribe to real-time updates for game_players table
+    const channel = supabase
+      .channel('game-players-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_players',
+          filter: `game_id=eq.${game.id}`
+        },
+        (payload) => {
+          console.log('Real-time update received in GameContainer:', payload);
+          refreshGame();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [game?.id, refreshGame]);
+
   const fetchPlayers = async () => {
     try {
       console.log("Fetching available players...");
@@ -45,6 +74,7 @@ export const GameContainer = ({
       });
     }
   };
+
   const handleAddPlayer = async () => {
     if (!selectedPlayer) {
       toast({
@@ -89,6 +119,7 @@ export const GameContainer = ({
       setIsProcessing(false);
     }
   };
+
   const handleRemovePlayer = async (playerId: string) => {
     try {
       console.log("Removing player from game:", playerId);
@@ -108,6 +139,7 @@ export const GameContainer = ({
       });
     }
   };
+
   if (game.status === "completed") {
     return <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} onUpdatePaymentStatus={async (playerId: string, status: string) => {
       try {
