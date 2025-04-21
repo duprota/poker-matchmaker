@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Plus, Edit2, Loader2, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { GamePlayer } from "@/types/game";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +16,7 @@ interface PlayerRebuysCardProps {
 
 export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating, onRemovePlayer }: PlayerRebuysCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const { toast } = useToast();
   const totalAmount = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -66,10 +67,19 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating, onRemovePl
     }
   };
 
-  const handleRemove = () => {
+  const confirmRemovePlayer = () => {
+    setShowRemoveConfirm(true);
+  };
+
+  const handleRemoveConfirmed = () => {
     if(onRemovePlayer) {
       onRemovePlayer(player.id);
     }
+    setShowRemoveConfirm(false);
+  };
+
+  const handleRemoveCanceled = () => {
+    setShowRemoveConfirm(false);
   };
 
   return (
@@ -104,7 +114,7 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating, onRemovePl
               </Button>
               {onRemovePlayer && (
                 <Button
-                  onClick={handleRemove}
+                  onClick={confirmRemovePlayer}
                   disabled={isProcessing}
                   variant="ghost"
                   size="icon"
@@ -152,6 +162,21 @@ export const PlayerRebuysCard = ({ player, onRebuyChange, isUpdating, onRemovePl
               Total amount with {player.total_rebuys} rebuys: ${totalAmount}
             </p>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmação de remoção</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover o jogador <strong>{player.player.name}</strong> do jogo? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleRemoveCanceled}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleRemoveConfirmed}>Remover</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
