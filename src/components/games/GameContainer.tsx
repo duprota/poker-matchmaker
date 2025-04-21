@@ -1,3 +1,4 @@
+
 import { Game, GamePlayer } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
@@ -68,13 +69,19 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
       setIsProcessing(true);
       console.log("Adding player to game:", selectedPlayer);
 
+      // Definir o valor de buy-in igual aos demais jogadores do jogo
+      let initialBuyin = 100;
+      if (game.players.length > 0) {
+        initialBuyin = game.players[0]?.initial_buyin || 100;
+      }
+
       // Add player to game
       const { error: gamePlayerError } = await supabase
         .from("game_players")
         .insert({
           game_id: game.id,
           player_id: selectedPlayer.id,
-          initial_buyin: game.players[0]?.initial_buyin || 100, // Use same buy-in as other players
+          initial_buyin: initialBuyin,
           total_rebuys: 0
         });
 
@@ -160,11 +167,16 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
     );
   }
 
+  // Permitir adicionar jogadores nos status "created" e "ongoing"
+  const allowAddingPlayers = game.status === "created" || game.status === "ongoing";
+
   return (
     <div className="grid gap-8">
-      {game.status === "created" && (
+      {allowAddingPlayers && (
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Manage Players</h3>
+          <h3 className="text-lg font-semibold">
+            {game.status === "ongoing" ? "Adicionar jogadores atrasados" : "Manage Players"}
+          </h3>
           <Button 
             onClick={() => {
               setShowAddPlayerDialog(true);
@@ -173,30 +185,56 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
             className="gap-2"
           >
             <Plus className="w-4 h-4" />
-            Add Player
+            Adicionar Jogador
           </Button>
         </div>
       )}
 
       <div className="grid gap-4">
         {game.status === "ongoing" && (
-          <OngoingGameForm
-            players={game.players}
-            rebuys={{}}
-            onRebuyChange={() => {
-              console.log("Rebuy change detected");
-              refreshGame();
-            }}
-            onSaveRebuys={() => {
-              console.log("Rebuys saved");
-              refreshGame();
-            }}
-            savingRebuys={false}
-            setRebuys={() => {
-              console.log("Rebuys updated");
-              refreshGame();
-            }}
-          />
+          <>
+            <OngoingGameForm
+              players={game.players}
+              rebuys={{}}
+              onRebuyChange={() => {
+                console.log("Rebuy change detected");
+                refreshGame();
+              }}
+              onSaveRebuys={() => {
+                console.log("Rebuys saved");
+                refreshGame();
+              }}
+              savingRebuys={false}
+              setRebuys={() => {
+                console.log("Rebuys updated");
+                refreshGame();
+              }}
+            />
+            {/* Lista jogadores já adicionados (somente leitura/remover) */}
+            <div className="grid gap-4">
+              {game.players.map((player) => (
+                <div
+                  key={player.id}
+                  className="flex justify-between items-center p-4 bg-card rounded-lg border"
+                >
+                  <div>
+                    <p className="font-medium">{player.player.name}</p>
+                    {player.player.email && (
+                      <p className="text-sm text-muted-foreground">{player.player.email}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemovePlayer(player.id)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <UserMinus className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {game.status === "created" && (
@@ -234,16 +272,17 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
       <Dialog open={showAddPlayerDialog} onOpenChange={setShowAddPlayerDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Player</DialogTitle>
+            <DialogTitle>Adicionar Jogador</DialogTitle>
             <DialogDescription>
-              Select an existing player to add to the game.
+              Selecione um jogador para adicionar ao jogo.<br />
+              O buy-in será igual ao dos outros jogadores já no jogo.
             </DialogDescription>
           </DialogHeader>
 
           <Command className="rounded-lg border shadow-md">
-            <CommandInput placeholder="Search players..." />
+            <CommandInput placeholder="Buscar jogadores..." />
             <CommandList>
-              <CommandEmpty>No players found.</CommandEmpty>
+              <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
               <CommandGroup>
                 {players?.map((player) => (
                   <CommandItem
@@ -271,13 +310,13 @@ export const GameContainer = ({ game, refreshGame }: GameContainerProps) => {
                 setSelectedPlayer(null);
               }}
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
               onClick={handleAddPlayer}
               disabled={isProcessing || !selectedPlayer}
             >
-              {isProcessing ? "Adding..." : "Add Player"}
+              {isProcessing ? "Adicionando..." : "Adicionar Jogador"}
             </Button>
           </div>
         </DialogContent>
