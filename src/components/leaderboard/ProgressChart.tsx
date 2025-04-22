@@ -51,7 +51,6 @@ export const ProgressChart = ({
           <LineChart 
             data={chartData} 
             margin={margin}
-            allowDataOverflow={false}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#444" opacity={0.1} />
             
