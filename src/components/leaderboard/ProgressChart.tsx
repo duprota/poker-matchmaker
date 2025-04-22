@@ -24,6 +24,31 @@ export const ProgressChart = ({
 }: ProgressChartProps) => {
   const isMobile = useIsMobile();
 
+  // Find min and max values to set appropriate domain
+  const getMinMax = () => {
+    if (!chartData || chartData.length === 0) return { min: 0, max: 0 };
+    
+    let min = 0;
+    let max = 0;
+    
+    chartData.forEach(dataPoint => {
+      selectedPlayers.forEach(player => {
+        if (dataPoint[player] !== undefined && dataPoint[player] !== null) {
+          min = Math.min(min, dataPoint[player]);
+          max = Math.max(max, dataPoint[player]);
+        }
+      });
+    });
+    
+    // Add some padding to the domain
+    min = Math.floor(min * 1.1);
+    max = Math.ceil(max * 1.1);
+    
+    return { min, max };
+  };
+  
+  const { min, max } = getMinMax();
+
   return (
     <div className="w-full" style={{ height: isMobile ? '400px' : '600px' }}>
       <ChartContainer config={chartConfig} className="h-full">
@@ -33,8 +58,8 @@ export const ProgressChart = ({
             layout="vertical"
             margin={{ 
               top: 5,
-              right: isMobile ? 25 : 40,
-              left: isMobile ? 60 : 80,
+              right: isMobile ? 5 : 40,
+              left: isMobile ? 45 : 80,
               bottom: 5
             }}
           >
@@ -43,24 +68,27 @@ export const ProgressChart = ({
               dataKey="formattedDate"
               type="category"
               tick={{ 
-                fontSize: isMobile ? 9 : 11,
+                fontSize: isMobile ? 8 : 11,
                 textAnchor: 'end',
-                width: isMobile ? 50 : 70,
+                width: isMobile ? 40 : 70,
               }}
               tickFormatter={(value) => value}
-              width={isMobile ? 55 : 75}
+              width={isMobile ? 40 : 75}
             />
             <XAxis 
               type="number"
-              tick={{ fontSize: isMobile ? 9 : 11 }}
+              tick={{ fontSize: isMobile ? 8 : 11 }}
               tickFormatter={(value) => `$${value}`}
-              domain={['auto', 'auto']}
+              domain={[min, max]}
+              allowDataOverflow={false}
+              padding={{ left: 0, right: 0 }}
             />
             <Tooltip 
               content={<ChartTooltipContent 
                 formatter={(value, name) => [`$ ${Number(value).toFixed(2)}`, name]}
                 labelFormatter={(date) => `Game: ${date}`}
               />}
+              cursor={{ strokeWidth: 1 }}
             />
             {selectedPlayers.map((player, index) => (
               <Line
@@ -91,12 +119,13 @@ export const ProgressChart = ({
                   <circle
                     cx={props.cx}
                     cy={props.cy}
-                    r={isMobile ? 4 : 5}
+                    r={isMobile ? 3 : 5}
                     fill={chartConfig[player].color}
                     stroke="none"
                     key={`activeDot-${player}-${props.index}-${index}`}
                   />
                 )}
+                isAnimationActive={!isMobile}
               />
             ))}
           </LineChart>

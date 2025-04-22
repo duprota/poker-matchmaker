@@ -34,7 +34,7 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
     );
 
     // Create data points for each date
-    return sortedDates.map(date => {
+    const chartData = sortedDates.map(date => {
       const dataPoint: any = {
         date,
         formattedDate: format(new Date(date), "d MMM"),
@@ -63,10 +63,14 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
 
       return dataPoint;
     });
+    
+    return chartData;
   };
 
-  return { prepareChartData, getPlayerColor: (playerName: string) => {
+  const getPlayerColor = (playerName: string) => {
     const playerIndex = playersData.findIndex(p => p.player_name === playerName);
     return CHART_COLORS[playerIndex % CHART_COLORS.length];
-  }};
+  };
+
+  return { prepareChartData, getPlayerColor };
 };
