@@ -62,12 +62,12 @@ export const ProgressChart = ({
                 axisLine={{ stroke: '#888' }}
                 padding={{ left: 0, right: 0 }}
                 tickMargin={5}
-                interval="preserveStartEnd"
-                minTickGap={20}
-                height={30} // Explicitly set height for X axis
-                scale="point" // Use point scale for better distribution
-                allowDataOverflow={false} // Prevent data overflow
-                xAxisId={0} // Explicit ID for XAxis
+                interval="preserveStart"
+                minTickGap={30}
+                height={30}
+                scale="point"
+                allowDataOverflow={false}
+                xAxisId={0}
               />
               
               <YAxis 
@@ -80,7 +80,7 @@ export const ProgressChart = ({
                 axisLine={{ stroke: '#888' }}
                 allowDecimals={false}
                 tickCount={tickCount}
-                yAxisId={0} // Explicit ID for YAxis
+                yAxisId={0}
               />
               
               <Tooltip 
@@ -103,7 +103,7 @@ export const ProgressChart = ({
                   fontSize: fontSize - 1,
                   fill: "#888" 
                 }} 
-                yAxisId={0} // Must match YAxis ID
+                yAxisId={0}
               />
               
               {selectedPlayers.map((player, index) => (
@@ -116,8 +116,8 @@ export const ProgressChart = ({
                   fill={chartConfig[player].color}
                   strokeWidth={strokeWidth}
                   connectNulls={true}
-                  xAxisId={0} // Must match XAxis ID
-                  yAxisId={0} // Must match YAxis ID
+                  xAxisId={0}
+                  yAxisId={0}
                   dot={(props) => {
                     if (!props.payload || !props.payload.date) return null;
                     const hasGameOnThisDate = chartData.some(

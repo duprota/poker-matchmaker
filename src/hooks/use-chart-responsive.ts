@@ -20,6 +20,7 @@ interface ChartDimensions {
   chartConfig: {
     tickCount: number;
     fontSize: number;
+    minTickGap?: number;
   };
 }
 
@@ -27,7 +28,6 @@ export const useChartResponsive = () => {
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement | null>(null);
   
-  // Estado inicial com valores padrão
   const [dimensions, setDimensions] = useState<ChartDimensions>({
     containerStyle: {
       width: "100%",
@@ -37,49 +37,50 @@ export const useChartResponsive = () => {
       position: "relative",
     },
     margin: {
-      top: 20, // Aumentando levemente para dar mais espaço no topo
+      top: 20,
       right: isMobile ? 20 : 30,
-      left: isMobile ? 10 : 15, // Aumentando para acomodar valores do eixo Y
-      bottom: 30, // Aumentando para dar mais espaço aos labels do eixo X
+      left: isMobile ? 10 : 15,
+      bottom: 30,
     },
     chartConfig: {
       tickCount: isMobile ? 4 : 8,
       fontSize: isMobile ? 10 : 12,
+      minTickGap: isMobile ? 40 : 60,
     }
   });
 
   const updateDimensions = useCallback(() => {
-    // Calculos mais dinâmicos baseados no tamanho real do container
     const width = containerRef.current?.clientWidth || 0;
     
-    // Ajustar margens e configuração baseado no tamanho real
     let rightMargin = 30;
     let leftMargin = 15;
     let bottomMargin = 30;
     let topMargin = 20;
     let fontSize = 12;
     let tickCount = 8;
+    let minTickGap = 60;
     
-    // Ajustes dinâmicos baseados no tamanho da tela
     if (width < 400) {
       rightMargin = 15;
       leftMargin = 10;
       bottomMargin = 25;
       fontSize = 9;
       tickCount = 3;
+      minTickGap = 30;
     } else if (width < 600) {
       rightMargin = 20;
       leftMargin = 12;
       fontSize = 10;
       tickCount = 4;
+      minTickGap = 40;
     } else if (width < 900) {
       rightMargin = 25;
       leftMargin = 15;
       fontSize = 11;
       tickCount = 6;
+      minTickGap = 50;
     }
     
-    // Preferir orientação mais quadrada em telas menores
     const aspectRatio = width < 500 ? "4/3" : width < 800 ? "3/2" : "16/9";
     const minHeight = width < 500 ? "280px" : width < 800 ? "320px" : "400px";
     
@@ -100,6 +101,7 @@ export const useChartResponsive = () => {
       chartConfig: {
         tickCount,
         fontSize,
+        minTickGap,
       }
     });
   }, []);
@@ -107,7 +109,6 @@ export const useChartResponsive = () => {
   useEffect(() => {
     const debouncedUpdate = debounce(updateDimensions, 250);
     
-    // Observe o container para detectar mudanças de tamanho
     if (containerRef.current && window.ResizeObserver) {
       const resizeObserver = new ResizeObserver(() => {
         debouncedUpdate();
@@ -120,7 +121,6 @@ export const useChartResponsive = () => {
       };
     }
     
-    // Fallback para navegadores que não suportam ResizeObserver
     window.addEventListener("resize", debouncedUpdate);
     updateDimensions();
     
