@@ -119,7 +119,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
         />
       </CardHeader>
 
-      <CardContent className="pt-1 px-1 md:px-2">
+      <CardContent className="p-0 md:p-2">
         <ProgressChart
           chartData={chartData}
           selectedPlayers={selectedPlayers}

@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useChartDimensions } from "@/hooks/use-chart-dimensions";
 
 interface ProgressChartProps {
   chartData: any[];
@@ -28,79 +27,31 @@ export const ProgressChart = ({
 }: ProgressChartProps) => {
   const isMobile = useIsMobile();
   
-  // Use o hook personalizado para obter as dimensões exatas e referência do container
-  const { containerRef, dimensions, getOptimalTickCount } = useChartDimensions({
-    minWidth: 300,
-    minHeight: isMobile ? 350 : 500,
-    debounceTime: 300
-  });
+  // Define margins adequadas para evitar overflow
+  const margin = {
+    top: 10,
+    right: 30,
+    left: isMobile ? 5 : 0,
+    bottom: 20
+  };
   
   // Use provided domain limits
   const { min, max } = domainLimits || { min: 0, max: 0 };
   
-  // Define margins dinamicamente com base nas dimensões disponíveis
-  const margins = {
-    top: 10,
-    right: Math.max(5, Math.floor(dimensions.width * 0.02)), // Margem direita dinâmica
-    bottom: Math.max(20, Math.floor(dimensions.height * 0.05)),
-    left: isMobile ? 5 : Math.max(5, Math.floor(dimensions.width * 0.01)) // Reduz ao mínimo
-  };
-  
-  // Ajusta o tamanho das fontes e elementos com base nas dimensões
-  const fontSize = Math.max(
-    isMobile ? 9 : 11,
-    Math.min(12, Math.floor(dimensions.width / 80))
-  );
-  const strokeWidth = Math.min(2, Math.max(1, dimensions.width / 500));
-  const dotRadius = Math.min(3, Math.max(2, dimensions.width / 600));
-  const activeDotRadius = dotRadius * 2;
-
-  // Número de ticks baseado no espaço disponível
-  const xAxisTickCount = getOptimalTickCount(chartData.length);
-
-  // Função para determinar o intervalo de ticks no eixo X
-  const getXAxisInterval = () => {
-    if (chartData.length <= xAxisTickCount) return 0; // Mostra todos
-    return Math.ceil(chartData.length / xAxisTickCount) - 1;
-  };
-
-  // Função para customizar a formatação do eixo Y
-  const formatYAxis = (value: number) => {
-    if (isMobile || dimensions.width < 500) {
-      // Em dispositivos móveis ou telas estreitas, mostrar formato mais compacto
-      if (Math.abs(value) >= 1000) {
-        return `$${Math.round(value/1000)}k`;
-      }
-      return `$${value}`;
-    }
-    return `$${value}`;
-  };
-
-  // Função para truncar ou formatar labels longos no eixo X
-  const formatXAxisLabel = (value: string) => {
-    if (dimensions.width < 400 && value.length > 5) {
-      return value.substring(0, 5) + '...';
-    }
-    return value;
-  };
-
-  // Calcula a largura do eixo Y com base nas dimensões
-  const yAxisWidth = Math.min(
-    isMobile ? 30 : 50,
-    Math.max(25, Math.floor(dimensions.width * 0.06))
-  );
+  // Ajusta o tamanho das fontes para melhor responsividade
+  const fontSize = isMobile ? 10 : 12;
+  const strokeWidth = 2;
+  const dotRadius = 2;
+  const activeDotRadius = 4;
 
   return (
-    <div 
-      ref={containerRef}
-      className="w-full h-full" 
-      style={{ height: isMobile ? '400px' : '600px' }}
-    >
+    <div className="w-full h-[400px] md:h-[600px]">
       <ChartContainer config={chartConfig} className="h-full">
-        <ResponsiveContainer width="100%" height="99%">
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={chartData} 
-            margin={margins}
+            margin={margin}
+            allowDataOverflow={false}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#444" opacity={0.1} />
             
@@ -111,21 +62,19 @@ export const ProgressChart = ({
               axisLine={{ stroke: '#888' }}
               padding={{ left: 0, right: 0 }}
               tickMargin={5}
-              interval={getXAxisInterval()}
-              tickFormatter={formatXAxisLabel}
+              interval={isMobile ? 1 : 0}
               scale="point"
             />
             
             <YAxis 
               type="number"
               domain={[min, max]}
-              tickFormatter={formatYAxis}
+              tickFormatter={(value) => `$${isMobile ? Math.abs(value) >= 1000 ? `${Math.round(value/1000)}k` : value : value}`}
               tick={{ fontSize }}
-              width={yAxisWidth}
+              width={isMobile ? 40 : 60}
               tickLine={{ stroke: '#888' }}
               axisLine={{ stroke: '#888' }}
               allowDecimals={false}
-              padding={{ top: 5, bottom: 5 }}
             />
             
             <Tooltip 
