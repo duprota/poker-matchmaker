@@ -27,7 +27,7 @@ export const ProgressChart = ({
   domainLimits
 }: ProgressChartProps) => {
   const { containerRef, dimensions } = useChartResponsive();
-  const { containerStyle, margin, chartConfig: { fontSize, tickCount } } = dimensions;
+  const { containerStyle, margin, chartConfig: { fontSize, tickCount, minTickGap, xAxisInterval } } = dimensions;
   
   const { min, max } = domainLimits || { min: 0, max: 0 };
   const strokeWidth = 2;
@@ -62,8 +62,8 @@ export const ProgressChart = ({
                 axisLine={{ stroke: '#888' }}
                 padding={{ left: 0, right: 0 }}
                 tickMargin={5}
-                interval="preserveStart"
-                minTickGap={30}
+                interval={xAxisInterval}
+                minTickGap={minTickGap}
                 height={30}
                 scale="point"
                 allowDataOverflow={false}

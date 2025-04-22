@@ -21,6 +21,7 @@ interface ChartDimensions {
     tickCount: number;
     fontSize: number;
     minTickGap?: number;
+    xAxisInterval?: number | "preserveStart" | "preserveEnd" | "preserveStartEnd";
   };
 }
 
@@ -46,6 +47,7 @@ export const useChartResponsive = () => {
       tickCount: isMobile ? 4 : 8,
       fontSize: isMobile ? 10 : 12,
       minTickGap: isMobile ? 40 : 60,
+      xAxisInterval: isMobile ? 1 : "preserveStartEnd"
     }
   });
 
@@ -59,26 +61,43 @@ export const useChartResponsive = () => {
     let fontSize = 12;
     let tickCount = 8;
     let minTickGap = 60;
+    // Novo: intervalo dinâmico para o eixo X
+    let xAxisInterval: number | "preserveStart" | "preserveEnd" | "preserveStartEnd" = "preserveStartEnd";
     
-    if (width < 400) {
+    // Ajustes baseados na largura do container
+    if (width < 350) {
+      rightMargin = 10;
+      leftMargin = 5;
+      bottomMargin = 20;
+      fontSize = 8;
+      tickCount = 2;
+      minTickGap = 15;
+      xAxisInterval = 2; // Mostrar apenas 1 a cada 3 ticks
+    }
+    else if (width < 400) {
       rightMargin = 15;
       leftMargin = 10;
       bottomMargin = 25;
       fontSize = 9;
       tickCount = 3;
-      minTickGap = 30;
-    } else if (width < 600) {
+      minTickGap = 20;
+      xAxisInterval = 1; // Mostrar apenas 1 a cada 2 ticks
+    } 
+    else if (width < 600) {
       rightMargin = 20;
       leftMargin = 12;
       fontSize = 10;
       tickCount = 4;
-      minTickGap = 40;
-    } else if (width < 900) {
+      minTickGap = 30;
+      xAxisInterval = "preserveStart"; // Preservar o primeiro e último
+    } 
+    else if (width < 900) {
       rightMargin = 25;
       leftMargin = 15;
       fontSize = 11;
       tickCount = 6;
-      minTickGap = 50;
+      minTickGap = 40;
+      xAxisInterval = "preserveStartEnd"; // Preservar o primeiro e último
     }
     
     const aspectRatio = width < 500 ? "4/3" : width < 800 ? "3/2" : "16/9";
@@ -102,6 +121,7 @@ export const useChartResponsive = () => {
         tickCount,
         fontSize,
         minTickGap,
+        xAxisInterval
       }
     });
   }, []);

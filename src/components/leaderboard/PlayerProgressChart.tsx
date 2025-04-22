@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { RotateCw, Info, TrendingUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -30,7 +31,17 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
   const { prepareChartData, getMinMaxValues, getPlayerColor } = usePlayerProgressData(playersData, selectedPlayers);
   
   const [chartView, setChartView] = useState<'earnings' | 'ranking'>('earnings');
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   useEffect(() => {
     if (isMobile) {
       const checkOrientation = () => {
@@ -45,18 +56,20 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   useEffect(() => {
     if (playersData.length > 0 && selectedPlayers.length === 0) {
+      const initialPlayerCount = windowWidth < 500 ? 2 : 3;
+      
       const sortedByGamesCount = [...playersData]
         .sort((a, b) => {
           const countA = a.games_count || a.games_data.length;
           const countB = b.games_count || b.games_data.length;
           return countB - countA;
         })
-        .slice(0, 3) // Limitar a 3 jogadores por padrão
+        .slice(0, initialPlayerCount)
         .map(p => p.player_name);
       
       setSelectedPlayers(sortedByGamesCount);
     }
-  }, [playersData, selectedPlayers.length]);
+  }, [playersData, selectedPlayers.length, windowWidth]);
 
   const sortedPlayersData = playersData.map(player => ({
     ...player,
@@ -80,6 +93,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   const domainLimits = getMinMaxValues();
 
+  // Filtrar os dados para reduzir pontos em telas menores
   const chartData = prepareChartData();
 
   return (
