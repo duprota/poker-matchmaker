@@ -1,3 +1,4 @@
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -9,7 +10,6 @@ import {
   ReferenceLine,
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useChartResponsive } from "@/hooks/use-chart-responsive";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
@@ -26,17 +26,23 @@ export const ProgressChart = ({
   chartConfig,
   domainLimits
 }: ProgressChartProps) => {
-  const isMobile = useIsMobile();
-  const { containerStyle, margin } = useChartResponsive();
+  const { containerRef, dimensions } = useChartResponsive();
+  const { containerStyle, margin, chartConfig: { fontSize, tickCount } } = dimensions;
   
   const { min, max } = domainLimits || { min: 0, max: 0 };
-  const fontSize = isMobile ? 10 : 12;
   const strokeWidth = 2;
   const dotRadius = 2;
   const activeDotRadius = 4;
 
   return (
-    <div className="w-full relative" style={{ minHeight: containerStyle.minHeight }}>
+    <div 
+      ref={containerRef}
+      className="w-full h-full"
+      style={{ 
+        position: "relative",
+        minHeight: containerStyle.minHeight
+      }}
+    >
       <AspectRatio 
         ratio={Number(containerStyle.aspectRatio?.split('/')[0]) / Number(containerStyle.aspectRatio?.split('/')[1])}
         className="w-full"
@@ -56,19 +62,20 @@ export const ProgressChart = ({
                 axisLine={{ stroke: '#888' }}
                 padding={{ left: 0, right: 0 }}
                 tickMargin={5}
-                interval={isMobile ? 1 : 0}
-                scale="point"
+                interval="preserveStartEnd"
+                minTickGap={20}
               />
               
               <YAxis 
                 type="number"
                 domain={[min, max]}
-                tickFormatter={(value) => `$${isMobile ? Math.abs(value) >= 1000 ? `${Math.round(value/1000)}k` : value : value}`}
+                tickFormatter={(value) => `$${Math.abs(value) >= 1000 ? `${Math.round(value/1000)}k` : value}`}
                 tick={{ fontSize }}
-                width={isMobile ? 40 : 60}
+                width={40}
                 tickLine={{ stroke: '#888' }}
                 axisLine={{ stroke: '#888' }}
                 allowDecimals={false}
+                tickCount={tickCount}
               />
               
               <Tooltip 
