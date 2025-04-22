@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { RotateCw } from "lucide-react";
+import { RotateCw, Info, TrendingUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayerProgressData } from "@/hooks/use-player-progress-data";
 import { PlayerSelection } from "./PlayerSelection";
 import { ProgressChart } from "./ProgressChart";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type PlayerData = {
   player_name: string;
@@ -26,6 +28,9 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [showRotationHint, setShowRotationHint] = useState(false);
   const { prepareChartData, getMinMaxValues, getPlayerColor } = usePlayerProgressData(playersData, selectedPlayers);
+  
+  // Estado para controlar a visualização atual
+  const [chartView, setChartView] = useState<'earnings' | 'ranking'>('earnings');
 
   useEffect(() => {
     if (isMobile) {
@@ -47,13 +52,14 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           const countB = b.games_count || b.games_data.length;
           return countB - countA;
         })
-        .slice(0, 3) // Limit to 3 players by default for clarity on small screens
+        .slice(0, 3) // Limitar a 3 jogadores por padrão
         .map(p => p.player_name);
       
       setSelectedPlayers(sortedByGamesCount);
     }
   }, [playersData, selectedPlayers.length]);
 
+  // Configuração das cores dos jogadores
   const chartConfig = selectedPlayers.reduce((config, player) => {
     config[player] = {
       label: player,
@@ -62,21 +68,48 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
     return config;
   }, {} as Record<string, { label: string; color: string }>);
 
-  // Calculate domain limits for the chart
+  // Calcular limites do domínio para o gráfico
   const domainLimits = getMinMaxValues();
+
+  // Preparar dados do gráfico
+  const chartData = prepareChartData();
 
   return (
     <Card className="w-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg md:text-xl">Players Progress</CardTitle>
-        <div className="text-sm text-muted-foreground mb-2">
-          Track players' financial performance over time
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div>
+            <CardTitle className="text-lg md:text-xl">Progresso dos Jogadores</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              Acompanhe o desempenho financeiro dos jogadores ao longo do tempo
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 inline ml-2 cursor-help text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p>Este gráfico mostra o saldo acumulado de cada jogador ao longo do tempo, com base nos resultados de cada jogo.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+          
+          <Tabs defaultValue="earnings" className="w-full md:w-auto" onValueChange={(value) => setChartView(value as 'earnings' | 'ranking')}>
+            <TabsList className="w-full md:w-auto grid grid-cols-2">
+              <TabsTrigger value="earnings" className="text-xs md:text-sm">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                Ganhos ($)
+              </TabsTrigger>
+              {/* Só deixei a tab "Earnings" visível por enquanto, até implementarmos a tab "Ranking" */}
+            </TabsList>
+          </Tabs>
         </div>
 
         {showRotationHint && (
           <div className="flex items-center justify-center bg-muted/50 p-3 rounded-md mb-4 animate-pulse">
             <RotateCw className="h-5 w-5 mr-2" />
-            <span>Rotate your phone for better chart viewing</span>
+            <span>Gire o telefone para melhor visualização</span>
           </div>
         )}
 
@@ -87,9 +120,9 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
         />
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-4">
         <ProgressChart
-          chartData={prepareChartData()}
+          chartData={chartData}
           selectedPlayers={selectedPlayers}
           chartConfig={chartConfig}
           domainLimits={domainLimits}
