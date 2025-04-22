@@ -176,7 +176,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           </div>
         )}
 
-        {/* Players selection with ScrollArea to handle overflow */}
+        {/* Players selection with ScrollArea */}
         <ScrollArea className="w-full pb-4">
           <div className="flex flex-wrap gap-2 pb-2">
             {playersData.map((player) => {
@@ -213,35 +213,42 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
       </CardHeader>
 
       <CardContent>
-        <div className="w-full" style={{ height: isMobile ? '280px' : '400px' }}>
+        <div className="w-full" style={{ height: isMobile ? '500px' : '700px' }}>
           <ChartContainer config={chartConfig} className="h-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart 
                 data={prepareChartData()} 
+                layout="vertical"
                 margin={{ 
-                  top: 20, 
-                  right: isMobile ? 10 : 30, 
-                  left: 0, 
-                  bottom: 5 
+                  top: 10,
+                  right: isMobile ? 40 : 60,
+                  left: isMobile ? 80 : 100,
+                  bottom: 10
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" opacity={0.1} />
-                <XAxis 
-                  dataKey="formattedDate" 
-                  tick={{ fontSize: isMobile ? 10 : 12 }} 
-                  tickMargin={8}
-                  interval={isMobile ? 1 : 0}
-                />
                 <YAxis 
-                  tick={{ fontSize: isMobile ? 10 : 12 }} 
+                  dataKey="formattedDate"
+                  type="category"
+                  tick={{ 
+                    fontSize: isMobile ? 10 : 12,
+                    textAnchor: 'end',
+                    width: isMobile ? 60 : 80,
+                  }}
+                  tickFormatter={(value) => value}
+                  width={isMobile ? 80 : 100}
+                />
+                <XAxis 
+                  type="number"
+                  tick={{ fontSize: isMobile ? 10 : 12 }}
                   tickFormatter={(value) => `$${value}`}
-                  width={40}
+                  domain={['auto', 'auto']}
                 />
                 <Tooltip 
                   content={<ChartTooltipContent 
                     formatter={(value, name) => [`$ ${Number(value).toFixed(2)}`, name]}
                     labelFormatter={(date) => `Game: ${date}`}
-                  />} 
+                  />}
                 />
                 {selectedPlayers.map((player, index) => (
                   <Line
