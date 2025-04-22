@@ -213,17 +213,17 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
       </CardHeader>
 
       <CardContent>
-        <div className="w-full" style={{ height: isMobile ? '500px' : '700px' }}>
+        <div className="w-full" style={{ height: isMobile ? '400px' : '600px' }}>
           <ChartContainer config={chartConfig} className="h-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart 
                 data={prepareChartData()} 
                 layout="vertical"
                 margin={{ 
-                  top: 10,
-                  right: isMobile ? 40 : 60,
-                  left: isMobile ? 80 : 100,
-                  bottom: 10
+                  top: 5,
+                  right: isMobile ? 25 : 40,
+                  left: isMobile ? 60 : 80,
+                  bottom: 5
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" opacity={0.1} />
@@ -231,16 +231,16 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                   dataKey="formattedDate"
                   type="category"
                   tick={{ 
-                    fontSize: isMobile ? 10 : 12,
+                    fontSize: isMobile ? 9 : 11,
                     textAnchor: 'end',
-                    width: isMobile ? 60 : 80,
+                    width: isMobile ? 50 : 70,
                   }}
                   tickFormatter={(value) => value}
-                  width={isMobile ? 80 : 100}
+                  width={isMobile ? 55 : 75}
                 />
                 <XAxis 
                   type="number"
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  tick={{ fontSize: isMobile ? 9 : 11 }}
                   tickFormatter={(value) => `$${value}`}
                   domain={['auto', 'auto']}
                 />
