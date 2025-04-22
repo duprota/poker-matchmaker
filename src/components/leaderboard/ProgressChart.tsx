@@ -32,7 +32,7 @@ export const ProgressChart = ({
   // Calculate chart dimensions and styling
   const chartHeight = isMobile ? 350 : 550;
   const marginLeft = isMobile ? 35 : 70;
-  const marginRight = isMobile ? 5 : 20;
+  const marginRight = isMobile ? 15 : 30; // Increased right margin to prevent overflow
   const marginTop = 5;
   const marginBottom = 5;
   const fontSize = isMobile ? 8 : 11;
@@ -66,11 +66,15 @@ export const ProgressChart = ({
             />
             <XAxis 
               type="number"
-              tick={{ fontSize: fontSize }}
+              tick={{ 
+                fontSize: fontSize,
+                width: isMobile ? 20 : 40
+              }}
               tickFormatter={(value) => `$${value}`}
               domain={[min, max]}
               allowDataOverflow={false}
-              padding={{ left: 0, right: 0 }}
+              padding={{ left: 0, right: 10 }} // Add padding to prevent text truncation
+              tickCount={isMobile ? 3 : 5} // Reduce tick count on mobile
             />
             <Tooltip 
               content={<ChartTooltipContent 
@@ -78,6 +82,7 @@ export const ProgressChart = ({
                 labelFormatter={(date) => `Game: ${date}`}
               />}
               cursor={{ strokeWidth: 1 }}
+              wrapperStyle={{ zIndex: 1000 }} // Ensure tooltip is visible
             />
             {selectedPlayers.map((player, index) => (
               <Line

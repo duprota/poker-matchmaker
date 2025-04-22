@@ -82,11 +82,16 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
       }
     });
     
-    // Add padding (10%) to prevent values from touching the edges
-    const padding = Math.max(Math.abs(maxValue - minValue) * 0.1, 10);
+    // Add more significant padding (20%) to prevent values from touching the edges
+    const range = Math.max(Math.abs(maxValue - minValue), 50);
+    const padding = range * 0.2;
+    
+    // If values are very close to zero, ensure we have some minimum padding
+    const minPadding = 25;
+    
     return {
-      min: Math.floor(minValue - padding),
-      max: Math.ceil(maxValue + padding)
+      min: Math.floor(minValue - Math.max(padding, minPadding)),
+      max: Math.ceil(maxValue + Math.max(padding, minPadding))
     };
   };
 
