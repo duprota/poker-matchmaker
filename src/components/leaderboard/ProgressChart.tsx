@@ -57,25 +57,30 @@ export const ProgressChart = ({
               
               <XAxis 
                 dataKey="formattedDate"
-                tick={{ fontSize }}
+                tick={{ fontSize, fill: "#888" }}
                 tickLine={{ stroke: '#888' }}
                 axisLine={{ stroke: '#888' }}
                 padding={{ left: 0, right: 0 }}
                 tickMargin={5}
                 interval="preserveStartEnd"
                 minTickGap={20}
+                height={30} // Explicitly set height for X axis
+                scale="point" // Use point scale for better distribution
+                allowDataOverflow={false} // Prevent data overflow
+                xAxisId={0} // Explicit ID for XAxis
               />
               
               <YAxis 
                 type="number"
                 domain={[min, max]}
                 tickFormatter={(value) => `$${Math.abs(value) >= 1000 ? `${Math.round(value/1000)}k` : value}`}
-                tick={{ fontSize }}
+                tick={{ fontSize, fill: "#888" }}
                 width={40}
                 tickLine={{ stroke: '#888' }}
                 axisLine={{ stroke: '#888' }}
                 allowDecimals={false}
                 tickCount={tickCount}
+                yAxisId={0} // Explicit ID for YAxis
               />
               
               <Tooltip 
@@ -98,6 +103,7 @@ export const ProgressChart = ({
                   fontSize: fontSize - 1,
                   fill: "#888" 
                 }} 
+                yAxisId={0} // Must match YAxis ID
               />
               
               {selectedPlayers.map((player, index) => (
@@ -110,6 +116,8 @@ export const ProgressChart = ({
                   fill={chartConfig[player].color}
                   strokeWidth={strokeWidth}
                   connectNulls={true}
+                  xAxisId={0} // Must match XAxis ID
+                  yAxisId={0} // Must match YAxis ID
                   dot={(props) => {
                     if (!props.payload || !props.payload.date) return null;
                     const hasGameOnThisDate = chartData.some(

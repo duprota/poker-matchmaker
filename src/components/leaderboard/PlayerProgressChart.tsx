@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { RotateCw, Info, TrendingUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -8,6 +7,7 @@ import { PlayerSelection } from "./PlayerSelection";
 import { ProgressChart } from "./ProgressChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { standardizeDate } from "@/lib/utils";
 
 type PlayerData = {
   player_name: string;
@@ -29,7 +29,6 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
   const [showRotationHint, setShowRotationHint] = useState(false);
   const { prepareChartData, getMinMaxValues, getPlayerColor } = usePlayerProgressData(playersData, selectedPlayers);
   
-  // Estado para controlar a visualização atual
   const [chartView, setChartView] = useState<'earnings' | 'ranking'>('earnings');
 
   useEffect(() => {
@@ -59,7 +58,18 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
     }
   }, [playersData, selectedPlayers.length]);
 
-  // Configuração das cores dos jogadores
+  const sortedPlayersData = playersData.map(player => ({
+    ...player,
+    games_data: player.games_data
+      .map(game => ({
+        ...game,
+        game_date: standardizeDate(game.game_date)
+      }))
+      .sort((a, b) => 
+        new Date(a.game_date).getTime() - new Date(b.game_date).getTime()
+      )
+  }));
+
   const chartConfig = selectedPlayers.reduce((config, player) => {
     config[player] = {
       label: player,
@@ -68,10 +78,8 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
     return config;
   }, {} as Record<string, { label: string; color: string }>);
 
-  // Calcular limites do domínio para o gráfico
   const domainLimits = getMinMaxValues();
 
-  // Preparar dados do gráfico
   const chartData = prepareChartData();
 
   return (

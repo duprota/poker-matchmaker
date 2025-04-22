@@ -37,10 +37,10 @@ export const useChartResponsive = () => {
       position: "relative",
     },
     margin: {
-      top: 10,
+      top: 20, // Aumentando levemente para dar mais espaço no topo
       right: isMobile ? 20 : 30,
-      left: isMobile ? 5 : 10,
-      bottom: 20,
+      left: isMobile ? 10 : 15, // Aumentando para acomodar valores do eixo Y
+      bottom: 30, // Aumentando para dar mais espaço aos labels do eixo X
     },
     chartConfig: {
       tickCount: isMobile ? 4 : 8,
@@ -54,23 +54,27 @@ export const useChartResponsive = () => {
     
     // Ajustar margens e configuração baseado no tamanho real
     let rightMargin = 30;
-    let leftMargin = 10;
+    let leftMargin = 15;
+    let bottomMargin = 30;
+    let topMargin = 20;
     let fontSize = 12;
     let tickCount = 8;
     
     // Ajustes dinâmicos baseados no tamanho da tela
     if (width < 400) {
       rightMargin = 15;
-      leftMargin = 5;
+      leftMargin = 10;
+      bottomMargin = 25;
       fontSize = 9;
       tickCount = 3;
     } else if (width < 600) {
       rightMargin = 20;
-      leftMargin = 5;
+      leftMargin = 12;
       fontSize = 10;
       tickCount = 4;
     } else if (width < 900) {
       rightMargin = 25;
+      leftMargin = 15;
       fontSize = 11;
       tickCount = 6;
     }
@@ -88,10 +92,10 @@ export const useChartResponsive = () => {
         position: "relative",
       },
       margin: {
-        top: 10,
+        top: topMargin,
         right: rightMargin,
         left: leftMargin,
-        bottom: 20,
+        bottom: bottomMargin,
       },
       chartConfig: {
         tickCount,
