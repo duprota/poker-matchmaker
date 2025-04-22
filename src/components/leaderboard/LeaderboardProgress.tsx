@@ -9,7 +9,7 @@ interface LeaderboardProgressProps {
 
 export const LeaderboardProgress = ({ playerProgressData }: LeaderboardProgressProps) => {
   return (
-    <div className="mt-2 md:mt-4">
+    <div className="w-full">
       {playerProgressData && playerProgressData.length > 0 ? (
         <PlayerProgressChart playersData={playerProgressData} />
       ) : (

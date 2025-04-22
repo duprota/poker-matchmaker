@@ -76,7 +76,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-2 px-3 md:px-5">
+      <CardHeader className="pb-1 px-2 md:px-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div>
             <CardTitle className="text-lg md:text-xl">Progresso dos Jogadores</CardTitle>
@@ -96,7 +96,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           </div>
           
           <Tabs defaultValue="earnings" className="w-full md:w-auto" onValueChange={(value) => setChartView(value as 'earnings' | 'ranking')}>
-            <TabsList className="w-full md:w-auto grid grid-cols-2">
+            <TabsList className="w-full md:w-auto grid grid-cols-1">
               <TabsTrigger value="earnings" className="text-xs md:text-sm">
                 <TrendingUp className="h-4 w-4 mr-1" />
                 Ganhos ($)
@@ -106,7 +106,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
         </div>
 
         {showRotationHint && (
-          <div className="flex items-center justify-center bg-muted/50 p-2 rounded-md mb-2 animate-pulse text-xs">
+          <div className="flex items-center justify-center bg-muted/50 p-2 rounded-md mb-1 animate-pulse text-xs">
             <RotateCw className="h-4 w-4 mr-1" />
             <span>Gire o telefone para melhor visualização</span>
           </div>
@@ -119,7 +119,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
         />
       </CardHeader>
 
-      <CardContent className="pt-2 px-2 md:px-4">
+      <CardContent className="pt-1 px-1 md:px-2">
         <ProgressChart
           chartData={chartData}
           selectedPlayers={selectedPlayers}
