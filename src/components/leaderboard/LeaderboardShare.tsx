@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { LeaderboardEntry, RankingType } from "@/types/leaderboard";
-import { Share2, Copy } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LeaderboardShareProps {
@@ -82,10 +82,10 @@ ${leaderboard
   };
 
   return (
-    <div className="mt-6 flex justify-center">
+    <div className="fixed bottom-4 left-0 right-0 flex justify-center">
       <Button
         size="lg"
-        className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity animate-fade-in"
+        className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity animate-fade-in mx-4"
         onClick={handleShare}
       >
         <Share2 className="w-5 h-5 mr-2" />
@@ -94,3 +94,4 @@ ${leaderboard
     </div>
   );
 };
+

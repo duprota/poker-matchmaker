@@ -12,7 +12,7 @@ export const LeaderboardRankings = ({ leaderboard, rankingType }: LeaderboardRan
   return (
     <div className="mt-8">
       <h2 className="text-xl font-semibold mb-4">Rankings</h2>
-      <ScrollArea className="h-[calc(100vh-500px)]">
+      <ScrollArea className="h-[calc(100vh-320px)]">
         {leaderboard?.map((entry, index) => (
           <LeaderboardCard 
             key={entry.player_name} 
