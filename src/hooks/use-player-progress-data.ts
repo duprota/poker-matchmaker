@@ -67,10 +67,33 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
     return chartData;
   };
 
+  const getMinMaxValues = () => {
+    let minValue = 0;
+    let maxValue = 0;
+    
+    // Find global min and max across all selected players
+    selectedPlayers.forEach(playerName => {
+      const player = playersData.find(p => p.player_name === playerName);
+      if (player && player.games_data.length > 0) {
+        player.games_data.forEach(game => {
+          minValue = Math.min(minValue, game.running_total);
+          maxValue = Math.max(maxValue, game.running_total);
+        });
+      }
+    });
+    
+    // Add padding (10%) to prevent values from touching the edges
+    const padding = Math.max(Math.abs(maxValue - minValue) * 0.1, 10);
+    return {
+      min: Math.floor(minValue - padding),
+      max: Math.ceil(maxValue + padding)
+    };
+  };
+
   const getPlayerColor = (playerName: string) => {
     const playerIndex = playersData.findIndex(p => p.player_name === playerName);
     return CHART_COLORS[playerIndex % CHART_COLORS.length];
   };
 
-  return { prepareChartData, getPlayerColor };
+  return { prepareChartData, getMinMaxValues, getPlayerColor };
 };

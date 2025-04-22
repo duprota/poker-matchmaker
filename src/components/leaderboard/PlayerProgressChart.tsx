@@ -25,7 +25,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
   const isMobile = useIsMobile();
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [showRotationHint, setShowRotationHint] = useState(false);
-  const { prepareChartData, getPlayerColor } = usePlayerProgressData(playersData, selectedPlayers);
+  const { prepareChartData, getMinMaxValues, getPlayerColor } = usePlayerProgressData(playersData, selectedPlayers);
 
   useEffect(() => {
     if (isMobile) {
@@ -47,7 +47,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           const countB = b.games_count || b.games_data.length;
           return countB - countA;
         })
-        .slice(0, 5)
+        .slice(0, 3) // Limit to 3 players by default for clarity on small screens
         .map(p => p.player_name);
       
       setSelectedPlayers(sortedByGamesCount);
@@ -61,6 +61,9 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
     };
     return config;
   }, {} as Record<string, { label: string; color: string }>);
+
+  // Calculate domain limits for the chart
+  const domainLimits = getMinMaxValues();
 
   return (
     <Card className="w-full">
@@ -89,6 +92,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           chartData={prepareChartData()}
           selectedPlayers={selectedPlayers}
           chartConfig={chartConfig}
+          domainLimits={domainLimits}
         />
       </CardContent>
     </Card>

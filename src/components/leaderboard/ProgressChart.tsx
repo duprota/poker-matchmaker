@@ -15,52 +15,42 @@ interface ProgressChartProps {
   chartData: any[];
   selectedPlayers: string[];
   chartConfig: Record<string, { label: string; color: string }>;
+  domainLimits: { min: number; max: number };
 }
 
 export const ProgressChart = ({
   chartData,
   selectedPlayers,
-  chartConfig
+  chartConfig,
+  domainLimits
 }: ProgressChartProps) => {
   const isMobile = useIsMobile();
-
-  // Find min and max values to set appropriate domain
-  const getMinMax = () => {
-    if (!chartData || chartData.length === 0) return { min: 0, max: 0 };
-    
-    let min = 0;
-    let max = 0;
-    
-    chartData.forEach(dataPoint => {
-      selectedPlayers.forEach(player => {
-        if (dataPoint[player] !== undefined && dataPoint[player] !== null) {
-          min = Math.min(min, dataPoint[player]);
-          max = Math.max(max, dataPoint[player]);
-        }
-      });
-    });
-    
-    // Add some padding to the domain
-    min = Math.floor(min * 1.1);
-    max = Math.ceil(max * 1.1);
-    
-    return { min, max };
-  };
   
-  const { min, max } = getMinMax();
+  // Use provided domain limits or default to 0
+  const { min, max } = domainLimits || { min: 0, max: 0 };
+  
+  // Calculate chart dimensions and styling
+  const chartHeight = isMobile ? 350 : 550;
+  const marginLeft = isMobile ? 35 : 70;
+  const marginRight = isMobile ? 5 : 20;
+  const marginTop = 5;
+  const marginBottom = 5;
+  const fontSize = isMobile ? 8 : 11;
+  const dotRadius = isMobile ? 2 : 3;
+  const activeDotRadius = isMobile ? 3 : 5;
 
   return (
-    <div className="w-full" style={{ height: isMobile ? '400px' : '600px' }}>
+    <div className="w-full" style={{ height: chartHeight }}>
       <ChartContainer config={chartConfig} className="h-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="99%" height="99%">
           <LineChart 
             data={chartData} 
             layout="vertical"
             margin={{ 
-              top: 5,
-              right: isMobile ? 5 : 40,
-              left: isMobile ? 45 : 80,
-              bottom: 5
+              top: marginTop,
+              right: marginRight,
+              left: marginLeft,
+              bottom: marginBottom
             }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#444" opacity={0.1} />
@@ -68,16 +58,15 @@ export const ProgressChart = ({
               dataKey="formattedDate"
               type="category"
               tick={{ 
-                fontSize: isMobile ? 8 : 11,
+                fontSize: fontSize,
                 textAnchor: 'end',
-                width: isMobile ? 40 : 70,
+                width: isMobile ? 30 : 60,
               }}
-              tickFormatter={(value) => value}
-              width={isMobile ? 40 : 75}
+              width={isMobile ? 30 : 60}
             />
             <XAxis 
               type="number"
-              tick={{ fontSize: isMobile ? 8 : 11 }}
+              tick={{ fontSize: fontSize }}
               tickFormatter={(value) => `$${value}`}
               domain={[min, max]}
               allowDataOverflow={false}
@@ -108,7 +97,7 @@ export const ProgressChart = ({
                     <circle
                       cx={props.cx}
                       cy={props.cy}
-                      r={isMobile ? 2 : 3}
+                      r={dotRadius}
                       fill={chartConfig[player].color}
                       stroke="none"
                       key={`dot-${player}-${props.payload.date}-${index}`}
@@ -119,13 +108,13 @@ export const ProgressChart = ({
                   <circle
                     cx={props.cx}
                     cy={props.cy}
-                    r={isMobile ? 3 : 5}
+                    r={activeDotRadius}
                     fill={chartConfig[player].color}
                     stroke="none"
                     key={`activeDot-${player}-${props.index}-${index}`}
                   />
                 )}
-                isAnimationActive={!isMobile}
+                isAnimationActive={false}
               />
             ))}
           </LineChart>
