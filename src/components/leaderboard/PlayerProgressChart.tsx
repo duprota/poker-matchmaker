@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
@@ -88,7 +89,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   // Prepare data for the chart
   const prepareChartData = () => {
-    // Find all unique game dates
+    // Find all unique game dates across all players
     const allDates = new Set<string>();
     playersData.forEach(player => {
       player.games_data.forEach(game => {
@@ -101,19 +102,36 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
       new Date(a).getTime() - new Date(b).getTime()
     );
 
-    // Create an object for each date with the value of each selected player
+    // Create an object for each date with the value for each selected player
     return sortedDates.map(date => {
       const dataPoint: any = {
         date,
         formattedDate: format(new Date(date), "d MMM"),
       };
 
-      // Add the value for each selected player on this date
+      // For each selected player, find their running total for this date
       selectedPlayers.forEach(playerName => {
         const player = playersData.find(p => p.player_name === playerName);
         if (player) {
-          const gameOnThisDate = player.games_data.find(g => g.game_date === date);
-          dataPoint[playerName] = gameOnThisDate ? gameOnThisDate.running_total : null;
+          const playerFirstGame = player.games_data[0]?.game_date;
+          const playerLastGame = player.games_data[player.games_data.length - 1]?.game_date;
+          
+          // Only include data points between player's first and last game
+          if (date >= playerFirstGame && date <= playerLastGame) {
+            const gameOnThisDate = player.games_data.find(g => g.game_date === date);
+            // If player has a game on this date, use its running total
+            // If not, use the last known running total
+            if (gameOnThisDate) {
+              dataPoint[playerName] = gameOnThisDate.running_total;
+            } else {
+              // Find the last known running total before this date
+              const lastKnownGame = player.games_data
+                .filter(g => g.game_date <= date)
+                .sort((a, b) => new Date(b.game_date).getTime() - new Date(a.game_date).getTime())[0];
+              
+              dataPoint[playerName] = lastKnownGame ? lastKnownGame.running_total : null;
+            }
+          }
         }
       });
 
@@ -194,7 +212,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           <ChartContainer config={chartConfig} className="h-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart 
-                data={chartData} 
+                data={prepareChartData()} 
                 margin={{ 
                   top: 20, 
                   right: isMobile ? 10 : 30, 
@@ -228,9 +246,32 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                     name={player}
                     stroke={getPlayerColor(player)}
                     strokeWidth={2}
-                    dot={{ r: isMobile ? 2 : 3 }}
-                    activeDot={{ r: isMobile ? 4 : 5 }}
-                    connectNulls
+                    dot={(props) => {
+                      const hasGameOnThisDate = playersData
+                        .find(p => p.player_name === player)
+                        ?.games_data.some(g => g.game_date === props.payload.date);
+                      
+                      if (!hasGameOnThisDate) return null;
+                      
+                      return (
+                        <circle
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={isMobile ? 2 : 3}
+                          fill={getPlayerColor(player)}
+                          stroke="none"
+                        />
+                      );
+                    }}
+                    activeDot={(props) => (
+                      <circle
+                        cx={props.cx}
+                        cy={props.cy}
+                        r={isMobile ? 4 : 5}
+                        fill={getPlayerColor(player)}
+                        stroke="none"
+                      />
+                    )}
                   />
                 ))}
               </LineChart>
