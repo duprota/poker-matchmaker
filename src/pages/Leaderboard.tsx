@@ -1,3 +1,4 @@
+
 import { Navigation } from "@/components/Navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -7,7 +8,7 @@ import { LeaderboardShare } from "@/components/leaderboard/LeaderboardShare";
 import { LeaderboardRankings } from "@/components/leaderboard/LeaderboardRankings";
 import { LeaderboardProgress } from "@/components/leaderboard/LeaderboardProgress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 const calculateROI = (winnings: number, spent: number) => {
@@ -129,10 +130,12 @@ const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[]) => {
   
   gamesData.forEach(game => {
     const gameDate = game.date;
-    const formattedDate = format(new Date(gameDate), 'yyyy-MM-dd');
+    // Use a string format that preserves the date exactly as stored in the database
+    const formattedDate = gameDate.split('T')[0]; // Get only the YYYY-MM-DD part
+    console.log(`Game date from DB: ${gameDate}, formatted as: ${formattedDate}`);
     
     game.game_players.forEach((gamePlayer: any) => {
-      if (!gamePlayer.final_result) return;
+      if (gamePlayer.final_result === null) return; // Changed from !gamePlayer.final_result to handle zero values
 
       const playerName = gamePlayer.player.name;
       

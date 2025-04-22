@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
@@ -9,7 +8,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { RotateCw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
@@ -89,13 +88,18 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   // Prepare data for the chart
   const prepareChartData = () => {
-    // Find all unique game dates across all players
+    console.log("Preparing chart data with players:", playersData.map(p => p.player_name));
+    
+    // Find all unique game dates across all players (no filtering)
     const allDates = new Set<string>();
     playersData.forEach(player => {
       player.games_data.forEach(game => {
+        console.log(`Adding date for ${player.player_name}: ${game.game_date}`);
         allDates.add(game.game_date);
       });
     });
+
+    console.log("All unique dates:", Array.from(allDates));
 
     // Sort dates chronologically
     const sortedDates = Array.from(allDates).sort((a, b) => 
@@ -106,6 +110,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
     return sortedDates.map(date => {
       const dataPoint: any = {
         date,
+        // Format for display only, keep original date for data processing
         formattedDate: format(new Date(date), "d MMM"),
       };
 
@@ -171,7 +176,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           </div>
         )}
 
-        {/* Players selection with flex-wrap to ensure all buttons are visible */}
+        {/* Players selection with ScrollArea to handle overflow */}
         <ScrollArea className="w-full pb-4">
           <div className="flex flex-wrap gap-2 pb-2">
             {playersData.map((player) => {
@@ -238,15 +243,17 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                     labelFormatter={(date) => `Game: ${date}`}
                   />} 
                 />
-                {selectedPlayers.map((player) => (
+                {selectedPlayers.map((player, index) => (
                   <Line
-                    key={player}
+                    key={`${player}-${index}`}
                     type="monotone"
                     dataKey={player}
                     name={player}
                     stroke={getPlayerColor(player)}
                     strokeWidth={2}
                     dot={(props) => {
+                      if (!props.payload || !props.payload.date) return null;
+                      
                       const hasGameOnThisDate = playersData
                         .find(p => p.player_name === player)
                         ?.games_data.some(g => g.game_date === props.payload.date);
@@ -260,6 +267,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                           r={isMobile ? 2 : 3}
                           fill={getPlayerColor(player)}
                           stroke="none"
+                          key={`dot-${player}-${props.payload.date}-${index}`}
                         />
                       );
                     }}
@@ -270,6 +278,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                         r={isMobile ? 4 : 5}
                         fill={getPlayerColor(player)}
                         stroke="none"
+                        key={`activeDot-${player}-${props.index}-${index}`}
                       />
                     )}
                   />
