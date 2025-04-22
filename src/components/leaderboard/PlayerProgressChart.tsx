@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
@@ -154,45 +153,40 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
           </div>
         )}
 
-        {/* Improved ScrollArea with visible scrollbar for mobile */}
-        <div className="relative">
-          <ScrollArea className="w-full pb-4 max-w-full">
-            <div className="flex flex-nowrap gap-2 min-w-min pr-8 pb-2">
-              {playersData.map((player) => {
-                const playerColor = getPlayerColor(player.player_name);
-                const gamesCount = player.games_count || player.games_data.length;
-                
-                return (
-                  <Badge 
-                    key={player.player_name}
-                    variant={selectedPlayers.includes(player.player_name) ? "default" : "outline"}
-                    className="cursor-pointer whitespace-nowrap shrink-0"
-                    style={{
-                      backgroundColor: selectedPlayers.includes(player.player_name) 
-                        ? playerColor
-                        : undefined,
-                      color: selectedPlayers.includes(player.player_name) 
-                        ? 'white' 
-                        : undefined
-                    }}
-                    onClick={() => {
-                      if (selectedPlayers.includes(player.player_name)) {
-                        setSelectedPlayers(selectedPlayers.filter(p => p !== player.player_name));
-                      } else {
-                        setSelectedPlayers([...selectedPlayers, player.player_name]);
-                      }
-                    }}
-                  >
-                    {player.player_name} ({gamesCount})
-                  </Badge>
-                );
-              })}
-            </div>
-          </ScrollArea>
-          {isMobile && (
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
-          )}
-        </div>
+        {/* Players selection with flex-wrap to ensure all buttons are visible */}
+        <ScrollArea className="w-full pb-4">
+          <div className="flex flex-wrap gap-2 pb-2">
+            {playersData.map((player) => {
+              const playerColor = getPlayerColor(player.player_name);
+              const gamesCount = player.games_count || player.games_data.length;
+              
+              return (
+                <Badge 
+                  key={player.player_name}
+                  variant={selectedPlayers.includes(player.player_name) ? "default" : "outline"}
+                  className="cursor-pointer whitespace-nowrap"
+                  style={{
+                    backgroundColor: selectedPlayers.includes(player.player_name) 
+                      ? playerColor
+                      : undefined,
+                    color: selectedPlayers.includes(player.player_name) 
+                      ? 'white' 
+                      : undefined
+                  }}
+                  onClick={() => {
+                    if (selectedPlayers.includes(player.player_name)) {
+                      setSelectedPlayers(selectedPlayers.filter(p => p !== player.player_name));
+                    } else {
+                      setSelectedPlayers([...selectedPlayers, player.player_name]);
+                    }
+                  }}
+                >
+                  {player.player_name} ({gamesCount})
+                </Badge>
+              );
+            })}
+          </div>
+        </ScrollArea>
       </CardHeader>
 
       <CardContent>
