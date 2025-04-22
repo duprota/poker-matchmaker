@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceLine,
-  Dot,
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,45 +30,47 @@ export const ProgressChart = ({
   // Use provided domain limits
   const { min, max } = domainLimits || { min: 0, max: 0 };
   
-  // Calculate chart dimensions and styling
+  // Responsive chart dimensions
   const chartHeight = isMobile ? 400 : 600;
   
-  // Ajustes de margem para garantir espaço suficiente para todos os elementos
+  // Ajustes de margem para reduzir espaço em branco e corrigir overflow
   const margins = {
-    top: 20,
-    right: isMobile ? 30 : 50,
+    top: 10,
+    right: isMobile ? 5 : 20,
     bottom: 20,
-    left: isMobile ? 40 : 80
+    left: isMobile ? 0 : 10
   };
   
-  // Definições de estilo
-  const fontSize = isMobile ? 10 : 12;
+  // Definições de estilo adaptadas para responsividade
+  const fontSize = isMobile ? 9 : 11;
   const strokeWidth = 2;
-  const dotRadius = isMobile ? 3 : 4;
-  const activeDotRadius = isMobile ? 5 : 7;
+  const dotRadius = isMobile ? 2 : 3;
+  const activeDotRadius = isMobile ? 4 : 6;
 
-  // Função para customizar a aparência do eixo
-  const renderCustomAxisTick = ({ x, y, payload }: any) => {
-    return (
-      <g transform={`translate(${x},${y})`}>
-        <text 
-          x={0} 
-          y={0} 
-          dy={16} 
-          textAnchor="middle" 
-          fill="#888"
-          fontSize={fontSize}
-        >
-          {payload.value}
-        </text>
-      </g>
-    );
+  // Função para customizar a formatação do eixo Y
+  const formatYAxis = (value: number) => {
+    if (isMobile) {
+      // Em dispositivos móveis, mostrar formato mais compacto
+      if (Math.abs(value) >= 1000) {
+        return `$${Math.round(value/1000)}k`;
+      }
+      return `$${value}`;
+    }
+    return `$${value}`;
+  };
+
+  // Função para determinar quantos ticks mostrar no eixo X baseado na largura
+  const getXAxisTickCount = () => {
+    if (isMobile) {
+      return Math.min(3, chartData.length);
+    }
+    return Math.min(6, chartData.length);
   };
 
   return (
     <div className="w-full h-full" style={{ height: chartHeight }}>
       <ChartContainer config={chartConfig} className="h-full">
-        <ResponsiveContainer width="99%" height="99%">
+        <ResponsiveContainer width="100%" height="99%">
           <LineChart 
             data={chartData} 
             margin={margins}
@@ -81,19 +82,22 @@ export const ProgressChart = ({
               tick={{ fontSize }}
               tickLine={{ stroke: '#888' }}
               axisLine={{ stroke: '#888' }}
-              padding={{ left: 10, right: 10 }}
+              padding={{ left: 0, right: 0 }}
+              tickMargin={5}
+              interval={isMobile ? Math.ceil(chartData.length / getXAxisTickCount()) - 1 : "preserveStartEnd"}
+              scale="point"
             />
             
             <YAxis 
               type="number"
               domain={[min, max]}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={formatYAxis}
               tick={{ fontSize }}
-              width={isMobile ? 60 : 80}
+              width={isMobile ? 30 : 50}
               tickLine={{ stroke: '#888' }}
               axisLine={{ stroke: '#888' }}
-              padding={{ top: 10, bottom: 10 }}
               allowDecimals={false}
+              padding={{ top: 5, bottom: 5 }}
             />
             
             <Tooltip 
@@ -103,6 +107,7 @@ export const ProgressChart = ({
               />}
               cursor={{ stroke: '#888', strokeWidth: 1, opacity: 0.3 }}
               wrapperStyle={{ zIndex: 100 }}
+              isAnimationActive={false}
             />
             
             {/* Linha de referência em $0 */}
@@ -112,7 +117,7 @@ export const ProgressChart = ({
               strokeDasharray="3 3" 
               label={{ 
                 value: "$0", 
-                position: "left", 
+                position: "insideLeft", 
                 fontSize: fontSize - 1,
                 fill: "#888" 
               }} 

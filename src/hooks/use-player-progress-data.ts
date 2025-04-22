@@ -76,8 +76,9 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
       });
     });
 
-    // Preparar dados para o gráfico horizontal
+    // Preparar dados para o gráfico
     return allDates.map(date => {
+      // Formatação simplificada para a data
       const formattedDate = format(new Date(date), "d MMM");
       
       const dataPoint: Record<string, any> = {
@@ -95,39 +96,6 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
     });
   };
 
-  // Nova função para calcular o ranking em cada data
-  const prepareRankingChartData = () => {
-    const chartData = prepareChartData();
-    const rankingData = chartData.map(dataPoint => {
-      const { date, formattedDate } = dataPoint;
-      
-      // Extrair valores para cada jogador nesta data
-      const playerValues: {name: string; value: number}[] = selectedPlayers
-        .filter(playerName => dataPoint[playerName] !== undefined)
-        .map(playerName => ({
-          name: playerName,
-          value: dataPoint[playerName]
-        }))
-        .sort((a, b) => b.value - a.value); // Ordenar por valor (maior primeiro)
-      
-      // Criar novo ponto de dados com posições
-      const newDataPoint: Record<string, any> = {
-        date,
-        formattedDate,
-      };
-      
-      // Atribuir posições
-      playerValues.forEach((player, index) => {
-        newDataPoint[`${player.name}_value`] = player.value;
-        newDataPoint[`${player.name}_position`] = index + 1; // posição 1-indexed
-      });
-      
-      return newDataPoint;
-    });
-    
-    return rankingData;
-  };
-
   const getMinMaxValues = () => {
     let minValue = 0;
     let maxValue = 0;
@@ -143,12 +111,13 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
       }
     });
     
-    // Adicionar padding (30%) para evitar que os valores toquem as bordas
+    // Adicionar padding (15%) para evitar que os valores toquem as bordas
+    // Reduzido de 30% para 15% para economizar espaço vertical
     const range = Math.max(Math.abs(maxValue - minValue), 100);
-    const padding = range * 0.3;
+    const padding = range * 0.15;
     
     // Garantir um padding mínimo
-    const minPadding = 50;
+    const minPadding = 20;
     
     return {
       min: Math.floor(minValue - Math.max(padding, minPadding)),
@@ -163,7 +132,6 @@ export const usePlayerProgressData = (playersData: PlayerData[], selectedPlayers
 
   return { 
     prepareChartData,
-    prepareRankingChartData,
     getMinMaxValues, 
     getPlayerColor 
   };

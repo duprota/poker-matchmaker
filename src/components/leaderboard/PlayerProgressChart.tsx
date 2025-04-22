@@ -76,7 +76,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 px-3 md:px-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div>
             <CardTitle className="text-lg md:text-xl">Progresso dos Jogadores</CardTitle>
@@ -101,14 +101,13 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
                 <TrendingUp className="h-4 w-4 mr-1" />
                 Ganhos ($)
               </TabsTrigger>
-              {/* Só deixei a tab "Earnings" visível por enquanto, até implementarmos a tab "Ranking" */}
             </TabsList>
           </Tabs>
         </div>
 
         {showRotationHint && (
-          <div className="flex items-center justify-center bg-muted/50 p-3 rounded-md mb-4 animate-pulse">
-            <RotateCw className="h-5 w-5 mr-2" />
+          <div className="flex items-center justify-center bg-muted/50 p-2 rounded-md mb-2 animate-pulse text-xs">
+            <RotateCw className="h-4 w-4 mr-1" />
             <span>Gire o telefone para melhor visualização</span>
           </div>
         )}
@@ -120,7 +119,7 @@ export const PlayerProgressChart = ({ playersData }: PlayerProgressChartProps) =
         />
       </CardHeader>
 
-      <CardContent className="pt-4">
+      <CardContent className="pt-2 px-2 md:px-4">
         <ProgressChart
           chartData={chartData}
           selectedPlayers={selectedPlayers}
