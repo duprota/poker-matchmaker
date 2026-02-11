@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Home, LayoutGrid, Users, Trophy, DollarSign, Menu } from "lucide-react";
+import { Home, LayoutGrid, Users, Trophy, DollarSign, Receipt, Menu } from "lucide-react";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "./ui/button";
@@ -27,6 +27,7 @@ export const Navigation = () => {
     { path: "/players", label: "Players", icon: Users },
     { path: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { path: "/financials", label: "Financials", icon: DollarSign },
+    { path: "/expenses", label: "Despesas", icon: Receipt },
   ];
 
   const NavLinks = () => (
