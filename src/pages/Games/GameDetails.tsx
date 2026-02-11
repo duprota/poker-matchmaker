@@ -26,7 +26,18 @@ const GameDetails = () => {
     try {
       console.log("Deleting game:", game.id);
       
-      // Primeiro, excluir as transações relacionadas ao jogo
+      // Excluir ledger entries relacionadas ao jogo
+      const { error: ledgerError } = await supabase
+        .from("ledger_entries")
+        .delete()
+        .eq("game_id", game.id);
+
+      if (ledgerError) {
+        console.error("Error deleting ledger entries:", ledgerError);
+        throw ledgerError;
+      }
+
+      // Excluir as transações relacionadas ao jogo
       const { error: transactionsError } = await supabase
         .from("game_transactions")
         .delete()
