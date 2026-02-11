@@ -39,8 +39,8 @@ const Financials = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
-      <div className="container mx-auto py-8 px-4 space-y-6">
-        <h1 className="text-2xl font-bold">Ajustes Financeiros</h1>
+      <div className="container mx-auto py-6 px-4 max-w-lg space-y-4">
+        <h1 className="text-xl font-bold">Ajustes Financeiros</h1>
 
         <PlayerBalancesCard balances={balances} isLoading={balancesLoading} />
 
