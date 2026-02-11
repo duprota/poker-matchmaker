@@ -17,7 +17,9 @@ export const PlayerBalancesCard = ({ balances, isLoading }: PlayerBalancesCardPr
     );
   }
 
-  const sorted = [...balances].sort((a, b) => b.balance - a.balance);
+  const sorted = [...balances]
+    .filter((p) => Math.abs(p.balance) >= 0.01)
+    .sort((a, b) => b.balance - a.balance);
 
   return (
     <Card className="p-6">
