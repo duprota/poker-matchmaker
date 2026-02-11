@@ -1,10 +1,11 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Undo2, RefreshCw, Copy, MessageCircle } from "lucide-react";
+import { Check, Undo2, RefreshCw, Copy, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import type { SettlementItem } from "@/types/ledger";
 import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 interface SettlementCardProps {
   settlement: any;
@@ -106,6 +107,7 @@ export const SettlementCard = ({
   onMarkPaid,
   onUnmarkPaid,
 }: SettlementCardProps) => {
+  const { toast: toastHook } = useToast();
   const items: SettlementItem[] = settlement?.settlement_items || [];
   const pendingItems = items.filter((i: any) => !i.paid_at);
   const paidItems = items.filter((i: any) => i.paid_at);
@@ -152,14 +154,32 @@ export const SettlementCard = ({
                   ))}
                 </div>
                 <Button
-                  className="w-full mt-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white"
-                  onClick={() => {
+                  className="w-full mt-2"
+                  variant="outline"
+                  onClick={async () => {
                     const msg = buildWhatsAppMessage(pendingItems);
-                    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                    try {
+                      if (navigator.share && navigator.canShare) {
+                        const shareData = { title: "Ajuste de Contas - Poker", text: msg };
+                        if (navigator.canShare(shareData)) {
+                          await navigator.share(shareData);
+                          return;
+                        }
+                      }
+                      await navigator.clipboard.writeText(msg);
+                      toastHook({ title: "Copiado para área de transferência", description: "O texto foi copiado para sua área de transferência" });
+                    } catch (error) {
+                      try {
+                        await navigator.clipboard.writeText(msg);
+                        toastHook({ title: "Copiado para área de transferência", description: "O texto foi copiado para sua área de transferência" });
+                      } catch {
+                        toastHook({ title: "Erro ao compartilhar", description: "Não foi possível compartilhar o conteúdo", variant: "destructive" });
+                      }
+                    }
                   }}
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Cobrar via WhatsApp
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Compartilhar Cobrança
                 </Button>
               </div>
             )}
