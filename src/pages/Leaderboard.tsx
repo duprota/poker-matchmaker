@@ -20,14 +20,26 @@ const calculateTotalSpecialHands = (specialHands: { [key: string]: number } = {}
   return Object.values(specialHands).reduce((sum, count) => sum + count, 0);
 };
 
-const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
-  console.log("Fetching leaderboard data...");
-  
+const fetchAvailableYears = async (): Promise<number[]> => {
   const { data, error } = await supabase
+    .from('games')
+    .select('date')
+    .eq('status', 'completed');
+
+  if (error) throw error;
+
+  const years = [...new Set(data.map(g => new Date(g.date).getFullYear()))];
+  return years.sort((a, b) => b - a);
+};
+
+const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntry[]> => {
+  console.log("Fetching leaderboard data for filter:", yearFilter);
+  
+  let query = supabase
     .from('game_players')
     .select(`
       player:players(name),
-      game:games(id, date),
+      game:games(id, date, status),
       final_result,
       initial_buyin,
       total_rebuys,
@@ -35,12 +47,25 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
     `)
     .not('final_result', 'is', null);
 
+  const { data, error } = await query;
+
   if (error) {
     console.error("Error fetching leaderboard data:", error);
     throw error;
   }
 
-  const playerStats = data.reduce((acc: { [key: string]: LeaderboardEntry }, entry) => {
+  // Filter by year on the client side (game join doesn't support direct date filtering easily)
+  const filtered = yearFilter === "All Time"
+    ? data
+    : data.filter(entry => {
+        const gameDate = new Date(entry.game.date);
+        return gameDate.getFullYear() === parseInt(yearFilter);
+      });
+
+  // Also filter only completed games
+  const completedFiltered = filtered.filter(entry => entry.game.status === 'completed');
+
+  const playerStats = completedFiltered.reduce((acc: { [key: string]: LeaderboardEntry }, entry) => {
     const playerName = entry.player.name;
     const spent = entry.initial_buyin * (1 + entry.total_rebuys);
     const result = entry.final_result || 0;
@@ -95,10 +120,10 @@ const fetchLeaderboardData = async (): Promise<LeaderboardEntry[]> => {
   return Object.values(playerStats);
 };
 
-const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[]) => {
-  console.log("Processing player progress data from leaderboard data...");
+const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[], yearFilter: string) => {
+  console.log("Processing player progress data...");
   
-  const { data: gamesData, error: gamesError } = await supabase
+  let query = supabase
     .from('games')
     .select(`
       id,
@@ -113,10 +138,17 @@ const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[]) => {
     .eq('status', 'completed')
     .order('date', { ascending: true });
 
+  const { data: gamesData, error: gamesError } = await query;
+
   if (gamesError) {
     console.error("Error fetching games data:", gamesError);
     throw gamesError;
   }
+
+  // Filter by year
+  const filteredGames = yearFilter === "All Time"
+    ? gamesData
+    : gamesData.filter(game => new Date(game.date).getFullYear() === parseInt(yearFilter));
 
   const playerProgressMap = new Map();
   
@@ -128,14 +160,12 @@ const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[]) => {
     });
   });
   
-  gamesData.forEach(game => {
+  filteredGames.forEach(game => {
     const gameDate = game.date;
-    // Use a string format that preserves the date exactly as stored in the database
-    const formattedDate = gameDate.split('T')[0]; // Get only the YYYY-MM-DD part
-    console.log(`Game date from DB: ${gameDate}, formatted as: ${formattedDate}`);
+    const formattedDate = gameDate.split('T')[0];
     
     game.game_players.forEach((gamePlayer: any) => {
-      if (gamePlayer.final_result === null) return; // Changed from !gamePlayer.final_result to handle zero values
+      if (gamePlayer.final_result === null) return;
 
       const playerName = gamePlayer.player.name;
       
@@ -170,19 +200,29 @@ const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[]) => {
 };
 
 const Leaderboard = () => {
-  const [timeFilter, setTimeFilter] = useState("All Time");
+  const currentYear = new Date().getFullYear().toString();
+  const [timeFilter, setTimeFilter] = useState(currentYear);
   const [rankingType, setRankingType] = useState<RankingType>("total");
+
+  const { data: availableYears } = useQuery({
+    queryKey: ['available-years'],
+    queryFn: fetchAvailableYears,
+  });
   
   const { data: leaderboard, isLoading, error } = useQuery({
     queryKey: ['leaderboard', timeFilter],
-    queryFn: fetchLeaderboardData,
+    queryFn: () => fetchLeaderboardData(timeFilter),
   });
 
   const { data: playerProgressData, isLoading: isLoadingProgress } = useQuery({
-    queryKey: ['player-progress', leaderboard],
-    queryFn: () => leaderboard ? fetchPlayerProgressData(leaderboard) : Promise.resolve([]),
+    queryKey: ['player-progress', timeFilter, leaderboard],
+    queryFn: () => leaderboard ? fetchPlayerProgressData(leaderboard, timeFilter) : Promise.resolve([]),
     enabled: !!leaderboard,
   });
+
+  const headerTitle = timeFilter === "All Time" 
+    ? "Leaderboard - All Time" 
+    : `Leaderboard ${timeFilter}`;
 
   const sortedLeaderboard = leaderboard?.sort((a, b) => {
     if (rankingType === "total") {
@@ -202,7 +242,7 @@ const Leaderboard = () => {
         <Navigation />
         <div className="container mx-auto py-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-            2024 Leaderboard
+            {headerTitle}
           </h1>
           <div className="text-center py-8">Loading leaderboard data...</div>
         </div>
@@ -216,7 +256,7 @@ const Leaderboard = () => {
         <Navigation />
         <div className="container mx-auto py-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-            2024 Leaderboard
+            {headerTitle}
           </h1>
           <div className="text-center py-8 text-destructive">
             Error loading leaderboard data. Please try again later.
@@ -235,6 +275,8 @@ const Leaderboard = () => {
           onTimeFilterChange={setTimeFilter}
           rankingType={rankingType}
           onRankingTypeChange={setRankingType}
+          availableYears={availableYears}
+          headerTitle={headerTitle}
         />
 
         <Tabs defaultValue="rankings" className="mt-4 md:mt-8">
