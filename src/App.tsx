@@ -10,6 +10,7 @@ import GameDetails from "./pages/Games/GameDetails";
 import Players from "./pages/Players";
 import Leaderboard from "./pages/Leaderboard";
 import Financials from "./pages/Financials";
+import Expenses from "./pages/Expenses";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/players" element={<Players />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/financials" element={<Financials />} />
+          <Route path="/expenses" element={<Expenses />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
