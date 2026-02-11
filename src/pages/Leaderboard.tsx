@@ -200,7 +200,7 @@ const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[], year
 };
 
 const Leaderboard = () => {
-  const currentYear = new Date().getFullYear().toString();
+  const currentYear = "2026";
   const [timeFilter, setTimeFilter] = useState(currentYear);
   const [rankingType, setRankingType] = useState<RankingType>("total");
 
