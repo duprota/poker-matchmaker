@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
-import { calculateOptimizedPayments } from "@/utils/paymentOptimization";
 import { format } from "date-fns";
 
 interface ShareButtonProps {
@@ -36,29 +35,6 @@ export const ShareButton = ({ players, date, name, place }: ShareButtonProps) =>
     const playerWithMostRebuys = players.find(player => player.total_rebuys === mostRebuys);
     const highestSingleWin = Math.max(...players.map(player => calculateFinalResult(player)));
 
-    const formattedPlayers = players.map(player => ({
-      id: player.id,
-      game_id: player.game_id,
-      player: {
-        id: player.player.id,
-        name: player.player.name,
-        email: player.player.email
-      },
-      initial_buyin: player.initial_buyin,
-      total_rebuys: player.total_rebuys,
-      final_result: calculateFinalResult(player),
-      payment_status: player.payment_status,
-      payment_amount: player.payment_amount
-    }));
-
-    const transactions = calculateOptimizedPayments([{
-      id: players[0]?.game_id || '',
-      date: new Date().toISOString(),
-      name: null,
-      status: 'completed',
-      players: formattedPlayers
-    }]);
-
     const summaryText = `🎰 ${name ? name + ' - ' : ''}${format(new Date(date), 'PPp')}\n` +
       `${place ? `📍 ${place}\n` : ''}` +
       `\n🏆 Winner: ${winner.player.name} (+$${winnerProfit}) - ROI: ${winnerROI}%\n\n` +
@@ -71,10 +47,7 @@ export const ShareButton = ({ players, date, name, place }: ShareButtonProps) =>
       `• Total Money in Play: $${totalMoneyInPlay}\n` +
       `• Total Rebuys: ${totalRebuys}\n` +
       `• Highest Win: $${highestSingleWin}\n` +
-      `• Most Rebuys: ${playerWithMostRebuys?.player.name} (${mostRebuys})\n\n` +
-      `💸 Required Payments:\n${transactions.map(t => 
-        `${t.fromPlayer.name} → ${t.toPlayer.name}: $${t.totalAmount}`
-      ).join('\n')}`;
+      `• Most Rebuys: ${playerWithMostRebuys?.player.name} (${mostRebuys})`;
 
     try {
       if (navigator.share && navigator.canShare) {

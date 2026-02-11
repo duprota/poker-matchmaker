@@ -141,27 +141,7 @@ export const GameContainer = ({
   };
 
   if (game.status === "completed") {
-    return <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} onUpdatePaymentStatus={async (playerId: string, status: string) => {
-      try {
-        console.log(`Updating payment status for player ${playerId} to ${status}`);
-        const {
-          error
-        } = await supabase.from("game_players").update({
-          payment_status: status
-        }).eq("id", playerId);
-        if (error) throw error;
-        toast({
-          description: "Payment status updated successfully"
-        });
-        refreshGame();
-      } catch (error) {
-        console.error("Error updating payment status:", error);
-        toast({
-          description: "Failed to update payment status",
-          variant: "destructive"
-        });
-      }
-    }} />;
+    return <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} />;
   }
 
   // Permitir adicionar jogadores nos status "created" e "ongoing"

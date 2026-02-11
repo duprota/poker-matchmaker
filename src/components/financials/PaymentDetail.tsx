@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Check, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { PaymentStatusButton } from "./PaymentStatusButton";
 
 interface PaymentDetailProps {
   gameName: string;
@@ -29,11 +30,31 @@ export const PaymentDetail = ({
           </p>
           <p className="font-medium">${amount.toFixed(2)}</p>
         </div>
-        <PaymentStatusButton
-          status={paymentStatus}
-          gamePlayerId={gamePlayerId}
-          onStatusUpdate={onStatusUpdate}
-        />
+        <Button
+          variant={paymentStatus === 'paid' ? "outline" : "default"}
+          size="sm"
+          onClick={() => onStatusUpdate(
+            gamePlayerId,
+            paymentStatus === 'pending' ? 'paid' : 'pending'
+          )}
+          className={`w-full sm:w-auto transition-all duration-200 ${
+            paymentStatus === 'paid' 
+              ? 'hover:bg-red-500/10 hover:text-red-500 hover:border-red-500' 
+              : 'hover:bg-green-500/90'
+          }`}
+        >
+          {paymentStatus === 'paid' ? (
+            <>
+              <X className="w-4 h-4 mr-2" />
+              <span>Mark as Pending</span>
+            </>
+          ) : (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              <span>Mark as Paid</span>
+            </>
+          )}
+        </Button>
       </div>
     </Card>
   );
