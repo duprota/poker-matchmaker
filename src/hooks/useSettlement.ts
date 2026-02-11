@@ -13,7 +13,7 @@ export const useActiveSettlement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("settlements" as any)
-        .select("*, settlement_items(*, from_player:players!settlement_items_from_player_id_fkey(id, name), to_player:players!settlement_items_to_player_id_fkey(id, name))")
+        .select("*, settlement_items(*, from_player:players!settlement_items_from_player_id_fkey(id, name, pix_key), to_player:players!settlement_items_to_player_id_fkey(id, name, pix_key))")
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(1)

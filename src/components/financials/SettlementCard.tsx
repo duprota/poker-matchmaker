@@ -57,10 +57,17 @@ export const SettlementCard = ({
                   key={item.id}
                   className="flex items-center justify-between py-2 px-3 rounded-md border bg-card"
                 >
-                  <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
-                    <span className="font-medium truncate">{item.from_player?.name}</span>
-                    <ArrowRight className="w-3 h-3 shrink-0 text-muted-foreground" />
-                    <span className="font-medium truncate">{item.to_player?.name}</span>
+                  <div className="flex flex-col gap-0.5 text-sm flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{item.from_player?.name}</span>
+                      <ArrowRight className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <span className="font-medium truncate">{item.to_player?.name}</span>
+                    </div>
+                    {item.to_player?.pix_key && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        Pix: {item.to_player.pix_key}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     <span className="font-mono font-semibold text-sm whitespace-nowrap">
@@ -89,13 +96,20 @@ export const SettlementCard = ({
                   key={item.id}
                   className="flex items-center justify-between py-2 px-3 rounded-md border bg-muted/30 opacity-70"
                 >
-                  <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
-                    <span className="truncate">{item.from_player?.name}</span>
-                    <ArrowRight className="w-3 h-3 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{item.to_player?.name}</span>
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      Pago
-                    </Badge>
+                  <div className="flex flex-col gap-0.5 text-sm flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{item.from_player?.name}</span>
+                      <ArrowRight className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <span className="truncate">{item.to_player?.name}</span>
+                      <Badge variant="secondary" className="text-xs shrink-0">
+                        Pago
+                      </Badge>
+                    </div>
+                    {item.to_player?.pix_key && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        Pix: {item.to_player.pix_key}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     <span className="font-mono text-sm whitespace-nowrap">
