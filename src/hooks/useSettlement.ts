@@ -37,10 +37,6 @@ export const useCreateSettlement = () => {
       // 1. Calculate minimized transactions
       const transactions = calculateMinimizedSettlements(balances);
 
-      if (transactions.length === 0) {
-        throw new Error("Não há saldos pendentes para ajustar.");
-      }
-
       // 2. Mark current active settlements as replaced
       await supabase
         .from("settlements" as any)
@@ -56,19 +52,21 @@ export const useCreateSettlement = () => {
 
       if (settError) throw settError;
 
-      // 4. Insert settlement items
-      const items = transactions.map((t) => ({
-        settlement_id: (settlement as any).id,
-        from_player_id: t.fromPlayerId,
-        to_player_id: t.toPlayerId,
-        amount: t.amount,
-      }));
+      // 4. Insert settlement items (if any)
+      if (transactions.length > 0) {
+        const items = transactions.map((t) => ({
+          settlement_id: (settlement as any).id,
+          from_player_id: t.fromPlayerId,
+          to_player_id: t.toPlayerId,
+          amount: t.amount,
+        }));
 
-      const { error: itemsError } = await supabase
-        .from("settlement_items" as any)
-        .insert(items as any);
+        const { error: itemsError } = await supabase
+          .from("settlement_items" as any)
+          .insert(items as any);
 
-      if (itemsError) throw itemsError;
+        if (itemsError) throw itemsError;
+      }
 
       return settlement;
     },
