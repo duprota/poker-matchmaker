@@ -93,10 +93,10 @@ export const FinalizeGameForm = ({
   };
 
   useEffect(() => {
-    // Initialize results with undefined for each player
-    const initialResults: Record<string, undefined> = {};
+    // Initialize results: pre-fill cashed-out players, undefined for others
+    const initialResults: Record<string, number | undefined> = {};
     players.forEach(player => {
-      initialResults[player.id] = undefined;
+      initialResults[player.id] = player.final_result !== null ? player.final_result : undefined;
     });
     setResults(initialResults);
   }, [players]);

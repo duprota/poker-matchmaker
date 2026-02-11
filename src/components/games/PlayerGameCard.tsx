@@ -2,7 +2,7 @@ import React from 'react';
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Trash2, Hand, RefreshCw } from "lucide-react";
+import { Plus, Loader2, Trash2, Hand, RefreshCw, LogOut, Check, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlayerSpecialHandPanel } from "./PlayerSpecialHandPanel";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import type { GamePlayer } from "@/types/game";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 interface PlayerGameCardProps {
@@ -20,6 +21,7 @@ interface PlayerGameCardProps {
   onSpecialHandsChange: (playerId: string, specialHands: {
     [key: string]: number;
   }) => Promise<void>;
+  onCashOut?: (playerId: string, finalStack: number) => Promise<void>;
   onRemovePlayer?: (playerId: string) => void;
   isProcessing: boolean;
 }
@@ -28,6 +30,7 @@ export function PlayerGameCard({
   player,
   onRebuyChange,
   onSpecialHandsChange,
+  onCashOut,
   onRemovePlayer,
   isProcessing
 }: PlayerGameCardProps) {
@@ -38,6 +41,12 @@ export function PlayerGameCard({
   const [openSpecialHands, setOpenSpecialHands] = useState(false);
   const [openRebuyPanel, setOpenRebuyPanel] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
+  const [showCashOut, setShowCashOut] = useState(false);
+  const [cashOutValue, setCashOutValue] = useState("");
+  const [editingCashOut, setEditingCashOut] = useState(false);
+
+  const isCashedOut = player.final_result !== null;
+  const netResult = isCashedOut ? (player.final_result! - totalAmount) : 0;
 
   const handleQuickRebuy = async () => {
     if (isProcessing || processingAction) return;
@@ -90,6 +99,44 @@ export function PlayerGameCard({
       onRemovePlayer(player.id);
     }
     setConfirmRemove(false);
+  };
+
+  const handleCashOut = async () => {
+    if (!onCashOut || isProcessing || processingAction) return;
+    const value = parseFloat(cashOutValue);
+    if (isNaN(value) || value < 0) {
+      toast.error("Informe um valor válido para o stack final");
+      return;
+    }
+    setProcessingAction('cashout');
+    try {
+      await onCashOut(player.id, value);
+      toast.success(`${player.player.name} encerrou a mesa!`, {
+        description: `Stack final: $${value}`,
+        position: "top-center"
+      });
+      setShowCashOut(false);
+      setEditingCashOut(false);
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  const handleUpdateCashOut = async () => {
+    if (!onCashOut || isProcessing || processingAction) return;
+    const value = parseFloat(cashOutValue);
+    if (isNaN(value) || value < 0) {
+      toast.error("Informe um valor válido");
+      return;
+    }
+    setProcessingAction('cashout-edit');
+    try {
+      await onCashOut(player.id, value);
+      toast.success("Valor atualizado!", { position: "top-center" });
+      setEditingCashOut(false);
+    } finally {
+      setProcessingAction(null);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -152,6 +199,132 @@ export function PlayerGameCard({
         <PlayerSpecialHandPanel specialHands={player.special_hands || {}} onChange={handleSpecialHandsChange} playerName={player.player.name} />
       </SheetContent>
     </Sheet>;
+
+  // Cash-out dialog
+  const CashOutDialog = () => <ControlComponent open={showCashOut} onOpenChange={(open) => {
+    setShowCashOut(open);
+    if (!open) setCashOutValue("");
+  }}>
+      <ContentComponent className="sm:max-w-[425px]">
+        <div className="p-6">
+          <h2 className="text-xl font-bold mb-2">Encerrar {player.player.name}</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Total investido: ${totalAmount} (buy-in + {player.total_rebuys} rebuys)
+          </p>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Stack final ($)</label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={cashOutValue}
+                onChange={e => setCashOutValue(e.target.value)}
+                placeholder="Valor do stack final"
+                className="h-12 text-lg"
+                autoFocus
+              />
+            </div>
+            {cashOutValue && !isNaN(parseFloat(cashOutValue)) && (
+              <div className={`p-3 rounded-lg ${parseFloat(cashOutValue) - totalAmount >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                <p className="text-sm text-muted-foreground">Resultado líquido</p>
+                <p className={`text-xl font-bold ${parseFloat(cashOutValue) - totalAmount >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {parseFloat(cashOutValue) - totalAmount >= 0 ? '+' : ''}${parseFloat(cashOutValue) - totalAmount}
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setShowCashOut(false)}>Cancelar</Button>
+            <Button 
+              onClick={handleCashOut} 
+              disabled={!cashOutValue || isNaN(parseFloat(cashOutValue)) || processingAction === 'cashout'}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+            >
+              {processingAction === 'cashout' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+              Confirmar
+            </Button>
+          </div>
+        </div>
+      </ContentComponent>
+    </ControlComponent>;
+
+  // If player is cashed out, show different card
+  if (isCashedOut) {
+    return <>
+      <motion.div whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+        <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-zinc-900/40 to-zinc-900/10 backdrop-blur-md opacity-80">
+          <div className="relative">
+            <div className={`absolute top-0 left-0 right-0 h-1 ${netResult >= 0 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-orange-500'}`} />
+            
+            <div className="p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar className="h-10 w-10 border-2 border-muted-foreground/30">
+                  <AvatarFallback className="bg-muted text-muted-foreground">
+                    {getInitials(player.player.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="font-bold">{player.player.name}</h3>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    <LogOut className="w-3 h-3 mr-1" /> Encerrado
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-muted/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Investido</p>
+                  <p className="text-lg font-bold">${totalAmount}</p>
+                </div>
+                <div className="bg-muted/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Stack Final</p>
+                  {editingCashOut ? (
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      value={cashOutValue}
+                      onChange={e => setCashOutValue(e.target.value)}
+                      className="h-8 text-sm w-full"
+                      autoFocus
+                    />
+                  ) : (
+                    <p className="text-lg font-bold">${player.final_result}</p>
+                  )}
+                </div>
+                <div className={`p-3 rounded-lg ${netResult >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                  <p className="text-xs text-muted-foreground mb-1">Resultado</p>
+                  <p className={`text-lg font-bold ${netResult >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {netResult >= 0 ? '+' : ''}${netResult}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {editingCashOut ? (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setEditingCashOut(false)}>Cancelar</Button>
+                    <Button size="sm" onClick={handleUpdateCashOut} disabled={processingAction === 'cashout-edit'}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                      {processingAction === 'cashout-edit' ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
+                      Salvar
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setCashOutValue(String(player.final_result || 0));
+                    setEditingCashOut(true);
+                  }}>
+                    <DollarSign className="h-4 w-4 mr-1" /> Editar valor
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+      <ConfirmDialog />
+    </>;
+  }
 
   return <>
       <motion.div whileHover={{
@@ -247,6 +420,18 @@ export function PlayerGameCard({
                 
                 <RebuyPanel />
                 <SpecialHandsPanel />
+
+                {onCashOut && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowCashOut(true)}
+                    className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border-green-500/20"
+                  >
+                    <LogOut className="w-4 h-4 mr-1 text-green-500" />
+                    Encerrar
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -254,5 +439,6 @@ export function PlayerGameCard({
       </motion.div>
       
       <ConfirmDialog />
+      <CashOutDialog />
     </>;
 }
