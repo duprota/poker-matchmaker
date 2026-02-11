@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PlayerBalance } from "@/types/ledger";
 import { ArrowUpCircle, ArrowDownCircle, MinusCircle } from "lucide-react";
 
@@ -10,9 +10,13 @@ interface PlayerBalancesCardProps {
 export const PlayerBalancesCard = ({ balances, isLoading }: PlayerBalancesCardProps) => {
   if (isLoading) {
     return (
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">Saldos dos Jogadores</h2>
-        <p className="text-muted-foreground text-center py-4">Carregando...</p>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Saldos dos Jogadores</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-center py-4">Carregando...</p>
+        </CardContent>
       </Card>
     );
   }
@@ -22,18 +26,20 @@ export const PlayerBalancesCard = ({ balances, isLoading }: PlayerBalancesCardPr
     .sort((a, b) => b.balance - a.balance);
 
   return (
-    <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Saldos dos Jogadores</h2>
-      {sorted.length === 0 ? (
-        <p className="text-muted-foreground text-center py-4">Nenhum lançamento encontrado.</p>
-      ) : (
-        <div className="space-y-2">
-          {sorted.map((player) => (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Saldos dos Jogadores</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-1.5">
+        {sorted.length === 0 ? (
+          <p className="text-muted-foreground text-center py-4">Nenhum lançamento encontrado.</p>
+        ) : (
+          sorted.map((player) => (
             <div
               key={player.playerId}
-              className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50"
+              className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-muted/40"
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 {player.balance > 0 ? (
                   <ArrowUpCircle className="w-4 h-4 text-green-500 shrink-0" />
                 ) : player.balance < 0 ? (
@@ -41,10 +47,10 @@ export const PlayerBalancesCard = ({ balances, isLoading }: PlayerBalancesCardPr
                 ) : (
                   <MinusCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                 )}
-                <span className="font-medium">{player.playerName}</span>
+                <span className="font-medium text-sm break-words">{player.playerName}</span>
               </div>
               <span
-                className={`font-mono font-semibold shrink-0 ${
+                className={`font-mono font-semibold text-sm shrink-0 ml-3 ${
                   player.balance > 0
                     ? "text-green-500"
                     : player.balance < 0
@@ -56,9 +62,9 @@ export const PlayerBalancesCard = ({ balances, isLoading }: PlayerBalancesCardPr
                 {player.balance.toFixed(2)}
               </span>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </CardContent>
     </Card>
   );
 };
