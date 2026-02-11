@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      expense_splits: {
+        Row: {
+          amount: number
+          created_at: string
+          expense_id: string
+          id: string
+          player_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          expense_id: string
+          id?: string
+          player_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expense_id?: string
+          id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_splits_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_splits_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          created_at: string
+          description: string
+          game_id: string | null
+          id: string
+          paid_by_player_id: string
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          game_id?: string | null
+          id?: string
+          paid_by_player_id: string
+          total_amount: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          game_id?: string | null
+          id?: string
+          paid_by_player_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_paid_by_player_id_fkey"
+            columns: ["paid_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_history: {
         Row: {
           amount: number | null
@@ -307,6 +388,7 @@ export type Database = {
           created_at: string
           description: string | null
           entry_type: string
+          expense_id: string | null
           game_id: string | null
           id: string
           player_id: string
@@ -317,6 +399,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           entry_type: string
+          expense_id?: string | null
           game_id?: string | null
           id?: string
           player_id: string
@@ -327,6 +410,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           entry_type?: string
+          expense_id?: string | null
           game_id?: string | null
           id?: string
           player_id?: string
@@ -338,6 +422,13 @@ export type Database = {
             columns: ["settlement_item_id"]
             isOneToOne: false
             referencedRelation: "settlement_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
           {
