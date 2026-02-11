@@ -12,7 +12,7 @@ export const usePlayerBalances = () => {
     queryFn: async (): Promise<PlayerBalance[]> => {
       // Get all ledger entries joined with player names
       const { data, error } = await supabase
-        .from("ledger_entries" as any)
+        .from("ledger_entries")
         .select("player_id, amount, players!inner(id, name)")
         .order("player_id");
 
@@ -48,7 +48,7 @@ export const useLedgerEntries = () => {
     queryKey: ["ledger-entries"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("ledger_entries" as any)
+        .from("ledger_entries")
         .select("*, players!inner(id, name)")
         .order("created_at", { ascending: false });
 
