@@ -1,7 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Undo2, RefreshCw, Copy } from "lucide-react";
+import { Check, Undo2, RefreshCw, Copy, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import type { SettlementItem } from "@/types/ledger";
 import { toast } from "sonner";
@@ -85,6 +85,20 @@ const TransactionCard = ({
   </div>
 );
 
+const APP_URL = "https://poker-matchmaker.lovable.app/financials";
+
+const buildWhatsAppMessage = (pendingItems: any[]) => {
+  let msg = "💰 *Ajuste de Contas - Poker*\n\n📋 Pagamentos pendentes:\n";
+  pendingItems.forEach((item: any) => {
+    msg += `\n• ${item.from_player?.name} → ${item.to_player?.name}: R$ ${Number(item.amount).toFixed(2)}`;
+    if (item.to_player?.pix_key) {
+      msg += `\n  Pix: ${item.to_player.pix_key}`;
+    }
+  });
+  msg += `\n\n✅ Depois de pagar, marque como pago no app:\n${APP_URL}`;
+  return msg;
+};
+
 export const SettlementCard = ({
   settlement,
   isCreating,
@@ -137,6 +151,16 @@ export const SettlementCard = ({
                     />
                   ))}
                 </div>
+                <Button
+                  className="w-full mt-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white"
+                  onClick={() => {
+                    const msg = buildWhatsAppMessage(pendingItems);
+                    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Cobrar via WhatsApp
+                </Button>
               </div>
             )}
 
