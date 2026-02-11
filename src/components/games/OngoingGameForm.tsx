@@ -63,6 +63,38 @@ export const OngoingGameForm = ({
       setIsProcessing(false);
     }
   };
+
+  const handleCashOut = async (playerId: string, finalStack: number) => {
+    setIsProcessing(true);
+    try {
+      const player = players.find(p => p.id === playerId);
+      if (!player) throw new Error("Player not found");
+
+      const { error } = await supabase
+        .from("game_players")
+        .update({ final_result: finalStack })
+        .eq("id", playerId);
+      if (error) throw error;
+
+      // Record in game history
+      const { error: historyError } = await supabase
+        .from("game_history")
+        .insert({
+          game_id: player.game_id,
+          game_player_id: playerId,
+          event_type: "result_update" as const,
+          amount: finalStack,
+        });
+      if (historyError) console.error("Error recording history:", historyError);
+
+      toast.success("Jogador encerrado com sucesso!");
+    } catch (error) {
+      console.error("Error cashing out:", error);
+      toast.error("Erro ao encerrar jogador");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   useEffect(() => {
     const gameId = players[0]?.game_id;
     if (!gameId) return;
@@ -112,7 +144,7 @@ export const OngoingGameForm = ({
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onSpecialHandsChange={handleSpecialHandsChange} isProcessing={isProcessing} />
+            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onSpecialHandsChange={handleSpecialHandsChange} onCashOut={handleCashOut} isProcessing={isProcessing} />
           </motion.div>)}
       </motion.div>
       
