@@ -8,6 +8,8 @@ interface LeaderboardHeaderProps {
   onTimeFilterChange: (filter: string) => void;
   rankingType: RankingType;
   onRankingTypeChange: (type: RankingType) => void;
+  availableYears?: number[];
+  headerTitle: string;
 }
 
 export const LeaderboardHeader = ({
@@ -15,15 +17,17 @@ export const LeaderboardHeader = ({
   onTimeFilterChange,
   rankingType,
   onRankingTypeChange,
+  availableYears,
+  headerTitle,
 }: LeaderboardHeaderProps) => {
   return (
     <>
       <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
-        2024 Leaderboard
+        {headerTitle}
       </h1>
       
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
-        <TimeFilter active={timeFilter} onChange={onTimeFilterChange} />
+        <TimeFilter active={timeFilter} onChange={onTimeFilterChange} availableYears={availableYears} />
         <div className="flex gap-2 flex-wrap">
           <Toggle
             pressed={rankingType === "total"}
