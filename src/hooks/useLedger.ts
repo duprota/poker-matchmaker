@@ -13,19 +13,20 @@ export const usePlayerBalances = () => {
       // Get all ledger entries joined with player names
       const { data, error } = await supabase
         .from("ledger_entries")
-        .select("player_id, amount, players!inner(id, name)")
+        .select("player_id, amount, players!inner(id, name, pix_key)")
         .order("player_id");
 
       if (error) throw error;
 
       // Aggregate balances per player
-      const balanceMap = new Map<string, { name: string; balance: number }>();
+      const balanceMap = new Map<string, { name: string; balance: number; pixKey: string | null }>();
 
       (data as any[])?.forEach((entry: any) => {
         const pid = entry.player_id as string;
         const current = balanceMap.get(pid) || {
           name: (entry.players as any)?.name || "Unknown",
           balance: 0,
+          pixKey: (entry.players as any)?.pix_key || null,
         };
         current.balance += Number(entry.amount);
         balanceMap.set(pid, current);
@@ -35,6 +36,7 @@ export const usePlayerBalances = () => {
         playerId,
         playerName: info.name,
         balance: Number(info.balance.toFixed(2)),
+        pixKey: info.pixKey,
       }));
     },
   });

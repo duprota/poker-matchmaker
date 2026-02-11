@@ -33,18 +33,25 @@ export const PlayerBalancesCard = ({ balances, isLoading }: PlayerBalancesCardPr
               key={player.playerId}
               className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 {player.balance > 0 ? (
-                  <ArrowUpCircle className="w-4 h-4 text-green-500" />
+                  <ArrowUpCircle className="w-4 h-4 text-green-500 shrink-0" />
                 ) : player.balance < 0 ? (
-                  <ArrowDownCircle className="w-4 h-4 text-red-500" />
+                  <ArrowDownCircle className="w-4 h-4 text-red-500 shrink-0" />
                 ) : (
-                  <MinusCircle className="w-4 h-4 text-muted-foreground" />
+                  <MinusCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                 )}
-                <span className="font-medium">{player.playerName}</span>
+                <div className="min-w-0">
+                  <span className="font-medium block">{player.playerName}</span>
+                  {player.pixKey && (
+                    <span className="text-xs text-muted-foreground block truncate">
+                      Pix: {player.pixKey}
+                    </span>
+                  )}
+                </div>
               </div>
               <span
-                className={`font-mono font-semibold ${
+                className={`font-mono font-semibold shrink-0 ${
                   player.balance > 0
                     ? "text-green-500"
                     : player.balance < 0

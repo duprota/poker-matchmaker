@@ -37,4 +37,5 @@ export interface PlayerBalance {
   playerId: string;
   playerName: string;
   balance: number;
+  pixKey?: string | null;
 }
