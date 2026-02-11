@@ -41,14 +41,7 @@ export const PlayerBalancesCard = ({ balances, isLoading }: PlayerBalancesCardPr
                 ) : (
                   <MinusCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                 )}
-                <div className="min-w-0">
-                  <span className="font-medium block">{player.playerName}</span>
-                  {player.pixKey && (
-                    <span className="text-xs text-muted-foreground block truncate">
-                      Pix: {player.pixKey}
-                    </span>
-                  )}
-                </div>
+                <span className="font-medium">{player.playerName}</span>
               </div>
               <span
                 className={`font-mono font-semibold shrink-0 ${
