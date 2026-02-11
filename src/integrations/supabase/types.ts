@@ -301,6 +301,61 @@ export type Database = {
         }
         Relationships: []
       }
+      ledger_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          entry_type: string
+          game_id: string | null
+          id: string
+          player_id: string
+          settlement_item_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          entry_type: string
+          game_id?: string | null
+          id?: string
+          player_id: string
+          settlement_item_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          entry_type?: string
+          game_id?: string | null
+          id?: string
+          player_id?: string
+          settlement_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_ledger_settlement_item"
+            columns: ["settlement_item_id"]
+            isOneToOne: false
+            referencedRelation: "settlement_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_feedback: {
         Row: {
           comment: string | null
@@ -426,6 +481,79 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Relationships: []
+      }
+      settlement_items: {
+        Row: {
+          amount: number
+          created_at: string
+          from_player_id: string
+          id: string
+          paid_at: string | null
+          settlement_id: string
+          to_player_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          from_player_id: string
+          id?: string
+          paid_at?: string | null
+          settlement_id: string
+          to_player_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          from_player_id?: string
+          id?: string
+          paid_at?: string | null
+          settlement_id?: string
+          to_player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlement_items_from_player_id_fkey"
+            columns: ["from_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_items_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_items_to_player_id_fkey"
+            columns: ["to_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settlements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          status?: string
         }
         Relationships: []
       }
