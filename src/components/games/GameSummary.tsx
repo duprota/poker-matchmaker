@@ -5,7 +5,6 @@ import { GameOverview } from "./summary/GameOverview";
 import { WinnerCard } from "./summary/WinnerCard";
 import { GameStats } from "./summary/GameStats";
 import { Rankings } from "./summary/Rankings";
-import { PaymentInstructions } from "./summary/PaymentInstructions";
 import { ShareButton } from "./summary/ShareButton";
 
 interface GameSummaryProps {
@@ -15,7 +14,6 @@ interface GameSummaryProps {
   name?: string;
   place?: string;
   startedAt?: string;
-  onUpdatePaymentStatus?: (playerId: string, status: string) => Promise<void>;
 }
 
 export const GameSummary = ({ 
@@ -25,7 +23,6 @@ export const GameSummary = ({
   name,
   place,
   startedAt,
-  onUpdatePaymentStatus 
 }: GameSummaryProps) => {
   const sortedPlayers = [...players].sort((a, b) => {
     const resultA = calculateFinalResult(a);
@@ -50,11 +47,6 @@ export const GameSummary = ({
       <GameStats players={players} />
 
       <Rankings players={players} />
-
-      <PaymentInstructions 
-        players={players}
-        onUpdatePaymentStatus={onUpdatePaymentStatus}
-      />
 
       <ShareButton 
         players={players}
