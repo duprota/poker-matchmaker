@@ -27,7 +27,7 @@ export const Navigation = () => {
     { path: "/players", label: "Players", icon: Users },
     { path: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { path: "/financials", label: "Financials", icon: DollarSign },
-    { path: "/expenses", label: "Despesas", icon: Receipt },
+    { path: "/expenses", label: "Expenses", icon: Receipt },
   ];
 
   const NavLinks = () => (

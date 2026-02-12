@@ -32,30 +32,45 @@ const Expenses = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
       <Navigation />
-      <div className="container mx-auto py-6 px-4 max-w-lg space-y-4">
+      <div className="container mx-auto py-6 px-4 max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Despesas Compartilhadas</h1>
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" />
-            Nova
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Shared Expenses</h1>
+            <p className="text-sm text-muted-foreground">Track and split costs with your group</p>
+          </div>
+          <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            New Expense
           </Button>
         </div>
 
         {isLoading ? (
-          <p className="text-muted-foreground text-sm">Carregando...</p>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />
+            ))}
+          </div>
         ) : expenses.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
-            <Receipt className="w-10 h-10" />
-            <p className="text-sm">Nenhuma despesa registrada.</p>
+          <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
+            <div className="rounded-full bg-muted p-4">
+              <Receipt className="w-8 h-8" />
+            </div>
+            <p className="text-sm font-medium">No expenses yet</p>
+            <p className="text-xs">Create your first shared expense to get started.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {expenses.map((expense) => (
-              <ExpenseCard
+            {expenses.map((expense, index) => (
+              <div
                 key={expense.id}
-                expense={expense}
-                onDelete={() => setDeleteId(expense.id)}
-              />
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <ExpenseCard
+                  expense={expense}
+                  onDelete={() => setDeleteId(expense.id)}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -66,15 +81,15 @@ const Expenses = () => {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
+            <AlertDialogTitle>Delete expense?</AlertDialogTitle>
             <AlertDialogDescription>
-              Isso removerá a despesa e ajustará os saldos de todos os participantes.
+              This will remove the expense and adjust all participant balances.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete}>
-              Excluir
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
