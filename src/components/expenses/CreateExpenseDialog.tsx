@@ -38,7 +38,6 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
 
   const createExpense = useCreateExpense();
 
-  // Fetch all players
   const { data: allPlayers = [] } = useQuery({
     queryKey: ["all-players"],
     queryFn: async () => {
@@ -51,7 +50,6 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     },
   });
 
-  // Fetch completed games for optional linking
   const { data: games = [] } = useQuery({
     queryKey: ["games-for-expenses"],
     queryFn: async () => {
@@ -64,10 +62,8 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     },
   });
 
-  // Fetch game players when a game is selected
   const { data: gamePlayers = [] } = useGamePlayers(gameId);
 
-  // Players available for selection
   const availablePlayers = useMemo(() => {
     if (gameId && gamePlayers.length > 0) {
       return gamePlayers.map((gp) => ({ id: gp.playerId, name: gp.playerName }));
@@ -75,7 +71,6 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     return allPlayers;
   }, [gameId, gamePlayers, allPlayers]);
 
-  // Reset selected players when game changes
   useEffect(() => {
     setSelectedPlayers([]);
     setCustomAmounts({});
@@ -149,23 +144,21 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Nova Despesa</DialogTitle>
+          <DialogTitle>New Expense</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Description */}
-          <div className="space-y-1">
-            <Label>Descrição</Label>
+          <div className="space-y-1.5">
+            <Label>Description</Label>
             <Input
-              placeholder="Ex: Pizza e bebidas"
+              placeholder="e.g. Pizza & drinks"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
-          {/* Total amount */}
-          <div className="space-y-1">
-            <Label>Valor total (R$)</Label>
+          <div className="space-y-1.5">
+            <Label>Total amount (R$)</Label>
             <Input
               type="number"
               inputMode="decimal"
@@ -176,12 +169,11 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             />
           </div>
 
-          {/* Paid by */}
-          <div className="space-y-1">
-            <Label>Pago por</Label>
+          <div className="space-y-1.5">
+            <Label>Paid by</Label>
             <Select value={paidByPlayerId} onValueChange={setPaidByPlayerId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione quem pagou" />
+                <SelectValue placeholder="Select who paid" />
               </SelectTrigger>
               <SelectContent>
                 {allPlayers.map((p) => (
@@ -193,40 +185,38 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             </Select>
           </div>
 
-          {/* Optional game */}
-          <div className="space-y-1">
-            <Label>Vincular a jogo (opcional)</Label>
+          <div className="space-y-1.5">
+            <Label>Link to game (optional)</Label>
             <Select
               value={gameId ?? "none"}
               onValueChange={(v) => setGameId(v === "none" ? null : v)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Nenhum jogo" />
+                <SelectValue placeholder="No game" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {games.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
-                    {g.name || new Date(g.date).toLocaleDateString("pt-BR")}
+                    {g.name || new Date(g.date).toLocaleDateString("en-US")}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Player selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Participantes</Label>
+              <Label>Participants</Label>
               <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={selectAll}>
-                Selecionar todos
+                Select all
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto rounded-md border border-border/60 p-3">
               {availablePlayers.map((p) => (
                 <label
                   key={p.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer"
+                  className="flex items-center gap-2 text-sm cursor-pointer hover:text-foreground transition-colors"
                 >
                   <Checkbox
                     checked={selectedPlayers.includes(p.id)}
@@ -238,19 +228,18 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             </div>
           </div>
 
-          {/* Split mode */}
           {selectedPlayers.length > 0 && amount > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-3 rounded-md border border-border/60 p-3 bg-muted/30">
               <div className="flex items-center gap-2">
                 <Switch checked={equalSplit} onCheckedChange={setEqualSplit} />
-                <Label className="text-sm">
-                  {equalSplit ? "Divisão igual" : "Valores customizados"}
+                <Label className="text-sm font-medium">
+                  {equalSplit ? "Equal split" : "Custom amounts"}
                 </Label>
               </div>
 
               {equalSplit ? (
                 <p className="text-sm text-muted-foreground">
-                  R$ {equalShare.toFixed(2)} por pessoa ({selectedPlayers.length} participantes)
+                  R$ {equalShare.toFixed(2)} per person ({selectedPlayers.length} participant{selectedPlayers.length > 1 ? "s" : ""})
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -277,7 +266,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
                       </div>
                     );
                   })}
-                  <p className={`text-xs ${Math.abs(customTotal - amount) < 0.02 ? "text-muted-foreground" : "text-destructive"}`}>
+                  <p className={`text-xs font-medium ${Math.abs(customTotal - amount) < 0.02 ? "text-muted-foreground" : "text-destructive"}`}>
                     Total: R$ {customTotal.toFixed(2)} / R$ {amount.toFixed(2)}
                   </p>
                 </div>
@@ -290,7 +279,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             disabled={!isValid || createExpense.isPending}
             onClick={handleSubmit}
           >
-            {createExpense.isPending ? "Salvando..." : "Registrar Despesa"}
+            {createExpense.isPending ? "Saving..." : "Create Expense"}
           </Button>
         </div>
       </DialogContent>
