@@ -211,7 +211,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
               <SelectTrigger>
                 <SelectValue placeholder="Select who paid" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover border border-border shadow-lg">
                 {payerOptions.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
