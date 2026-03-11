@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Home, LayoutGrid, Users, Trophy, DollarSign, Receipt, Menu } from "lucide-react";
+import { Home, LayoutGrid, Users, Trophy, DollarSign, Receipt, MessageSquare, Menu } from "lucide-react";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "./ui/button";
