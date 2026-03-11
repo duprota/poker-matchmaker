@@ -11,6 +11,7 @@ import Players from "./pages/Players";
 import Leaderboard from "./pages/Leaderboard";
 import Financials from "./pages/Financials";
 import Expenses from "./pages/Expenses";
+import Bot from "./pages/Bot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/financials" element={<Financials />} />
           <Route path="/expenses" element={<Expenses />} />
+          <Route path="/bot" element={<Bot />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
