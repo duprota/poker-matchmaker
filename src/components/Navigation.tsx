@@ -28,6 +28,7 @@ export const Navigation = () => {
     { path: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { path: "/financials", label: "Financials", icon: DollarSign },
     { path: "/expenses", label: "Expenses", icon: Receipt },
+    { path: "/bot", label: "Bot", icon: MessageSquare },
   ];
 
   const NavLinks = () => (
