@@ -1,14 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -21,6 +21,7 @@ import { useCreateExpense } from "@/hooks/useExpenses";
 import { useGamePlayers } from "@/hooks/useGamePlayers";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Check, Users } from "lucide-react";
 
 interface CreateExpenseDialogProps {
   open: boolean;
@@ -71,8 +72,17 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     return allPlayers;
   }, [gameId, gamePlayers, allPlayers]);
 
+  // Also filter "paid by" based on game selection
+  const payerOptions = useMemo(() => {
+    if (gameId && gamePlayers.length > 0) {
+      return gamePlayers.map((gp) => ({ id: gp.playerId, name: gp.playerName }));
+    }
+    return allPlayers;
+  }, [gameId, gamePlayers, allPlayers]);
+
   useEffect(() => {
     setSelectedPlayers([]);
+    setPaidByPlayerId("");
     setCustomAmounts({});
   }, [gameId]);
 
@@ -141,13 +151,16 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>New Expense</DialogTitle>
-        </DialogHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader>
+          <DrawerTitle className="bg-gradient-to-r from-primary via-secondary-foreground to-accent-foreground bg-clip-text text-transparent">
+            New Expense
+          </DrawerTitle>
+        </DrawerHeader>
 
-        <div className="space-y-4">
+        <div className="overflow-y-auto px-4 space-y-5 pb-2">
+          {/* Description */}
           <div className="space-y-1.5">
             <Label>Description</Label>
             <Input
@@ -157,6 +170,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             />
           </div>
 
+          {/* Total amount */}
           <div className="space-y-1.5">
             <Label>Total amount (R$)</Label>
             <Input
@@ -169,22 +183,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Paid by</Label>
-            <Select value={paidByPlayerId} onValueChange={setPaidByPlayerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select who paid" />
-              </SelectTrigger>
-              <SelectContent>
-                {allPlayers.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+          {/* Link to game — MOVED UP */}
           <div className="space-y-1.5">
             <Label>Link to game (optional)</Label>
             <Select
@@ -205,31 +204,60 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             </Select>
           </div>
 
+          {/* Paid by — NOW AFTER game selection, filtered */}
+          <div className="space-y-1.5">
+            <Label>Paid by</Label>
+            <Select value={paidByPlayerId} onValueChange={setPaidByPlayerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select who paid" />
+              </SelectTrigger>
+              <SelectContent>
+                {payerOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Participants — clickable cards */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Participants</Label>
+              <Label className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                Participants
+              </Label>
               <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={selectAll}>
                 Select all
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto rounded-md border border-border/60 p-3">
-              {availablePlayers.map((p) => (
-                <label
-                  key={p.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer hover:text-foreground transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedPlayers.includes(p.id)}
-                    onCheckedChange={() => togglePlayer(p.id)}
-                  />
-                  {p.name}
-                </label>
-              ))}
+            <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto">
+              {availablePlayers.map((p) => {
+                const isSelected = selectedPlayers.includes(p.id);
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => togglePlayer(p.id)}
+                    className={`relative p-3 rounded-lg cursor-pointer transition-all duration-150 text-sm font-medium ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-card hover:bg-accent border border-border"
+                    }`}
+                  >
+                    {p.name}
+                    {isSelected && (
+                      <Check className="absolute top-2 right-2 w-3.5 h-3.5" />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
+          {/* Split section */}
           {selectedPlayers.length > 0 && amount > 0 && (
-            <div className="space-y-3 rounded-md border border-border/60 p-3 bg-muted/30">
+            <div className="space-y-3 rounded-lg border border-border p-3 bg-card">
               <div className="flex items-center gap-2">
                 <Switch checked={equalSplit} onCheckedChange={setEqualSplit} />
                 <Label className="text-sm font-medium">
@@ -273,7 +301,9 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
               )}
             </div>
           )}
+        </div>
 
+        <DrawerFooter>
           <Button
             className="w-full"
             disabled={!isValid || createExpense.isPending}
@@ -281,8 +311,8 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
           >
             {createExpense.isPending ? "Saving..." : "Create Expense"}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };
