@@ -11,6 +11,7 @@ import Players from "./pages/Players";
 import Leaderboard from "./pages/Leaderboard";
 import Financials from "./pages/Financials";
 import Expenses from "./pages/Expenses";
+import Bot from "./pages/Bot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
