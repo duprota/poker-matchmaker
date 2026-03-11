@@ -193,7 +193,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
               <SelectTrigger>
                 <SelectValue placeholder="No game" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover border border-border shadow-lg">
                 <SelectItem value="none">None</SelectItem>
                 {games.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
