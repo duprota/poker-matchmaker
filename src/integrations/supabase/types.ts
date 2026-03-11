@@ -14,6 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
+      bot_config: {
+        Row: {
+          api_url: string | null
+          bot_trigger: string
+          created_at: string
+          enabled: boolean
+          group_id: string | null
+          id: string
+          instance_name: string | null
+          session_timeout_minutes: number
+        }
+        Insert: {
+          api_url?: string | null
+          bot_trigger?: string
+          created_at?: string
+          enabled?: boolean
+          group_id?: string | null
+          id?: string
+          instance_name?: string | null
+          session_timeout_minutes?: number
+        }
+        Update: {
+          api_url?: string | null
+          bot_trigger?: string
+          created_at?: string
+          enabled?: boolean
+          group_id?: string | null
+          id?: string
+          instance_name?: string | null
+          session_timeout_minutes?: number
+        }
+        Relationships: []
+      }
+      bot_message_logs: {
+        Row: {
+          created_at: string
+          direction: string
+          id: string
+          message_text: string | null
+          message_type: string | null
+          parsed_intent: string | null
+          phone: string | null
+          session_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          id?: string
+          message_text?: string | null
+          message_type?: string | null
+          parsed_intent?: string | null
+          phone?: string | null
+          session_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          id?: string
+          message_text?: string | null
+          message_type?: string | null
+          parsed_intent?: string | null
+          phone?: string | null
+          session_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_message_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "bot_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_sessions: {
+        Row: {
+          context_messages: Json | null
+          created_at: string
+          group_id: string | null
+          id: string
+          is_active: boolean
+          last_activity_at: string
+          started_by_phone: string | null
+        }
+        Insert: {
+          context_messages?: Json | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_activity_at?: string
+          started_by_phone?: string | null
+        }
+        Update: {
+          context_messages?: Json | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_activity_at?: string
+          started_by_phone?: string | null
+        }
+        Relationships: []
+      }
       expense_splits: {
         Row: {
           amount: number
