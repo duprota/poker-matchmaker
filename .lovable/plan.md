@@ -1,123 +1,86 @@
 
 
-# Fase 2 — Ranking ATP com Janela Fixa (Sliding Window)
+# Fase 2 — Ranking ATP com Tiers e Janela Fixa (Sliding Window)
 
 ## Resumo
 
-Ranking permanente onde apenas os pontos dos **últimos N jogos do grupo** são considerados. Jogos anteriores são completamente descartados. N é configurável pelo admin. Isso substitui o decay multiplicativo por uma janela fixa simples.
+Ranking permanente onde apenas os pontos dos **últimos N jogos do grupo** são considerados. A pontuação de cada jogo é determinada por **Tiers** (ATP 250, 500, 1000, Grand Slam), classificados automaticamente pela dificuldade da mesa (média do skill_score) ou manualmente (Grand Slam). Apenas os **5 primeiros colocados** pontuam.
 
-## Mecânica Simplificada
+## Mecânica dos Tiers
+
+### Classificação automática por percentis
+
+Os tiers 250/500/1000 são definidos pela média do `skill_score` dos participantes, comparada ao histórico de todos os jogos completados:
+
+| Tier | Critério | Pontos: 1º / 2º / 3º / 4º / 5º |
+|------|----------|----------------------------------|
+| **ATP 250** | Média skill ≤ Percentil 33 | 250 / 150 / 100 / 60 / 30 |
+| **ATP 500** | Média skill entre P33 e P66 | 500 / 300 / 200 / 120 / 60 |
+| **ATP 1000** | Média skill > Percentil 66 | 1000 / 600 / 400 / 240 / 120 |
+| **Grand Slam** 🏆 | Seleção manual (flag `is_grand_slam` no jogo) | 2000 / 1200 / 800 / 480 / 240 |
+
+- **6º colocado em diante = 0 pontos**
+- Percentis são recalculados a cada jogo com base no histórico completo
+- Grand Slam é marcado pelo admin na criação/edição do jogo
+
+### Score ATP
 
 ```text
 Score_ATP(jogador) = Σ raw_points(jogo_k)
                      onde jogo_k está entre os últimos N jogos do grupo
 ```
 
+- raw_points = pontos fixos do tier pela posição (sem multiplicadores de ROI ou SoS)
 - Se o grupo jogou 50 jogos e N=15, apenas os jogos #36 a #50 contam
-- Um jogador que não participou de nenhum dos últimos 15 jogos tem Score = 0 e não aparece no ranking
-- Quando um novo jogo acontece, o jogo #36 sai da janela automaticamente — os pontos daquele jogo são perdidos
-- Isso permite ao jogador ver exatamente quais pontos cairão no próximo jogo
 
 ## 1. Migration Supabase
 
-### Tabela `atp_points`
-Armazena pontos brutos por jogador/jogo:
-- `id UUID PK`, `player_id` (FK players), `game_id` (FK games)
-- `raw_points NUMERIC`, `base_points NUMERIC`, `sos_multiplier NUMERIC`, `roi_factor NUMERIC`
-- `position INTEGER`, `roi NUMERIC`, `created_at TIMESTAMPTZ`
-- UNIQUE(player_id, game_id)
-- RLS: leitura pública, insert/delete público
+### Alterar tabela `atp_points`
+- Adicionar coluna `tier TEXT` (valores: '250', '500', '1000', 'grand_slam')
+- Manter colunas existentes para compatibilidade
 
-### Tabela `atp_config`
-Configuração global (1 linha):
-- `id UUID PK`, `window_size INTEGER NOT NULL DEFAULT 15` (CHECK >= 1 AND <= 100), `updated_at TIMESTAMPTZ`
-- Inserir linha inicial com window_size = 15
-- RLS: leitura pública, update para authenticated
+### Alterar tabela `games`
+- Adicionar coluna `is_grand_slam BOOLEAN DEFAULT false`
 
-### View `atp_ranking`
-```sql
-WITH recent_games AS (
-  SELECT id, ROW_NUMBER() OVER (ORDER BY date DESC) AS rn
-  FROM games WHERE status = 'completed'
-),
-config AS (SELECT window_size FROM atp_config LIMIT 1)
-SELECT p.id, p.name, p.avatar_url,
-  ROUND(SUM(ap.raw_points)::numeric, 1) AS score_atp,
-  COUNT(ap.id) AS games_scored
-FROM players p
-JOIN atp_points ap ON ap.player_id = p.id
-JOIN recent_games rg ON rg.id = ap.game_id
-CROSS JOIN config c
-WHERE rg.rn <= c.window_size
-GROUP BY p.id, p.name, p.avatar_url
-ORDER BY score_atp DESC;
-```
+### Tabela `atp_config` (já existe)
+- `window_size INTEGER NOT NULL DEFAULT 15`
 
-## 2. Edge Function: Expandir `calculate-ratings`
+### View `atp_ranking` (já existe, manter)
 
-Adicionar ações na Edge Function existente:
+## 2. Edge Function: `calculate-ratings`
 
 ### `calculate-atp`
 Para cada participante do jogo finalizado:
-1. Derivar posição do `final_result` (DESC)
-2. `ROI = (final_result - initial_buyin*(1+total_rebuys)) / initial_buyin * 100`
-3. `base_points`: 1º=100, 2º=60, 3º=40, demais=max(0, 10*(n-pos))
-4. `SoS = MAX(0.5, AVG(skill_score dos outros jogadores) / 100)`
-5. `f(ROI)`: ROI>=0 → `ln(e + ROI/100)`, ROI<0 → `1/(1+0.5*|ROI/100|)`
-6. `raw_points = base_points * SoS * f(ROI)`
-7. Inserir em `atp_points`
+1. Calcular média skill_score dos participantes
+2. Buscar percentis P33/P66 do histórico de jogos
+3. Classificar tier (ou Grand Slam se flag)
+4. Atribuir pontos pela posição (top 5 apenas)
+5. Inserir em `atp_points`
 
-### `revert-atp`
-Deleta registros de `atp_points` para o game_id.
+### `revert-atp` / `recalculate-all-atp`
+Mantêm lógica existente
 
-### `recalculate-all-atp`
-Processa todos os jogos completed em ordem cronológica para popular dados históricos.
+## 3. Frontend
 
-## 3. Frontend — Trigger
+### Criação de jogo (`NewGame.tsx`)
+- Toggle "Grand Slam 🏆" para marcar jogos especiais
 
-### `FinalizeGameForm.tsx`
-Após chamar `calculate` (skill rating), chamar `calculate-atp` na mesma Edge Function.
+### Ranking ATP (`AtpRankingTable.tsx`)
+- Mostrar tier de cada jogo nos detalhes
+- Info banner explicando o sistema de tiers
 
-## 4. Nova Tab "Ranking ATP" no Leaderboard
+### Config (`AtpConfigPanel.tsx`)
+- Manter configuração de window_size
 
-### `src/pages/Leaderboard.tsx`
-- 4ª tab: Rankings | Progresso | Skill Rating | **Ranking ATP**
-
-### `src/components/leaderboard/AtpRankingTable.tsx` (novo)
-- Query na view `atp_ranking`
-- Colunas: Posição | Avatar+Nome | Score ATP | Jogos (na janela)
-- Info banner: "Considerando os últimos {N} jogos do grupo. Jogos anteriores não contam."
-- Para cada jogador: mostrar quais pontos cairão quando o próximo jogo acontecer (pontos do jogo mais antigo na janela daquele jogador)
-- Jogadores sem jogos na janela não aparecem
-
-### `src/components/leaderboard/AtpConfigPanel.tsx` (novo)
-- Input numérico para `window_size` (1–100)
-- Preview: "Janela atual: últimos {N} jogos. Jogos com mais de {N} partidas atrás são descartados."
-- Botão salvar → UPDATE em `atp_config`
-
-## 5. Perfil do Jogador
-
-### `src/pages/Players/PlayerProfile.tsx`
-- Card "ATP Score" com: Score ATP atual, posição no ranking, pontos que cairão no próximo jogo
-- Tab "ATP" com gráfico de evolução: eixo X = jogos do grupo, eixo Y = Score ATP acumulado na janela naquele momento
+### Perfil do jogador
+- Gráfico ATP com tiers no tooltip
 
 ## Arquivos Impactados
 
 | Arquivo | Ação |
 |---------|------|
-| Migration SQL | Criar `atp_points`, `atp_config`, view `atp_ranking` |
-| `supabase/functions/calculate-ratings/index.ts` | Adicionar `calculate-atp`, `revert-atp`, `recalculate-all-atp` |
-| `src/components/games/FinalizeGameForm.tsx` | Chamar `calculate-atp` após finalizar |
-| `src/pages/Leaderboard.tsx` | Adicionar 4ª tab |
-| `src/components/leaderboard/AtpRankingTable.tsx` | Criar |
-| `src/components/leaderboard/AtpConfigPanel.tsx` | Criar |
-| `src/pages/Players/PlayerProfile.tsx` | Card ATP + tab gráfico |
-| `src/integrations/supabase/types.ts` | Atualizado pela migration |
-
-## Vantagens da Janela Fixa vs Decay Multiplicativo
-
-- **Transparência**: jogador sabe exatamente quais pontos perderá
-- **Simplicidade**: sem fórmulas exponenciais, fácil de explicar
-- **Penaliza ausência**: jogador que para de jogar sai do ranking quando seus jogos saem da janela
-- **Configurável**: admin ajusta N para mais ou menos memória
-
+| Migration SQL | Adicionar `tier` em `atp_points`, `is_grand_slam` em `games` |
+| `supabase/functions/calculate-ratings/index.ts` | Reescrever `calculate-atp` com lógica de tiers |
+| `src/pages/Games/NewGame.tsx` | Toggle Grand Slam |
+| `src/components/leaderboard/AtpRankingTable.tsx` | Mostrar tiers |
+| `src/pages/Players/PlayerProfile.tsx` | Adaptar gráfico ATP |
