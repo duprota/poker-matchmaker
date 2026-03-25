@@ -395,15 +395,18 @@ const PlayerProfile = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="progress" className="mt-2">
-          <TabsList className="w-full">
-            <TabsTrigger value="progress" className="flex-1">
-              <TrendingUp className="h-4 w-4 mr-1" /> Progresso
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="progress" className="text-xs">
+              <TrendingUp className="h-3 w-3 mr-1" /> Progresso
             </TabsTrigger>
-            <TabsTrigger value="rating" className="flex-1">
-              <Brain className="h-4 w-4 mr-1" /> Rating
+            <TabsTrigger value="rating" className="text-xs">
+              <Brain className="h-3 w-3 mr-1" /> Rating
             </TabsTrigger>
-            <TabsTrigger value="games" className="flex-1">
-              <TrendingDown className="h-4 w-4 mr-1" /> Jogos
+            <TabsTrigger value="atp" className="text-xs">
+              <Target className="h-3 w-3 mr-1" /> ATP
+            </TabsTrigger>
+            <TabsTrigger value="games" className="text-xs">
+              <TrendingDown className="h-3 w-3 mr-1" /> Jogos
             </TabsTrigger>
           </TabsList>
 
