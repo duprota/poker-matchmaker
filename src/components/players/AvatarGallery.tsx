@@ -4,6 +4,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ChevronLeft, ChevronRight, Check, Shuffle } from 'lucide-react';
 
 const DICEBEAR_STYLES = [
+  { id: 'fun-emoji', label: '🐾 Animais', fixedSeeds: [
+    'vaca', 'capivara', 'gato', 'cachorro', 'leao', 'tigre',
+    'urso', 'raposa', 'lobo', 'aguia', 'coruja', 'panda',
+    'macaco', 'coelho', 'elefante', 'girafa', 'tubarao', 'baleia',
+    'cobra', 'jacare', 'tartaruga', 'pinguim', 'flamingo', 'papagaio',
+  ]},
   { id: 'adventurer', label: 'Aventureiro' },
   { id: 'adventurer-neutral', label: 'Neutro' },
   { id: 'avataaars', label: 'Avataaars' },
@@ -24,7 +30,9 @@ const DICEBEAR_STYLES = [
   { id: 'pixel-art', label: 'Pixel Art' },
   { id: 'pixel-art-neutral', label: 'Pixel Neutro' },
   { id: 'thumbs', label: 'Thumbs' },
-];
+] as const;
+
+type StyleEntry = typeof DICEBEAR_STYLES[number];
 
 function getDiceBearUrl(style: string, seed: string) {
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
