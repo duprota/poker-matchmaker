@@ -100,6 +100,7 @@ const RankIcon = ({ position }: { position: number }) => {
 
 export const AtpRankingTable = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [recalculating, setRecalculating] = useState(false);
 
   const { data: players, isLoading } = useQuery({
