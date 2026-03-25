@@ -101,8 +101,8 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
 
           {/* Avatar grid */}
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="grid grid-cols-3 gap-3">
-              {seeds.map((seed) => {
+            <div className={`grid ${hasFixedSeeds ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>
+              {displaySeeds.map((seed) => {
                 const url = getDiceBearUrl(style.id, seed);
                 const isSelected = selectedUrl === url;
                 return (
@@ -121,6 +121,9 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
                       className="w-full h-full rounded-xl"
                       loading="lazy"
                     />
+                    {hasFixedSeeds && (
+                      <span className="text-[10px] text-muted-foreground truncate block mt-[-4px]">{seed}</span>
+                    )}
                     {isSelected && (
                       <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                         <Check className="h-3 w-3 text-primary-foreground" />
