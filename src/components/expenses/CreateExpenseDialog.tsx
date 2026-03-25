@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -17,11 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCreateExpense } from "@/hooks/useExpenses";
 import { useGamePlayers } from "@/hooks/useGamePlayers";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Users } from "lucide-react";
+import { Check, Users, Equal, Percent, LayoutGrid, DollarSign } from "lucide-react";
+
+type SplitMode = "equal" | "percentage" | "parts" | "direct";
 
 interface CreateExpenseDialogProps {
   open: boolean;
@@ -34,8 +36,9 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
   const [paidByPlayerId, setPaidByPlayerId] = useState("");
   const [gameId, setGameId] = useState<string | null>(null);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
-  const [equalSplit, setEqualSplit] = useState(true);
+  const [splitMode, setSplitMode] = useState<SplitMode>("equal");
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
+  const [totalParts, setTotalParts] = useState("");
 
   const createExpense = useCreateExpense();
 
@@ -72,7 +75,6 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     return allPlayers;
   }, [gameId, gamePlayers, allPlayers]);
 
-  // Also filter "paid by" based on game selection
   const payerOptions = useMemo(() => {
     if (gameId && gamePlayers.length > 0) {
       return gamePlayers.map((gp) => ({ id: gp.playerId, name: gp.playerName }));
@@ -85,6 +87,12 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     setPaidByPlayerId("");
     setCustomAmounts({});
   }, [gameId]);
+
+  // Reset custom inputs when split mode changes
+  useEffect(() => {
+    setCustomAmounts({});
+    setTotalParts("");
+  }, [splitMode]);
 
   const togglePlayer = (playerId: string) => {
     setSelectedPlayers((prev) =>
@@ -103,23 +111,80 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     ? Number((amount / selectedPlayers.length).toFixed(2))
     : 0;
 
+  const totalPartsNumber = parseFloat(totalParts) || 0;
+
   const splits = useMemo(() => {
-    if (equalSplit) {
+    if (splitMode === "equal") {
       return selectedPlayers.map((pid) => ({ player_id: pid, amount: equalShare }));
     }
+    if (splitMode === "percentage") {
+      return selectedPlayers.map((pid) => {
+        const pct = parseFloat(customAmounts[pid] || "0");
+        return { player_id: pid, amount: Number((amount * pct / 100).toFixed(2)) };
+      });
+    }
+    if (splitMode === "parts") {
+      const assignedParts = selectedPlayers.reduce(
+        (sum, pid) => sum + (parseFloat(customAmounts[pid] || "0") || 0), 0
+      );
+      const divisor = totalPartsNumber > 0 ? totalPartsNumber : (assignedParts > 0 ? assignedParts : 1);
+      return selectedPlayers.map((pid) => {
+        const playerParts = parseFloat(customAmounts[pid] || "0") || 0;
+        return { player_id: pid, amount: Number((amount * playerParts / divisor).toFixed(2)) };
+      });
+    }
+    // direct
     return selectedPlayers.map((pid) => ({
       player_id: pid,
       amount: parseFloat(customAmounts[pid] || "0"),
     }));
-  }, [equalSplit, selectedPlayers, equalShare, customAmounts]);
+  }, [splitMode, selectedPlayers, equalShare, customAmounts, amount, totalPartsNumber]);
 
   const customTotal = splits.reduce((sum, s) => sum + s.amount, 0);
+
+  // Validation per mode
+  const splitValidation = useMemo(() => {
+    if (splitMode === "equal") return { valid: true, message: "" };
+
+    if (splitMode === "percentage") {
+      const pctSum = selectedPlayers.reduce(
+        (sum, pid) => sum + (parseFloat(customAmounts[pid] || "0") || 0), 0
+      );
+      const valid = Math.abs(pctSum - 100) < 0.1;
+      return {
+        valid,
+        message: `Total: ${pctSum.toFixed(1)}% / 100%`,
+      };
+    }
+
+    if (splitMode === "parts") {
+      const assignedParts = selectedPlayers.reduce(
+        (sum, pid) => sum + (parseFloat(customAmounts[pid] || "0") || 0), 0
+      );
+      if (totalPartsNumber <= 0) {
+        return { valid: false, message: "Informe o total de partes" };
+      }
+      const valid = assignedParts > 0 && Math.abs(assignedParts - totalPartsNumber) < 0.1;
+      return {
+        valid,
+        message: `Atribuídas: ${assignedParts} / ${totalPartsNumber} partes`,
+      };
+    }
+
+    // direct
+    const valid = Math.abs(customTotal - amount) < 0.02;
+    return {
+      valid,
+      message: `Total: R$ ${customTotal.toFixed(2)} / R$ ${amount.toFixed(2)}`,
+    };
+  }, [splitMode, selectedPlayers, customAmounts, customTotal, amount, totalPartsNumber]);
+
   const isValid =
     description.trim() &&
     amount > 0 &&
     paidByPlayerId &&
     selectedPlayers.length > 0 &&
-    (equalSplit || Math.abs(customTotal - amount) < 0.02);
+    splitValidation.valid;
 
   const handleSubmit = () => {
     if (!isValid) return;
@@ -146,8 +211,87 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
     setPaidByPlayerId("");
     setGameId(null);
     setSelectedPlayers([]);
-    setEqualSplit(true);
+    setSplitMode("equal");
     setCustomAmounts({});
+    setTotalParts("");
+  };
+
+  const getInputSuffix = (mode: SplitMode) => {
+    if (mode === "percentage") return "%";
+    if (mode === "parts") return "partes";
+    return "";
+  };
+
+  const renderSplitInputs = () => {
+    if (splitMode === "equal") {
+      return (
+        <p className="text-sm text-muted-foreground">
+          R$ {equalShare.toFixed(2)} por pessoa ({selectedPlayers.length} participante{selectedPlayers.length > 1 ? "s" : ""})
+        </p>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {/* Total parts input for parts mode */}
+        {splitMode === "parts" && (
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <Label className="text-sm min-w-[80px]">Total partes</Label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              className="h-8"
+              placeholder="ex: 10"
+              value={totalParts}
+              onChange={(e) => setTotalParts(e.target.value)}
+            />
+          </div>
+        )}
+
+        {selectedPlayers.map((pid) => {
+          const player = availablePlayers.find((p) => p.id === pid);
+          const split = splits.find((s) => s.player_id === pid);
+          const previewAmount = split?.amount ?? 0;
+
+          return (
+            <div key={pid} className="flex items-center gap-2">
+              <span className="text-sm min-w-[70px] truncate">
+                {player?.name}
+              </span>
+              <div className="flex items-center gap-1 flex-1">
+                <Input
+                  type="number"
+                  inputMode={splitMode === "parts" ? "numeric" : "decimal"}
+                  step={splitMode === "direct" ? "0.01" : "1"}
+                  className="h-8"
+                  value={customAmounts[pid] ?? ""}
+                  onChange={(e) =>
+                    setCustomAmounts((prev) => ({
+                      ...prev,
+                      [pid]: e.target.value,
+                    }))
+                  }
+                />
+                {getInputSuffix(splitMode) && (
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {getInputSuffix(splitMode)}
+                  </span>
+                )}
+              </div>
+              {splitMode !== "direct" && (
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  → R$ {previewAmount.toFixed(2)}
+                </span>
+              )}
+            </div>
+          );
+        })}
+
+        <p className={`text-xs font-medium ${splitValidation.valid ? "text-muted-foreground" : "text-destructive"}`}>
+          {splitValidation.message}
+        </p>
+      </div>
+    );
   };
 
   return (
@@ -183,7 +327,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             />
           </div>
 
-          {/* Link to game — MOVED UP */}
+          {/* Link to game */}
           <div className="space-y-1.5">
             <Label>Link to game (optional)</Label>
             <Select
@@ -204,7 +348,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             </Select>
           </div>
 
-          {/* Paid by — NOW AFTER game selection, filtered */}
+          {/* Paid by */}
           <div className="space-y-1.5">
             <Label>Paid by</Label>
             <Select value={paidByPlayerId} onValueChange={setPaidByPlayerId}>
@@ -221,7 +365,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             </Select>
           </div>
 
-          {/* Participants — clickable cards */}
+          {/* Participants */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-1.5">
@@ -258,47 +402,35 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
           {/* Split section */}
           {selectedPlayers.length > 0 && amount > 0 && (
             <div className="space-y-3 rounded-lg border border-border p-3 bg-card">
-              <div className="flex items-center gap-2">
-                <Switch checked={equalSplit} onCheckedChange={setEqualSplit} />
-                <Label className="text-sm font-medium">
-                  {equalSplit ? "Equal split" : "Custom amounts"}
-                </Label>
+              {/* Split mode selector */}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Modo de divisão</Label>
+                <ToggleGroup
+                  type="single"
+                  value={splitMode}
+                  onValueChange={(v) => v && setSplitMode(v as SplitMode)}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="equal" aria-label="Igual" className="text-xs gap-1 px-2.5">
+                    <Equal className="w-3.5 h-3.5" />
+                    Igual
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="percentage" aria-label="Percentual" className="text-xs gap-1 px-2.5">
+                    <Percent className="w-3.5 h-3.5" />
+                    %
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="parts" aria-label="Partes" className="text-xs gap-1 px-2.5">
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    Partes
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="direct" aria-label="Valor direto" className="text-xs gap-1 px-2.5">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    R$
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
 
-              {equalSplit ? (
-                <p className="text-sm text-muted-foreground">
-                  R$ {equalShare.toFixed(2)} per person ({selectedPlayers.length} participant{selectedPlayers.length > 1 ? "s" : ""})
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedPlayers.map((pid) => {
-                    const player = availablePlayers.find((p) => p.id === pid);
-                    return (
-                      <div key={pid} className="flex items-center gap-2">
-                        <span className="text-sm min-w-[80px] truncate">
-                          {player?.name}
-                        </span>
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.01"
-                          className="h-8"
-                          value={customAmounts[pid] ?? ""}
-                          onChange={(e) =>
-                            setCustomAmounts((prev) => ({
-                              ...prev,
-                              [pid]: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    );
-                  })}
-                  <p className={`text-xs font-medium ${Math.abs(customTotal - amount) < 0.02 ? "text-muted-foreground" : "text-destructive"}`}>
-                    Total: R$ {customTotal.toFixed(2)} / R$ {amount.toFixed(2)}
-                  </p>
-                </div>
-              )}
+              {renderSplitInputs()}
             </div>
           )}
         </div>
