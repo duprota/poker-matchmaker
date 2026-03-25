@@ -209,7 +209,12 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
         {currentAvatar ? (
           <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover" />
         ) : (
-          <div className={`${textSize} font-bold text-muted-foreground`}>?</div>
+          <BoringAvatar
+            size={size === 'lg' ? 96 : 40}
+            name={playerName || playerId}
+            variant="beam"
+            colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
+          />
         )}
       </div>
 
