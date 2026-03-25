@@ -71,6 +71,113 @@ const RatingCard = ({ playerId, mu, sigma, skillScore, ratingGames }: {
   );
 };
 
+// ── ATP Card ──
+const AtpCard = ({ playerId }: { playerId: string }) => {
+  const { data: ranking } = useQuery({
+    queryKey: ["atp-ranking-player", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("atp_ranking" as any)
+        .select("*");
+      if (error) throw error;
+      const all = (data || []) as any[];
+      const idx = all.findIndex((p: any) => p.id === playerId);
+      if (idx === -1) return null;
+      return { ...all[idx], position: idx + 1 };
+    },
+  });
+
+  if (!ranking) return null;
+
+  return (
+    <Card className="p-3 mt-3 bg-card/80 backdrop-blur-sm border-border/50">
+      <div className="flex items-center gap-2 mb-1">
+        <Target className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Ranking ATP</span>
+        <span className="text-xs text-muted-foreground">#{ranking.position}</span>
+      </div>
+      <div className="flex items-baseline gap-4">
+        <p className="text-2xl font-bold text-primary">{ranking.score_atp}</p>
+        <div className="flex gap-3 text-xs text-muted-foreground">
+          <span>{ranking.games_scored} {ranking.games_scored === 1 ? "jogo" : "jogos"} na janela</span>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// ── ATP History Chart ──
+const AtpHistoryChart = ({ playerId }: { playerId: string | undefined }) => {
+  const { data: history, isLoading } = useQuery({
+    queryKey: ["atp-history", playerId],
+    enabled: !!playerId,
+    queryFn: async () => {
+      // Get all atp_points for this player with game dates
+      const { data: points, error } = await supabase
+        .from("atp_points")
+        .select("raw_points, game_id, created_at")
+        .eq("player_id", playerId!)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      if (!points || points.length === 0) return [];
+
+      // Get game dates
+      const gameIds = points.map((p: any) => p.game_id);
+      const { data: games } = await supabase
+        .from("games")
+        .select("id, date")
+        .in("id", gameIds);
+
+      const gameMap = new Map((games || []).map((g: any) => [g.id, g.date]));
+
+      // Build cumulative chart data
+      let cumulative = 0;
+      return points.map((p: any) => {
+        cumulative += Number(p.raw_points);
+        const date = gameMap.get(p.game_id) || p.created_at;
+        return {
+          date: new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+          score: Math.round(cumulative * 10) / 10,
+          points: Math.round(Number(p.raw_points) * 10) / 10,
+        };
+      });
+    },
+  });
+
+  if (isLoading) return <p className="text-center text-muted-foreground py-8">Carregando...</p>;
+  if (!history || history.length === 0) {
+    return <p className="text-center text-muted-foreground py-8">Sem histórico ATP ainda.</p>;
+  }
+
+  return (
+    <Card className="p-4 mt-2">
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart data={history}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="date" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+          <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+          <Tooltip
+            formatter={(value: number, name: string) => [
+              `${value}`,
+              name === "score" ? "Score Acumulado" : "Pontos no Jogo",
+            ]}
+            labelFormatter={(label) => `Jogo: ${label}`}
+          />
+          <Line
+            type="monotone"
+            dataKey="score"
+            name="score"
+            stroke="hsl(var(--primary))"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
 // ── Rating History Chart ──
 const RatingHistoryChart = ({ playerId }: { playerId: string | undefined }) => {
   const { data: history, isLoading } = useQuery({
