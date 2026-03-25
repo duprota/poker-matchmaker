@@ -4,6 +4,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ChevronLeft, ChevronRight, Check, Shuffle } from 'lucide-react';
 
 const DICEBEAR_STYLES = [
+  { id: 'fun-emoji', label: '🐾 Animais', fixedSeeds: [
+    'vaca', 'capivara', 'gato', 'cachorro', 'leao', 'tigre',
+    'urso', 'raposa', 'lobo', 'aguia', 'coruja', 'panda',
+    'macaco', 'coelho', 'elefante', 'girafa', 'tubarao', 'baleia',
+    'cobra', 'jacare', 'tartaruga', 'pinguim', 'flamingo', 'papagaio',
+  ]},
   { id: 'adventurer', label: 'Aventureiro' },
   { id: 'adventurer-neutral', label: 'Neutro' },
   { id: 'avataaars', label: 'Avataaars' },
@@ -24,7 +30,9 @@ const DICEBEAR_STYLES = [
   { id: 'pixel-art', label: 'Pixel Art' },
   { id: 'pixel-art-neutral', label: 'Pixel Neutro' },
   { id: 'thumbs', label: 'Thumbs' },
-];
+] as const;
+
+type StyleEntry = typeof DICEBEAR_STYLES[number];
 
 function getDiceBearUrl(style: string, seed: string) {
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
@@ -43,6 +51,8 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
 
   const style = DICEBEAR_STYLES[styleIndex];
+  const hasFixedSeeds = 'fixedSeeds' in style && style.fixedSeeds;
+  const displaySeeds = hasFixedSeeds ? style.fixedSeeds as readonly string[] : seeds;
 
   function generateSeeds(base: string) {
     return Array.from({ length: 12 }, (_, i) => `${base}-${i}-${Math.random().toString(36).slice(2, 6)}`);
@@ -91,8 +101,8 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
 
           {/* Avatar grid */}
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="grid grid-cols-3 gap-3">
-              {seeds.map((seed) => {
+            <div className={`grid ${hasFixedSeeds ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>
+              {displaySeeds.map((seed) => {
                 const url = getDiceBearUrl(style.id, seed);
                 const isSelected = selectedUrl === url;
                 return (
@@ -111,6 +121,9 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
                       className="w-full h-full rounded-xl"
                       loading="lazy"
                     />
+                    {hasFixedSeeds && (
+                      <span className="text-[10px] text-muted-foreground truncate block mt-[-4px]">{seed}</span>
+                    )}
                     {isSelected && (
                       <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                         <Check className="h-3 w-3 text-primary-foreground" />
@@ -124,9 +137,11 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
 
           {/* Actions */}
           <div className="p-4 border-t bg-background flex items-center gap-3">
-            <Button variant="outline" size="icon" onClick={shuffleSeeds}>
-              <Shuffle className="h-4 w-4" />
-            </Button>
+            {!hasFixedSeeds && (
+              <Button variant="outline" size="icon" onClick={shuffleSeeds}>
+                <Shuffle className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               className="flex-1"
               disabled={!selectedUrl}
