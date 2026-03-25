@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 
 interface AvatarUploaderProps {
   playerId: string;
+  playerName?: string;
   currentAvatar?: string | null;
   onAvatarChange: (url: string) => Promise<void>;
   size?: 'sm' | 'lg';
