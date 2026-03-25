@@ -1,8 +1,7 @@
-
-import { Trophy } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Crown } from "lucide-react";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
+import { PlayerAvatar } from "./PlayerAvatar";
 
 interface WinnerCardProps {
   winner: GamePlayer;
@@ -10,30 +9,45 @@ interface WinnerCardProps {
 
 export const WinnerCard = ({ winner }: WinnerCardProps) => {
   const winnerProfit = calculateFinalResult(winner);
-  const winnerROI = ((winnerProfit / (winner.initial_buyin + (winner.total_rebuys * winner.initial_buyin))) * 100).toFixed(2);
+  const totalInvested = winner.initial_buyin + (winner.total_rebuys * winner.initial_buyin);
+  const winnerROI = ((winnerProfit / totalInvested) * 100).toFixed(0);
 
   return (
-    <Card className="p-6 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 dark:from-yellow-500/10 dark:to-amber-500/10 border-yellow-500/50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Trophy className="w-12 h-12 text-yellow-500 animate-[pulse_3s_ease-in-out_infinite]" />
-            <div className="absolute -inset-1 bg-yellow-500/20 blur-lg rounded-full -z-10" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
-              {winner.player.name}
-            </h2>
-            <p className="text-lg text-green-500 font-semibold">+${winnerProfit}</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Return on Investment</p>
-          <p className="text-xl font-semibold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
-            {winnerROI}%
-          </p>
+    <div className="relative flex flex-col items-center py-8 px-4">
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-yellow-500/10 via-amber-500/5 to-transparent rounded-2xl" />
+      
+      {/* Crown */}
+      <div className="relative mb-2 animate-bounce" style={{ animationDuration: '2s' }}>
+        <Crown className="w-10 h-10 text-yellow-500 fill-yellow-500/30" />
+      </div>
+
+      {/* Avatar with golden glow */}
+      <div className="relative mb-4">
+        <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 opacity-60 blur-md animate-pulse" />
+        <div className="relative rounded-full ring-4 ring-yellow-500/80 overflow-hidden">
+          <PlayerAvatar
+            name={winner.player.name}
+            avatarUrl={winner.player.avatar_url}
+            size={120}
+          />
         </div>
       </div>
-    </Card>
+
+      {/* Name */}
+      <h2 className="relative text-2xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 bg-clip-text text-transparent mb-1">
+        {winner.player.name}
+      </h2>
+
+      {/* Profit */}
+      <p className="relative text-3xl font-bold text-green-500 mb-1">
+        +${winnerProfit}
+      </p>
+
+      {/* ROI */}
+      <p className="relative text-sm text-muted-foreground">
+        ROI: <span className="font-semibold text-green-400">{winnerROI}%</span> • Investido: ${totalInvested}
+      </p>
+    </div>
   );
 };

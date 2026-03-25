@@ -1,8 +1,8 @@
-
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "./GameCalculations";
 import { GameOverview } from "./summary/GameOverview";
 import { WinnerCard } from "./summary/WinnerCard";
+import { PodiumSection } from "./summary/PodiumSection";
 import { GameStats } from "./summary/GameStats";
 import { Rankings } from "./summary/Rankings";
 import { ShareButton } from "./summary/ShareButton";
@@ -31,29 +31,47 @@ export const GameSummary = ({
   });
 
   const winner = sortedPlayers[0];
+  const podiumPlayers = sortedPlayers.slice(1, 3);
+  const hasEnoughForPodium = sortedPlayers.length >= 3;
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <GameOverview 
-        name={name}
-        date={date}
-        place={place}
-        startedAt={startedAt}
-        playerCount={players.length}
-      />
+    <div className="space-y-6">
+      <div className="animate-fade-in">
+        <GameOverview 
+          name={name}
+          date={date}
+          place={place}
+          startedAt={startedAt}
+          playerCount={players.length}
+        />
+      </div>
 
-      <WinnerCard winner={winner} />
+      <div className="animate-fade-in" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
+        <WinnerCard winner={winner} />
+      </div>
 
-      <GameStats players={players} />
+      {hasEnoughForPodium && (
+        <div className="animate-fade-in" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
+          <PodiumSection players={podiumPlayers} />
+        </div>
+      )}
 
-      <Rankings players={players} />
+      <div className="animate-fade-in" style={{ animationDelay: '450ms', animationFillMode: 'both' }}>
+        <Rankings players={players} skipTop={hasEnoughForPodium ? 3 : 1} />
+      </div>
 
-      <ShareButton 
-        players={players}
-        date={date}
-        name={name}
-        place={place}
-      />
+      <div className="animate-fade-in" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
+        <GameStats players={players} />
+      </div>
+
+      <div className="animate-fade-in" style={{ animationDelay: '750ms', animationFillMode: 'both' }}>
+        <ShareButton 
+          players={players}
+          date={date}
+          name={name}
+          place={place}
+        />
+      </div>
     </div>
   );
 };

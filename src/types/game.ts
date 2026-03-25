@@ -5,6 +5,7 @@ export interface GamePlayer {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string | null;
   };
   initial_buyin: number;
   total_rebuys: number;

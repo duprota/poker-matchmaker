@@ -2,61 +2,57 @@ import { Card } from "@/components/ui/card";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
 import { SpecialHandIcon } from "@/components/shared/SpecialHandIcon";
+import { PlayerAvatar } from "./PlayerAvatar";
 
 interface RankingsProps {
   players: GamePlayer[];
+  skipTop?: number;
 }
 
-export const Rankings = ({ players }: RankingsProps) => {
+export const Rankings = ({ players, skipTop = 0 }: RankingsProps) => {
   const sortedPlayers = [...players].sort((a, b) => {
     const resultA = calculateFinalResult(a);
     const resultB = calculateFinalResult(b);
     return resultB - resultA;
   });
 
+  const displayPlayers = sortedPlayers.slice(skipTop);
+
+  if (displayPlayers.length === 0) return null;
+
   return (
     <div>
-      <h3 className="text-xl font-semibold mb-4">Final Rankings</h3>
+      <h3 className="text-xl font-semibold mb-4">
+        {skipTop > 0 ? 'Demais Jogadores' : 'Final Rankings'}
+      </h3>
       <div className="space-y-2">
-        {sortedPlayers.map((player, index) => {
+        {displayPlayers.map((player, index) => {
           const result = calculateFinalResult(player);
-          const roi = ((result / (player.initial_buyin + (player.total_rebuys * player.initial_buyin))) * 100).toFixed(0);
-          const totalAmountInGame = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
+          const position = skipTop + index + 1;
           const specialHands = player.special_hands || {};
 
           return (
-            <Card 
-              key={player.id} 
-              className={`p-4 hover:bg-muted/50 transition-all duration-300 transform hover:scale-[1.02] ${
-                index === 0 ? 'bg-gradient-to-r from-yellow-500/10 to-amber-500/10' :
-                index === 1 ? 'bg-gradient-to-r from-slate-300/10 to-slate-400/10' :
-                index === 2 ? 'bg-gradient-to-r from-amber-700/10 to-amber-800/10' : ''
-              }`}
-            >
+            <Card key={player.id} className="p-3 hover:bg-muted/50 transition-colors">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className={`text-lg font-bold ${
-                    index === 0 ? 'text-yellow-500' :
-                    index === 1 ? 'text-slate-400' :
-                    index === 2 ? 'text-amber-700' : ''
-                  }`}>
-                    #{index + 1}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-muted-foreground w-6">
+                    #{position}
                   </span>
-                  <div className="space-y-1">
-                    <p className="font-medium">{player.player.name}</p>
-                    <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                      <span>Total In Game: ${totalAmountInGame}</span>
-                      <span>ROI: {roi}%</span>
-                    </div>
+                  <div className="rounded-full overflow-hidden flex-shrink-0">
+                    <PlayerAvatar
+                      name={player.player.name}
+                      avatarUrl={player.player.avatar_url}
+                      size={32}
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{player.player.name}</p>
                     {Object.entries(specialHands).length > 0 && (
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1 mt-0.5">
                         {Object.entries(specialHands).map(([handType, count]) => (
                           count > 0 && (
-                            <div key={handType} className="flex items-center gap-1">
-                              <SpecialHandIcon 
-                                type={handType as any} 
-                                size="sm"
-                              />
+                            <div key={handType} className="flex items-center gap-0.5">
+                              <SpecialHandIcon type={handType as any} size="sm" />
                               <span className="text-xs font-semibold">{count}</span>
                             </div>
                           )
