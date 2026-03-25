@@ -1,4 +1,5 @@
 import { Crown } from "lucide-react";
+import { Link } from "react-router-dom";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
 import { PlayerAvatar } from "./PlayerAvatar";
