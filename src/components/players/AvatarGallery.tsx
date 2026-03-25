@@ -30,7 +30,7 @@ const ANIMAL_EMOJIS = [
   { code: '1f9a9', label: 'Flamingo' },
   { code: '1f99c', label: 'Papagaio' },
   { code: '1f434', label: 'Cavalo' },
-  { code: '1f43e', label: 'Capivara' },
+  { code: '1f9a6', label: 'Capivara' },
   { code: '1f994', label: 'Ouriço' },
   { code: '1f98e', label: 'Lagarto' },
   { code: '1f409', label: 'Dragão' },
