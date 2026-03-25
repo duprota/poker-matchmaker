@@ -64,8 +64,6 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [sourceImg, setSourceImg] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
