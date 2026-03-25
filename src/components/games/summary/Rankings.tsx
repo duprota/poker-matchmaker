@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
