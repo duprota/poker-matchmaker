@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { Game, GameStatus } from "@/types/game";
+import { Badge } from "@/components/ui/badge";
 
 const Games = () => {
   const [games, setGames] = useState<Game[]>([]);
