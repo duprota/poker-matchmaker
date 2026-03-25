@@ -168,8 +168,17 @@ export const AtpRankingTable = () => {
             ))}
           </div>
           <p className="text-[10px] mt-1">
-            Tier definido pela média de skill dos jogadores (percentis P33/P66). Grand Slam é manual.
+            Tier definido pela média de skill dos jogadores (percentis P50/P85). Grand Slam é manual.
           </p>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-[11px] text-primary mt-1"
+            onClick={() => navigate("/atp-info")}
+          >
+            <Info className="w-3 h-3 mr-1" />
+            Saiba mais sobre o ranking ATP
+          </Button>
         </div>
       </div>
 
