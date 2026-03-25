@@ -53,10 +53,19 @@ const Games = () => {
               throw playersError;
             }
 
+            // Fetch ATP tier for this game
+            const { data: atpData } = await supabase
+              .from("atp_points")
+              .select("tier")
+              .eq("game_id", game.id)
+              .limit(1)
+              .maybeSingle();
+
             return {
               ...game,
               status: game.status as GameStatus,
               players: playersData,
+              atp_tier: game.is_grand_slam ? "grand_slam" : (atpData?.tier || null),
             };
           })
         );
