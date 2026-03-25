@@ -373,11 +373,12 @@ async function determineTier(supabase: any, gameId: string, avgSkill: number): P
   }
 
   gameSkillAvgs.sort((a, b) => a - b);
-  const p33 = gameSkillAvgs[Math.floor(gameSkillAvgs.length * 0.33)];
-  const p66 = gameSkillAvgs[Math.floor(gameSkillAvgs.length * 0.66)];
+  // Distribution: ~50% ATP 250, ~35% ATP 500, ~15% ATP 1000
+  const p50 = gameSkillAvgs[Math.floor(gameSkillAvgs.length * 0.50)];
+  const p85 = gameSkillAvgs[Math.floor(gameSkillAvgs.length * 0.85)];
 
-  if (avgSkill <= p33) return "250";
-  if (avgSkill <= p66) return "500";
+  if (avgSkill <= p50) return "250";
+  if (avgSkill <= p85) return "500";
   return "1000";
 }
 
