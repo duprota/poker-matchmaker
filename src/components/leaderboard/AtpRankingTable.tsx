@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Target, HelpCircle, AlertTriangle } from "lucide-react";
+import { Trophy, Medal, Target, HelpCircle, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -15,6 +15,7 @@ import { AtpConfigPanel } from "./AtpConfigPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface AtpPlayer {
   id: string;
@@ -99,6 +100,7 @@ const RankIcon = ({ position }: { position: number }) => {
 
 export const AtpRankingTable = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [recalculating, setRecalculating] = useState(false);
 
   const { data: players, isLoading } = useQuery({
@@ -166,8 +168,17 @@ export const AtpRankingTable = () => {
             ))}
           </div>
           <p className="text-[10px] mt-1">
-            Tier definido pela média de skill dos jogadores (percentis P33/P66). Grand Slam é manual.
+            Tier definido pela média de skill dos jogadores (percentis P50/P85). Grand Slam é manual.
           </p>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-[11px] text-primary mt-1"
+            onClick={() => navigate("/atp-info")}
+          >
+            <Info className="w-3 h-3 mr-1" />
+            Saiba mais sobre o ranking ATP
+          </Button>
         </div>
       </div>
 
