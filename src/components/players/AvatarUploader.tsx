@@ -63,7 +63,7 @@ function createImage(url: string): Promise<HTMLImageElement> {
 export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size = 'sm' }: AvatarUploaderProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [sourceImg, setSourceImg] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
