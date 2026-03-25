@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { Game, GameStatus } from "@/types/game";
+import { Badge } from "@/components/ui/badge";
 
 const Games = () => {
   const [games, setGames] = useState<Game[]>([]);
@@ -52,10 +53,19 @@ const Games = () => {
               throw playersError;
             }
 
+            // Fetch ATP tier for this game
+            const { data: atpData } = await supabase
+              .from("atp_points")
+              .select("tier")
+              .eq("game_id", game.id)
+              .limit(1)
+              .maybeSingle();
+
             return {
               ...game,
               status: game.status as GameStatus,
               players: playersData,
+              atp_tier: game.is_grand_slam ? "grand_slam" : (atpData?.tier || null),
             };
           })
         );
@@ -111,23 +121,43 @@ const Games = () => {
               className="p-6 bg-card/80 backdrop-blur-sm border-primary/10 hover:border-primary/20 transition-all duration-200 hover:shadow-lg group"
             >
               <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {game.name || "Game Details"}
-                  </h3>
-                  <p className="text-muted-foreground mt-1">
-                    {new Date(game.date).toLocaleDateString()}
-                  </p>
+                <div className="flex items-center gap-2">
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {game.name || "Game Details"}
+                    </h3>
+                    <p className="text-muted-foreground mt-1">
+                      {new Date(game.date).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    game.status === "ongoing"
-                      ? "bg-secondary/10 text-secondary"
-                      : "bg-primary/10 text-primary"
-                  }`}
-                >
-                  {game.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  {game.atp_tier && (
+                    <Badge
+                      className={
+                        game.atp_tier === "grand_slam"
+                          ? "bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25"
+                          : game.atp_tier === "1000"
+                          ? "bg-purple-500/15 text-purple-500 border-purple-500/30 hover:bg-purple-500/25"
+                          : game.atp_tier === "500"
+                          ? "bg-blue-500/15 text-blue-500 border-blue-500/30 hover:bg-blue-500/25"
+                          : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/25"
+                      }
+                      variant="outline"
+                    >
+                      {game.atp_tier === "grand_slam" ? "🏆 Grand Slam" : `ATP ${game.atp_tier}`}
+                    </Badge>
+                  )}
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      game.status === "ongoing"
+                        ? "bg-secondary/10 text-secondary"
+                        : "bg-primary/10 text-primary"
+                    }`}
+                  >
+                    {game.status}
+                  </span>
+                </div>
               </div>
               <p className="text-muted-foreground mb-4 line-clamp-2">
                 Players: {game.players.map((p) => p.player.name).join(", ")}

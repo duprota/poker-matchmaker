@@ -25,4 +25,6 @@ export interface Game {
   name?: string;
   place?: string;
   started_at?: string;
+  is_grand_slam?: boolean | null;
+  atp_tier?: string | null;
 }
