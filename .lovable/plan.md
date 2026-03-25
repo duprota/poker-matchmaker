@@ -1,64 +1,67 @@
 
 
-# Players Page — Redesign Implementation
+# Avatar Upload — Melhoria com Bibliotecas Especializadas
 
-The approved plan has not been implemented yet. Here is the full implementation breakdown.
+## Problemas Atuais
 
-## Files to Create
+1. **Câmera**: Captura um frame instantâneo sem mostrar viewfinder ao vivo — o usuário não vê o que está fotografando.
+2. **Crop**: `react-image-crop` funciona, mas a UX é rígida — o usuário arrasta um retângulo. Não tem zoom nem rotação.
+3. **Mobile**: A interação de arrastar o crop box é difícil em tela pequena.
 
-### 1. `src/hooks/usePlayerStats.ts`
-New hook that queries `game_players` joined with `games` for a given `player_id`. Computes:
-- Games played (count where `final_result` is not null)
-- Net earnings (sum of `final_result - initial_buyin * (1 + total_rebuys)`)
-- ROI% (net / total invested * 100)
-- Best/worst single game net
-- Win rate (% of games with positive net)
-- Progress data array (date + running_total) for the chart
-- Game history list (date, buyin, rebuys, result, net)
+## Biblioteca Recomendada: `react-easy-crop`
 
-Uses a single Supabase query: `game_players` with `select("*, games(date, status, name)")` filtered by `player_id` and `games.status = 'completed'`.
+| Critério | react-image-crop (atual) | react-easy-crop | react-avatar-editor |
+|----------|-------------------------|-----------------|---------------------|
+| UX Mobile | Fraca (arrastar box) | Excelente (pinch-zoom) | Boa |
+| Zoom/Rotate | Não | Sim (slider) | Sim |
+| Circular crop | Sim | Sim (nativo) | Sim |
+| Bundle size | ~15KB | ~10KB | ~12KB |
+| Manutenção | Ativa | Ativa | Baixa |
 
-### 2. `src/pages/Players/PlayerProfile.tsx`
-New page component with:
-- Back button linking to `/players`
-- Large centered avatar (96px, clickable via `AvatarUploader` with `size` prop)
-- Player name, email, PIX key display
-- Edit/Delete action buttons
-- **KPI grid**: 4 cards (Games, Net, ROI%, Best Game) using data from `usePlayerStats`
-- **Tabs** ("Progress" / "Games"):
-  - Progress tab: Reuses `ProgressChart` pattern (Recharts `LineChart` with `running_total` over time)
-  - Games tab: Table listing each game with date, buyin, rebuys, final result, net
+**`react-easy-crop`** é a melhor opção: o usuário move a imagem com drag (ou pinch no mobile) dentro de uma área circular fixa, com slider de zoom. Muito mais natural que arrastar cantos de um box.
 
-### 3. `src/components/players/PlayerKPICards.tsx`
-Grid of 4 stat cards. Each card shows an icon, label, and value with color coding (green for positive, red for negative on monetary values).
+## Solução para Câmera: Viewfinder ao Vivo
 
-### 4. `src/components/players/PlayerGameHistory.tsx`
-Table component showing the player's completed games. Columns: Date, Game Name, Buy-in, Rebuys, Final Result, Net. Each row links to `/games/:id`.
+Em vez de capturar um frame cego, mostrar um **video live** em tela cheia com botão de captura (estilo câmera de celular). Fluxo:
 
-## Files to Modify
+```text
+[Tap avatar] → Dialog: "Upload" ou "Câmera"
+                          ↓ Câmera
+                    Tela com video ao vivo
+                    [  Botão circular ⊙  ]
+                          ↓ Tap
+                    Congela frame → Crop com react-easy-crop
+                          ↓ Salvar
+                    Upload ao Supabase
+```
 
-### 5. `src/pages/Players.tsx`
-Rewrite to a contact-list style layout:
-- Move creation form into a Dialog (triggered by "+ Add" button in header)
-- Search bar to filter players by name
-- Each player row: Avatar (40px) | Name + mini-KPIs (games, net) | Balance indicator
-- Click navigates to `/players/:id` via `useNavigate`
-- Remove the grid card layout
+## Mudanças no `AvatarUploader.tsx`
 
-### 6. `src/components/players/AvatarUploader.tsx`
-- Add optional `size` prop (`'sm' | 'lg'`, default `'sm'`)
-- Remove the external "Alterar foto" button — clicking the avatar circle itself opens the dialog (already works this way, just remove the redundant Button)
-- `sm` = 40px (list), `lg` = 96px (profile)
+1. **Substituir** `react-image-crop` por `react-easy-crop`
+   - Remover `ReactCrop` e seu CSS
+   - Usar `Cropper` do react-easy-crop com `cropShape="round"` e `showGrid={false}`
+   - Adicionar slider de zoom abaixo do cropper
+   - Usar `getCroppedImg` helper com canvas (da doc oficial do react-easy-crop)
 
-### 7. `src/App.tsx`
-Add route: `<Route path="/players/:id" element={<PlayerProfile />} />`
+2. **Viewfinder ao vivo para câmera**
+   - Ao escolher "Câmera", abrir Sheet com `<video>` renderizado em tela cheia (stream da câmera)
+   - Botão circular grande na parte inferior para capturar
+   - Ao capturar: pausa stream, converte frame para dataURL, abre o cropper
+   - Botão para alternar câmera frontal/traseira (se disponível)
 
-## Order of Implementation
+3. **Input de arquivo mobile-friendly**
+   - Adicionar `capture="environment"` como opção para permitir ao navegador abrir a câmera nativa do celular diretamente (alternativa ao viewfinder custom)
 
-1. `usePlayerStats.ts` (data layer)
-2. `AvatarUploader.tsx` (remove button, add size prop)
-3. `PlayerKPICards.tsx` + `PlayerGameHistory.tsx` (profile sub-components)
-4. `PlayerProfile.tsx` (profile page)
-5. `Players.tsx` (list redesign)
-6. `App.tsx` (routing)
+## Arquivos Impactados
+
+| Arquivo | Ação |
+|---------|------|
+| `package.json` | Adicionar `react-easy-crop`, remover `react-image-crop` |
+| `src/components/players/AvatarUploader.tsx` | Reescrever crop com react-easy-crop + viewfinder ao vivo |
+
+## Resultado Esperado
+
+- Crop: drag/pinch para posicionar, slider para zoom, preview circular
+- Câmera: viewfinder ao vivo com botão de captura, troca de câmera
+- Mobile: pinch-to-zoom nativo, botões grandes, tela cheia
 
