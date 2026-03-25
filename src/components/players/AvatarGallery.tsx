@@ -3,13 +3,41 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ChevronLeft, ChevronRight, Check, Shuffle } from 'lucide-react';
 
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg';
+
+const ANIMAL_EMOJIS = [
+  { code: '1f42e', label: 'Vaca' },
+  { code: '1f431', label: 'Gato' },
+  { code: '1f436', label: 'Cachorro' },
+  { code: '1f981', label: 'Leão' },
+  { code: '1f42f', label: 'Tigre' },
+  { code: '1f43b', label: 'Urso' },
+  { code: '1f98a', label: 'Raposa' },
+  { code: '1f43a', label: 'Lobo' },
+  { code: '1f985', label: 'Águia' },
+  { code: '1f989', label: 'Coruja' },
+  { code: '1f43c', label: 'Panda' },
+  { code: '1f435', label: 'Macaco' },
+  { code: '1f430', label: 'Coelho' },
+  { code: '1f418', label: 'Elefante' },
+  { code: '1f992', label: 'Girafa' },
+  { code: '1f988', label: 'Tubarão' },
+  { code: '1f40b', label: 'Baleia' },
+  { code: '1f40d', label: 'Cobra' },
+  { code: '1f40a', label: 'Jacaré' },
+  { code: '1f422', label: 'Tartaruga' },
+  { code: '1f427', label: 'Pinguim' },
+  { code: '1f9a9', label: 'Flamingo' },
+  { code: '1f99c', label: 'Papagaio' },
+  { code: '1f434', label: 'Cavalo' },
+  { code: '1f43e', label: 'Capivara' },
+  { code: '1f994', label: 'Ouriço' },
+  { code: '1f98e', label: 'Lagarto' },
+  { code: '1f409', label: 'Dragão' },
+];
+
 const DICEBEAR_STYLES = [
-  { id: 'fun-emoji', label: '🐾 Animais', fixedSeeds: [
-    'vaca', 'capivara', 'gato', 'cachorro', 'leao', 'tigre',
-    'urso', 'raposa', 'lobo', 'aguia', 'coruja', 'panda',
-    'macaco', 'coelho', 'elefante', 'girafa', 'tubarao', 'baleia',
-    'cobra', 'jacare', 'tartaruga', 'pinguim', 'flamingo', 'papagaio',
-  ]},
+  { id: '_animals', label: '🐾 Animais', isAnimalGrid: true },
   { id: 'adventurer', label: 'Aventureiro' },
   { id: 'adventurer-neutral', label: 'Neutro' },
   { id: 'avataaars', label: 'Avataaars' },
@@ -32,8 +60,6 @@ const DICEBEAR_STYLES = [
   { id: 'thumbs', label: 'Thumbs' },
 ] as const;
 
-type StyleEntry = typeof DICEBEAR_STYLES[number];
-
 function getDiceBearUrl(style: string, seed: string) {
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
 }
@@ -51,8 +77,7 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
 
   const style = DICEBEAR_STYLES[styleIndex];
-  const hasFixedSeeds = 'fixedSeeds' in style && style.fixedSeeds;
-  const displaySeeds = hasFixedSeeds ? style.fixedSeeds as readonly string[] : seeds;
+  const isAnimalGrid = 'isAnimalGrid' in style && style.isAnimalGrid;
 
   function generateSeeds(base: string) {
     return Array.from({ length: 12 }, (_, i) => `${base}-${i}-${Math.random().toString(36).slice(2, 6)}`);
@@ -101,43 +126,73 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
 
           {/* Avatar grid */}
           <div className="flex-1 overflow-y-auto p-4">
-            <div className={`grid ${hasFixedSeeds ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>
-              {displaySeeds.map((seed) => {
-                const url = getDiceBearUrl(style.id, seed);
-                const isSelected = selectedUrl === url;
-                return (
-                  <button
-                    key={seed}
-                    onClick={() => setSelectedUrl(url)}
-                    className={`relative aspect-square rounded-2xl border-2 p-2 transition-all ${
-                      isSelected
-                        ? 'border-primary bg-primary/10 scale-95'
-                        : 'border-border bg-card hover:border-primary/50'
-                    }`}
-                  >
-                    <img
-                      src={url}
-                      alt={`Avatar ${seed}`}
-                      className="w-full h-full rounded-xl"
-                      loading="lazy"
-                    />
-                    {hasFixedSeeds && (
-                      <span className="text-[10px] text-muted-foreground truncate block mt-[-4px]">{seed}</span>
-                    )}
-                    {isSelected && (
-                      <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <Check className="h-3 w-3 text-primary-foreground" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {isAnimalGrid ? (
+              <div className="grid grid-cols-4 gap-3">
+                {ANIMAL_EMOJIS.map((animal) => {
+                  const url = `${TWEMOJI_BASE}/${animal.code}.svg`;
+                  const isSelected = selectedUrl === url;
+                  return (
+                    <button
+                      key={animal.code}
+                      onClick={() => setSelectedUrl(url)}
+                      className={`relative flex flex-col items-center gap-1 aspect-square rounded-2xl border-2 p-3 transition-all ${
+                        isSelected
+                          ? 'border-primary bg-primary/10 scale-95'
+                          : 'border-border bg-card hover:border-primary/50'
+                      }`}
+                    >
+                      <img
+                        src={url}
+                        alt={animal.label}
+                        className="w-full h-full object-contain"
+                        loading="lazy"
+                      />
+                      <span className="text-[10px] text-muted-foreground leading-none">{animal.label}</span>
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                {seeds.map((seed) => {
+                  const url = getDiceBearUrl(style.id, seed);
+                  const isSelected = selectedUrl === url;
+                  return (
+                    <button
+                      key={seed}
+                      onClick={() => setSelectedUrl(url)}
+                      className={`relative aspect-square rounded-2xl border-2 p-2 transition-all ${
+                        isSelected
+                          ? 'border-primary bg-primary/10 scale-95'
+                          : 'border-border bg-card hover:border-primary/50'
+                      }`}
+                    >
+                      <img
+                        src={url}
+                        alt={`Avatar ${seed}`}
+                        className="w-full h-full rounded-xl"
+                        loading="lazy"
+                      />
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
           <div className="p-4 border-t bg-background flex items-center gap-3">
-            {!hasFixedSeeds && (
+            {!isAnimalGrid && (
               <Button variant="outline" size="icon" onClick={shuffleSeeds}>
                 <Shuffle className="h-4 w-4" />
               </Button>
