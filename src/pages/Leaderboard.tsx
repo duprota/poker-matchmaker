@@ -303,6 +303,10 @@ const Leaderboard = () => {
               <LeaderboardProgress playerProgressData={playerProgressData || []} />
             )}
           </TabsContent>
+
+          <TabsContent value="skill" className="mt-2 md:mt-4">
+            <SkillRatingTable />
+          </TabsContent>
         </Tabs>
 
         {sortedLeaderboard && (
