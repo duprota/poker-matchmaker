@@ -447,6 +447,9 @@ const PlayerProfile = () => {
             <RatingHistoryChart playerId={id} />
           </TabsContent>
 
+          <TabsContent value="atp">
+            <AtpHistoryChart playerId={id} />
+
           <TabsContent value="games">
             {stats && <PlayerGameHistory games={stats.gameHistory} />}
           </TabsContent>
