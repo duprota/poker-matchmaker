@@ -234,6 +234,7 @@ const PlayerProfile = () => {
               <div className="flex justify-center">
                 <AvatarUploader
                   playerId={player.id}
+                  playerName={player.name}
                   currentAvatar={player.avatar_url}
                   onAvatarChange={updateAvatar}
                   size="lg"

@@ -146,6 +146,7 @@ const Players = () => {
               >
                 <AvatarUploader
                   playerId={player.id}
+                  playerName={player.name}
                   currentAvatar={player.avatar_url}
                   onAvatarChange={(url) => updatePlayerAvatar(player.id, url)}
                   size="sm"
