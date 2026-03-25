@@ -35,17 +35,19 @@ export const PodiumSection = ({ players }: PodiumSectionProps) => {
               <span className={`text-sm font-bold ${pos.color}`}>{pos.label}</span>
             </div>
 
-            <div className={`rounded-full ring-2 ${pos.borderColor} overflow-hidden mb-2`}>
+            <Link to={`/players/${player.player.id}`} className={`rounded-full ring-2 ${pos.borderColor} overflow-hidden mb-2`}>
               <PlayerAvatar
                 name={player.player.name}
                 avatarUrl={player.player.avatar_url}
                 size={64}
               />
-            </div>
+            </Link>
 
-            <p className="font-semibold text-sm text-center truncate w-full">
-              {player.player.name}
-            </p>
+            <Link to={`/players/${player.player.id}`}>
+              <p className="font-semibold text-sm text-center truncate w-full hover:opacity-80 transition-opacity">
+                {player.player.name}
+              </p>
+            </Link>
 
             <p className={`text-lg font-bold ${result >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               {result >= 0 ? '+' : ''}{result}
