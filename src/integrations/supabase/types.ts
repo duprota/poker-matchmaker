@@ -44,6 +44,7 @@ export type Database = {
           roi: number
           roi_factor: number
           sos_multiplier: number
+          tier: string | null
         }
         Insert: {
           base_points: number
@@ -56,6 +57,7 @@ export type Database = {
           roi: number
           roi_factor: number
           sos_multiplier: number
+          tier?: string | null
         }
         Update: {
           base_points?: number
@@ -68,6 +70,7 @@ export type Database = {
           roi?: number
           roi_factor?: number
           sos_multiplier?: number
+          tier?: string | null
         }
         Relationships: [
           {
@@ -506,6 +509,7 @@ export type Database = {
           date: string
           group_id: string | null
           id: string
+          is_grand_slam: boolean | null
           manager_id: string | null
           name: string | null
           place: string | null
@@ -517,6 +521,7 @@ export type Database = {
           date?: string
           group_id?: string | null
           id?: string
+          is_grand_slam?: boolean | null
           manager_id?: string | null
           name?: string | null
           place?: string | null
@@ -528,6 +533,7 @@ export type Database = {
           date?: string
           group_id?: string | null
           id?: string
+          is_grand_slam?: boolean | null
           manager_id?: string | null
           name?: string | null
           place?: string | null
