@@ -82,6 +82,15 @@ export const FinalizeGameForm = ({
       if (ratingError) {
         console.error("Rating calculation error (non-blocking):", ratingError);
       }
+
+      // Calculate ATP points
+      console.log("Calculating ATP points for game:", gameId);
+      const { error: atpError } = await supabase.functions.invoke("calculate-ratings", {
+        body: { game_id: gameId, action: "calculate-atp" },
+      });
+      if (atpError) {
+        console.error("ATP calculation error (non-blocking):", atpError);
+      }
       
       console.log("Game finalization completed successfully");
       toast({

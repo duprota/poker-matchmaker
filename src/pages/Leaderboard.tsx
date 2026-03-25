@@ -309,6 +309,10 @@ const Leaderboard = () => {
           <TabsContent value="skill" className="mt-2 md:mt-4">
             <SkillRatingTable />
           </TabsContent>
+
+          <TabsContent value="atp" className="mt-2 md:mt-4">
+            <AtpRankingTable />
+          </TabsContent>
         </Tabs>
 
         {sortedLeaderboard && (
