@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      atp_config: {
+        Row: {
+          id: string
+          updated_at: string | null
+          window_size: number
+        }
+        Insert: {
+          id?: string
+          updated_at?: string | null
+          window_size?: number
+        }
+        Update: {
+          id?: string
+          updated_at?: string | null
+          window_size?: number
+        }
+        Relationships: []
+      }
+      atp_points: {
+        Row: {
+          base_points: number
+          created_at: string | null
+          game_id: string
+          id: string
+          player_id: string
+          position: number
+          raw_points: number
+          roi: number
+          roi_factor: number
+          sos_multiplier: number
+        }
+        Insert: {
+          base_points: number
+          created_at?: string | null
+          game_id: string
+          id?: string
+          player_id: string
+          position: number
+          raw_points: number
+          roi: number
+          roi_factor: number
+          sos_multiplier: number
+        }
+        Update: {
+          base_points?: number
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          player_id?: string
+          position?: number
+          raw_points?: number
+          roi?: number
+          roi_factor?: number
+          sos_multiplier?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atp_points_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atp_points_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atp_points_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bot_config: {
         Row: {
           api_url: string | null
@@ -155,6 +234,13 @@ export type Database = {
             foreignKeyName: "expense_splits_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_splits_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -191,6 +277,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_paid_by_player_id_fkey"
+            columns: ["paid_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
             referencedColumns: ["id"]
           },
           {
@@ -259,6 +352,13 @@ export type Database = {
             foreignKeyName: "game_history_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -319,6 +419,13 @@ export type Database = {
             foreignKeyName: "game_players_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -360,6 +467,13 @@ export type Database = {
             foreignKeyName: "game_transactions_from_player_id_fkey"
             columns: ["from_player_id"]
             isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_transactions_from_player_id_fkey"
+            columns: ["from_player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -368,6 +482,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_transactions_to_player_id_fkey"
+            columns: ["to_player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
             referencedColumns: ["id"]
           },
           {
@@ -454,6 +575,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
             referencedColumns: ["id"]
           },
           {
@@ -549,6 +677,13 @@ export type Database = {
             foreignKeyName: "ledger_entries_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -580,6 +715,13 @@ export type Database = {
           vote_type?: Database["public"]["Enums"]["player_vote_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "player_feedback_to_player_id_fkey"
+            columns: ["to_player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "player_feedback_to_player_id_fkey"
             columns: ["to_player_id"]
@@ -629,6 +771,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rating_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
             referencedColumns: ["id"]
           },
           {
@@ -722,6 +871,13 @@ export type Database = {
             foreignKeyName: "poker_hands_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poker_hands_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -778,6 +934,13 @@ export type Database = {
             foreignKeyName: "settlement_items_from_player_id_fkey"
             columns: ["from_player_id"]
             isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_items_from_player_id_fkey"
+            columns: ["from_player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -786,6 +949,13 @@ export type Database = {
             columns: ["settlement_id"]
             isOneToOne: false
             referencedRelation: "settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_items_to_player_id_fkey"
+            columns: ["to_player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
             referencedColumns: ["id"]
           },
           {
@@ -820,7 +990,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      atp_ranking: {
+        Row: {
+          avatar_url: string | null
+          games_scored: number | null
+          id: string | null
+          name: string | null
+          score_atp: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       promote_to_manager: { Args: { user_id: string }; Returns: undefined }
