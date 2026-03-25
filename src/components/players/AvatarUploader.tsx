@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Cropper, { Area } from 'react-easy-crop';
-import { Camera, Upload, Save, X, SwitchCamera } from 'lucide-react';
+import { Camera, Upload, Save, X, SwitchCamera, User } from 'lucide-react';
+import BoringAvatar from 'boring-avatars';
+import { AvatarGallery } from './AvatarGallery';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
@@ -10,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 
 interface AvatarUploaderProps {
   playerId: string;
+  playerName?: string;
   currentAvatar?: string | null;
   onAvatarChange: (url: string) => Promise<void>;
   size?: 'sm' | 'lg';
@@ -57,10 +60,11 @@ function createImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size = 'sm' }: AvatarUploaderProps) => {
+export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAvatarChange, size = 'sm' }: AvatarUploaderProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [sourceImg, setSourceImg] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -194,7 +198,7 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
   };
 
   const sizeClasses = size === 'lg' ? 'w-24 h-24' : 'w-10 h-10';
-  const textSize = size === 'lg' ? 'text-3xl' : 'text-sm';
+  
 
   return (
     <>
@@ -205,7 +209,12 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
         {currentAvatar ? (
           <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover" />
         ) : (
-          <div className={`${textSize} font-bold text-muted-foreground`}>?</div>
+          <BoringAvatar
+            size={size === 'lg' ? 96 : 40}
+            name={playerName || playerId}
+            variant="beam"
+            colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
+          />
         )}
       </div>
 
@@ -230,6 +239,14 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
             >
               <Camera className="h-8 w-8" />
               <span>Tirar uma foto</span>
+            </Button>
+            <Button
+              onClick={() => { setIsDialogOpen(false); setIsGalleryOpen(true); }}
+              variant="outline"
+              className="w-full py-8 flex flex-col items-center justify-center h-auto gap-2"
+            >
+              <User className="h-8 w-8" />
+              <span>Escolher um avatar</span>
             </Button>
             <input
               ref={fileInputRef}
@@ -352,6 +369,17 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Galeria de avatares DiceBear */}
+      <AvatarGallery
+        open={isGalleryOpen}
+        onOpenChange={setIsGalleryOpen}
+        playerName={playerName || playerId}
+        onSelect={async (url) => {
+          await onAvatarChange(url);
+          toast({ title: 'Sucesso', description: 'Avatar atualizado com sucesso' });
+        }}
+      />
     </>
   );
 };
