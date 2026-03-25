@@ -201,33 +201,26 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
     }
   };
   
+  const sizeClasses = size === 'lg' ? 'w-24 h-24' : 'w-10 h-10';
+  const textSize = size === 'lg' ? 'text-3xl' : 'text-sm';
+
   return (
     <>
-      <div className="flex items-center gap-4">
-        <div 
-          className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center cursor-pointer border-2 border-primary relative"
-          onClick={() => setIsDialogOpen(true)}
-        >
-          {currentAvatar ? (
-            <img
-              src={currentAvatar}
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="text-2xl font-bold text-muted-foreground">
-              ?
-            </div>
-          )}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsDialogOpen(true)}
-        >
-          <Camera className="mr-2 h-4 w-4" />
-          Alterar foto
-        </Button>
+      <div
+        className={`${sizeClasses} rounded-full overflow-hidden bg-muted flex items-center justify-center cursor-pointer border-2 border-primary/30 hover:border-primary transition-colors relative flex-shrink-0`}
+        onClick={() => setIsDialogOpen(true)}
+      >
+        {currentAvatar ? (
+          <img
+            src={currentAvatar}
+            alt="Avatar"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className={`${textSize} font-bold text-muted-foreground`}>
+            ?
+          </div>
+        )}
       </div>
       
       {/* Dialog para escolher método de upload */}
