@@ -1,353 +1,200 @@
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { Pencil, Trash2, Key } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { AvatarUploader } from "@/components/players/AvatarUploader";
 
 type Player = Tables<"players">;
 
+interface PlayerMiniStats {
+  games: number;
+  net: number;
+}
+
 const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [newPlayerName, setNewPlayerName] = useState("");
-  const [newPlayerEmail, setNewPlayerEmail] = useState("");
-  const [newPlayerPixKey, setNewPlayerPixKey] = useState("");
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [statsMap, setStatsMap] = useState<Record<string, PlayerMiniStats>>({});
+  const [search, setSearch] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPix, setNewPix] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPlayers();
+    fetchMiniStats();
   }, []);
 
   const fetchPlayers = async () => {
-    try {
-      console.log("Fetching players...");
-      const { data, error } = await supabase.from("players").select("*");
-      
-      if (error) {
-        throw error;
-      }
-
-      console.log("Players fetched:", data);
-      setPlayers(data || []);
-    } catch (error) {
-      console.error("Error fetching players:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load players",
-        variant: "destructive",
-      });
+    const { data, error } = await supabase.from("players").select("*").order("name");
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao carregar jogadores", variant: "destructive" });
+      return;
     }
+    setPlayers(data || []);
+  };
+
+  const fetchMiniStats = async () => {
+    const { data, error } = await supabase
+      .from("game_players")
+      .select("player_id, initial_buyin, total_rebuys, final_result, games!inner(status)")
+      .eq("games.status", "completed")
+      .not("final_result", "is", null);
+
+    if (error) return;
+
+    const map: Record<string, PlayerMiniStats> = {};
+    (data || []).forEach((gp: any) => {
+      const pid = gp.player_id;
+      if (!map[pid]) map[pid] = { games: 0, net: 0 };
+      map[pid].games += 1;
+      const invested = gp.initial_buyin + gp.total_rebuys * gp.initial_buyin;
+      map[pid].net += gp.final_result - invested;
+    });
+    setStatsMap(map);
   };
 
   const addPlayer = async () => {
-    if (!newPlayerName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please provide a name",
-        variant: "destructive",
-      });
+    if (!newName.trim()) {
+      toast({ title: "Erro", description: "Informe o nome", variant: "destructive" });
       return;
     }
-
     setLoading(true);
-    try {
-      console.log("Adding new player:", { 
-        name: newPlayerName, 
-        email: newPlayerEmail || null,
-        pix_key: newPlayerPixKey 
-      });
-      
-      const { data, error } = await supabase
-        .from("players")
-        .insert([
-          {
-            name: newPlayerName.trim(),
-            email: newPlayerEmail.trim() || null,
-            pix_key: newPlayerPixKey.trim() || null,
-          },
-        ])
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from("players")
+      .insert([{ name: newName.trim(), email: newEmail.trim() || null, pix_key: newPix.trim() || null }])
+      .select()
+      .single();
 
-      if (error) {
-        throw error;
-      }
-
-      console.log("Player added successfully:", data);
-      setPlayers([...players, data]);
-      setNewPlayerName("");
-      setNewPlayerEmail("");
-      setNewPlayerPixKey("");
-      toast({
-        title: "Success",
-        description: "Player added successfully",
-      });
-    } catch (error) {
-      console.error("Error adding player:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add player",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao adicionar", variant: "destructive" });
+    } else {
+      setPlayers((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewName("");
+      setNewEmail("");
+      setNewPix("");
+      setAddOpen(false);
+      toast({ title: "Sucesso", description: "Jogador adicionado" });
     }
+    setLoading(false);
   };
 
-  const updatePlayer = async () => {
-    if (!editingPlayer || !editingPlayer.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Please provide a name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      console.log("Updating player:", editingPlayer);
-      const { error } = await supabase
-        .from("players")
-        .update({
-          name: editingPlayer.name.trim(),
-          email: editingPlayer.email?.trim() || null,
-          pix_key: editingPlayer.pix_key?.trim() || null,
-        })
-        .eq("id", editingPlayer.id);
-
-      if (error) {
-        throw error;
-      }
-
-      setPlayers(players.map(p => 
-        p.id === editingPlayer.id ? editingPlayer : p
-      ));
-      setEditingPlayer(null);
-      toast({
-        title: "Success",
-        description: "Player updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating player:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update player",
-        variant: "destructive",
-      });
-    }
+  const updatePlayerAvatar = async (playerId: string, url: string) => {
+    const { error } = await supabase.from("players").update({ avatar_url: url }).eq("id", playerId);
+    if (error) throw error;
+    setPlayers((prev) => prev.map((p) => (p.id === playerId ? { ...p, avatar_url: url } : p)));
   };
 
-  const deletePlayer = async (playerId: string) => {
-    try {
-      console.log("Deleting player:", playerId);
-      const { error } = await supabase
-        .from("players")
-        .delete()
-        .eq("id", playerId);
+  const filtered = useMemo(
+    () =>
+      players.filter((p) =>
+        p.name.toLowerCase().includes(search.toLowerCase())
+      ),
+    [players, search]
+  );
 
-      if (error) {
-        throw error;
-      }
-
-      setPlayers(players.filter(p => p.id !== playerId));
-      toast({
-        title: "Success",
-        description: "Player deleted successfully",
-      });
-    } catch (error) {
-      console.error("Error deleting player:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete player",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updatePlayerAvatar = async (playerId: string, avatarUrl: string) => {
-    try {
-      console.log("Updating player avatar:", playerId, avatarUrl);
-      const { error } = await supabase
-        .from("players")
-        .update({ avatar_url: avatarUrl })
-        .eq("id", playerId);
-
-      if (error) {
-        throw error;
-      }
-
-      setPlayers(players.map(p => 
-        p.id === playerId ? { ...p, avatar_url: avatarUrl } : p
-      ));
-      
-      if (editingPlayer?.id === playerId) {
-        setEditingPlayer({ ...editingPlayer, avatar_url: avatarUrl });
-      }
-
-      return Promise.resolve();
-    } catch (error) {
-      console.error("Error updating player avatar:", error);
-      return Promise.reject(error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
-        <Navigation />
-        <div className="container mx-auto py-8">
-          <p className="text-foreground font-medium">Loading players...</p>
-        </div>
-      </div>
-    );
-  }
+  const fmt = (v: number) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted">
+    <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">Players</h1>
-        
-        <Card className="p-6 mb-8 bg-card/80 backdrop-blur-sm border-primary/10">
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Input
-                placeholder="Player name"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-              />
-              <Input
-                placeholder="Player email (optional)"
-                type="email"
-                value={newPlayerEmail}
-                onChange={(e) => setNewPlayerEmail(e.target.value)}
-              />
-              <Input
-                placeholder="PIX key (optional)"
-                value={newPlayerPixKey}
-                onChange={(e) => setNewPlayerPixKey(e.target.value)}
-                className="flex items-center"
-              />
-            </div>
-            <Button 
-              onClick={addPlayer} 
-              disabled={loading}
-              className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              {loading ? "Adding..." : "Add Player"}
-            </Button>
-          </div>
-        </Card>
+      <div className="container mx-auto py-4 px-4 max-w-lg">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold text-foreground">Jogadores</h1>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          </Button>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {players.map((player) => (
-            <Card 
-              key={player.id} 
-              className="p-6 bg-card/80 backdrop-blur-sm border-primary/10 hover:border-primary/20 transition-all duration-200 hover:shadow-lg group"
-            >
-              <div className="flex justify-between items-start">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <AvatarUploader
-                      playerId={player.id}
-                      currentAvatar={player.avatar_url}
-                      onAvatarChange={(url) => updatePlayerAvatar(player.id, url)}
-                    />
-                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {player.name}
-                    </h3>
-                  </div>
-                  {player.email && (
-                    <p className="text-muted-foreground">{player.email}</p>
-                  )}
-                  {player.pix_key && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Key className="h-4 w-4" />
-                      <span>{player.pix_key}</span>
-                    </div>
-                  )}
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar jogador..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        {/* Player list */}
+        <div className="space-y-1">
+          {filtered.map((player) => {
+            const st = statsMap[player.id];
+            const net = st?.net ?? 0;
+            return (
+              <div
+                key={player.id}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                onClick={() => navigate(`/players/${player.id}`)}
+              >
+                <AvatarUploader
+                  playerId={player.id}
+                  currentAvatar={player.avatar_url}
+                  onAvatarChange={(url) => updatePlayerAvatar(player.id, url)}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">{player.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {st ? `${st.games} jogos` : "0 jogos"}
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditingPlayer(player)}
-                        className="hover:bg-primary/10"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-card/95 backdrop-blur-lg">
-                      <DialogHeader>
-                        <DialogTitle>Edit Player</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="flex justify-center mb-4">
-                          <AvatarUploader
-                            playerId={editingPlayer?.id || ''}
-                            currentAvatar={editingPlayer?.avatar_url}
-                            onAvatarChange={(url) => updatePlayerAvatar(editingPlayer?.id || '', url)}
-                          />
-                        </div>
-                        <Input
-                          placeholder="Player name"
-                          value={editingPlayer?.name || ""}
-                          onChange={(e) => setEditingPlayer(prev => 
-                            prev ? { ...prev, name: e.target.value } : null
-                          )}
-                        />
-                        <Input
-                          placeholder="Player email (optional)"
-                          type="email"
-                          value={editingPlayer?.email || ""}
-                          onChange={(e) => setEditingPlayer(prev => 
-                            prev ? { ...prev, email: e.target.value } : null
-                          )}
-                        />
-                        <Input
-                          placeholder="PIX key (optional)"
-                          value={editingPlayer?.pix_key || ""}
-                          onChange={(e) => setEditingPlayer(prev => 
-                            prev ? { ...prev, pix_key: e.target.value } : null
-                          )}
-                        />
-                        <Button 
-                          onClick={updatePlayer} 
-                          className="w-full bg-primary hover:bg-primary/90"
-                        >
-                          Update Player
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deletePlayer(player.id)}
-                    className="hover:bg-destructive/10 hover:text-destructive"
+                <div className="text-right flex-shrink-0">
+                  <p
+                    className={`text-sm font-semibold ${
+                      net > 0
+                        ? "text-emerald-500"
+                        : net < 0
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    }`}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    {fmt(net)}
+                  </p>
                 </div>
               </div>
-            </Card>
-          ))}
+            );
+          })}
+          {filtered.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhum jogador encontrado.
+            </p>
+          )}
         </div>
+
+        {/* Add dialog */}
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Novo Jogador</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <Input placeholder="Nome *" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <Input placeholder="Email (opcional)" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+              <Input placeholder="Chave PIX (opcional)" value={newPix} onChange={(e) => setNewPix(e.target.value)} />
+              <Button onClick={addPlayer} disabled={loading} className="w-full">
+                {loading ? "Adicionando..." : "Adicionar"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
