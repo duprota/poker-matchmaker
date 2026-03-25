@@ -155,6 +155,11 @@ const PlayerProfile = () => {
         {/* KPIs */}
         {stats && <PlayerKPICards stats={stats} />}
 
+        {/* Rating Card */}
+        {player && (
+          <RatingCard playerId={player.id} mu={player.mu} sigma={player.sigma} skillScore={player.skill_score} ratingGames={player.rating_games} />
+        )}
+
         {/* Extra stats row */}
         {stats && (
           <div className="flex justify-around mt-3 mb-4">
@@ -182,6 +187,9 @@ const PlayerProfile = () => {
           <TabsList className="w-full">
             <TabsTrigger value="progress" className="flex-1">
               <TrendingUp className="h-4 w-4 mr-1" /> Progresso
+            </TabsTrigger>
+            <TabsTrigger value="rating" className="flex-1">
+              <Brain className="h-4 w-4 mr-1" /> Rating
             </TabsTrigger>
             <TabsTrigger value="games" className="flex-1">
               <TrendingDown className="h-4 w-4 mr-1" /> Jogos
@@ -219,6 +227,10 @@ const PlayerProfile = () => {
                 Sem dados de progresso ainda.
               </p>
             )}
+          </TabsContent>
+
+          <TabsContent value="rating">
+            <RatingHistoryChart playerId={id} />
           </TabsContent>
 
           <TabsContent value="games">
