@@ -198,7 +198,7 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
   };
 
   const sizeClasses = size === 'lg' ? 'w-24 h-24' : 'w-10 h-10';
-  const textSize = size === 'lg' ? 'text-3xl' : 'text-sm';
+  
 
   return (
     <>
