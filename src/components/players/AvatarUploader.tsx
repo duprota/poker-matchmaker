@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Cropper, { Area } from 'react-easy-crop';
-import { Camera, Upload, Save, X, SwitchCamera } from 'lucide-react';
+import { Camera, Upload, Save, X, SwitchCamera, User } from 'lucide-react';
+import BoringAvatar from 'boring-avatars';
+import { AvatarGallery } from './AvatarGallery';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
