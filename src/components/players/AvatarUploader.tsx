@@ -240,6 +240,14 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
               <Camera className="h-8 w-8" />
               <span>Tirar uma foto</span>
             </Button>
+            <Button
+              onClick={() => { setIsDialogOpen(false); setIsGalleryOpen(true); }}
+              variant="outline"
+              className="w-full py-8 flex flex-col items-center justify-center h-auto gap-2"
+            >
+              <User className="h-8 w-8" />
+              <span>Escolher um avatar</span>
+            </Button>
             <input
               ref={fileInputRef}
               type="file"
