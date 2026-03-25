@@ -369,6 +369,17 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Galeria de avatares DiceBear */}
+      <AvatarGallery
+        open={isGalleryOpen}
+        onOpenChange={setIsGalleryOpen}
+        playerName={playerName || playerId}
+        onSelect={async (url) => {
+          await onAvatarChange(url);
+          toast({ title: 'Sucesso', description: 'Avatar atualizado com sucesso' });
+        }}
+      />
     </>
   );
 };
