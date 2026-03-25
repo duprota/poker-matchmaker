@@ -51,6 +51,8 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
 
   const style = DICEBEAR_STYLES[styleIndex];
+  const hasFixedSeeds = 'fixedSeeds' in style && style.fixedSeeds;
+  const displaySeeds = hasFixedSeeds ? style.fixedSeeds as readonly string[] : seeds;
 
   function generateSeeds(base: string) {
     return Array.from({ length: 12 }, (_, i) => `${base}-${i}-${Math.random().toString(36).slice(2, 6)}`);
