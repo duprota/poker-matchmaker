@@ -35,7 +35,8 @@ export const useGameDetails = (gameId: string | undefined) => {
           player:players (
             id,
             name,
-            email
+            email,
+            avatar_url
           )
         `)
         .eq("game_id", gameId);
