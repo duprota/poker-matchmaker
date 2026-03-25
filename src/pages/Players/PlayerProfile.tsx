@@ -368,6 +368,9 @@ const PlayerProfile = () => {
           <RatingCard playerId={player.id} mu={player.mu} sigma={player.sigma} skillScore={player.skill_score} ratingGames={player.rating_games} />
         )}
 
+        {/* ATP Card */}
+        {player && <AtpCard playerId={player.id} />}
+
         {/* Extra stats row */}
         {stats && (
           <div className="flex justify-around mt-3 mb-4">
