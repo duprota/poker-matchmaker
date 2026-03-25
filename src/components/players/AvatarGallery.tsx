@@ -137,9 +137,11 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
 
           {/* Actions */}
           <div className="p-4 border-t bg-background flex items-center gap-3">
-            <Button variant="outline" size="icon" onClick={shuffleSeeds}>
-              <Shuffle className="h-4 w-4" />
-            </Button>
+            {!hasFixedSeeds && (
+              <Button variant="outline" size="icon" onClick={shuffleSeeds}>
+                <Shuffle className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               className="flex-1"
               disabled={!selectedUrl}
