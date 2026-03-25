@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // ── Weng-Lin (Plackett-Luce) math ──────────────────────────────────────
-const BETA = 4.1665; // σ_default / 2
+const BETA = 4.1665;
 const KAPPA = 0.0001;
 const BETA_SQ = BETA * BETA;
 
@@ -18,12 +18,6 @@ function pdf(x: number): number {
 function cdf(x: number): number {
   const t = 1 / (1 + 0.2316419 * Math.abs(x));
   const d = 0.3989422804014327;
-  const p =
-    d *
-    t *
-    (-0.3565638 +
-      t * (1.781478 + t * (-1.8212560 + t * (1.3302744 + t * -1.8212560))));
-  // Horner approximation (Abramowitz & Stegun)
   const poly =
     t *
     (0.31938153 +
@@ -41,7 +35,7 @@ interface Rating {
 
 function wengLinUpdate(
   ratings: Rating[],
-  ranks: number[] // 1-indexed, lower = better
+  ranks: number[]
 ): Rating[] {
   const n = ratings.length;
   const newRatings: Rating[] = ratings.map((r) => ({ mu: r.mu, sigma: r.sigma }));
@@ -58,7 +52,6 @@ function wengLinUpdate(
       const c = Math.sqrt(2 * BETA_SQ + sigmaI * sigmaI + sigmaJ * sigmaJ);
       const muDiff = (ratings[i].mu - ratings[j].mu) / c;
 
-      // i beat j?
       if (ranks[i] < ranks[j]) {
         const v = pdf(muDiff) / cdf(muDiff);
         const w = v * (v + muDiff);
@@ -70,7 +63,6 @@ function wengLinUpdate(
         muDelta -= (sigmaI * sigmaI / c) * v;
         sigmaDelta += (sigmaI * sigmaI / (c * c)) * w;
       }
-      // ties: no update
     }
 
     newRatings[i].mu = ratings[i].mu + muDelta / (n - 1);
@@ -84,6 +76,21 @@ function wengLinUpdate(
 
 function skillScore(mu: number, sigma: number): number {
   return (mu - 3 * sigma) * 40;
+}
+
+// ── ATP Points Calculation ─────────────────────────────────────────────
+function calculateBasePoints(position: number, totalPlayers: number): number {
+  if (position === 1) return 100;
+  if (position === 2) return 60;
+  if (position === 3) return 40;
+  return Math.max(0, 10 * (totalPlayers - position));
+}
+
+function calculateRoiFactor(roi: number): number {
+  if (roi >= 0) {
+    return Math.log(Math.E + roi / 100);
+  }
+  return 1 / (1 + 0.5 * Math.abs(roi / 100));
 }
 
 // ── Handler ────────────────────────────────────────────────────────────
@@ -103,6 +110,10 @@ Deno.serve(async (req) => {
       return await recalculateAll(supabase);
     }
 
+    if (action === "recalculate-all-atp") {
+      return await recalculateAllAtp(supabase);
+    }
+
     if (!game_id) {
       return new Response(JSON.stringify({ error: "game_id required" }), {
         status: 400,
@@ -116,6 +127,14 @@ Deno.serve(async (req) => {
 
     if (action === "revert") {
       return await revertForGame(supabase, game_id);
+    }
+
+    if (action === "calculate-atp") {
+      return await calculateAtpForGame(supabase, game_id);
+    }
+
+    if (action === "revert-atp") {
+      return await revertAtpForGame(supabase, game_id);
     }
 
     return new Response(JSON.stringify({ error: "invalid action" }), {
@@ -132,7 +151,6 @@ Deno.serve(async (req) => {
 });
 
 async function calculateForGame(supabase: any, gameId: string) {
-  // 1. Get game players with final_result
   const { data: gamePlayers, error: gpErr } = await supabase
     .from("game_players")
     .select("player_id, final_result")
@@ -147,13 +165,11 @@ async function calculateForGame(supabase: any, gameId: string) {
     );
   }
 
-  // 2. Sort by final_result DESC → rank 1 = highest
   const sorted = [...gamePlayers].sort(
     (a: any, b: any) => b.final_result - a.final_result
   );
   const playerIds = sorted.map((p: any) => p.player_id);
 
-  // Assign ranks (handle ties)
   const ranks: number[] = [];
   for (let i = 0; i < sorted.length; i++) {
     if (i === 0) {
@@ -165,7 +181,6 @@ async function calculateForGame(supabase: any, gameId: string) {
     }
   }
 
-  // 3. Get current ratings
   const { data: players, error: pErr } = await supabase
     .from("players")
     .select("id, mu, sigma, rating_games")
@@ -179,10 +194,8 @@ async function calculateForGame(supabase: any, gameId: string) {
     return { mu: Number(p?.mu ?? 25), sigma: Number(p?.sigma ?? 8.333) };
   });
 
-  // 4. Calculate new ratings
   const newRatings = wengLinUpdate(ratings, ranks);
 
-  // 5. Save snapshots and update players
   const historyRows = playerIds.map((id: string, i: number) => ({
     player_id: id,
     game_id: gameId,
@@ -193,7 +206,6 @@ async function calculateForGame(supabase: any, gameId: string) {
     skill_score_after: skillScore(newRatings[i].mu, newRatings[i].sigma),
   }));
 
-  // Delete existing snapshots for this game (idempotent)
   await supabase
     .from("player_rating_history")
     .delete()
@@ -205,7 +217,6 @@ async function calculateForGame(supabase: any, gameId: string) {
 
   if (histErr) throw histErr;
 
-  // Update each player
   for (let i = 0; i < playerIds.length; i++) {
     const currentPlayer = playerMap.get(playerIds[i]);
     const { error: upErr } = await supabase
@@ -227,7 +238,6 @@ async function calculateForGame(supabase: any, gameId: string) {
 }
 
 async function revertForGame(supabase: any, gameId: string) {
-  // Get snapshots
   const { data: snapshots, error: sErr } = await supabase
     .from("player_rating_history")
     .select("*")
@@ -241,7 +251,6 @@ async function revertForGame(supabase: any, gameId: string) {
     );
   }
 
-  // Restore each player's before values
   for (const snap of snapshots) {
     const restoredScore = skillScore(snap.mu_before, snap.sigma_before);
     const { error: upErr } = await supabase
@@ -256,7 +265,6 @@ async function revertForGame(supabase: any, gameId: string) {
     if (upErr) throw upErr;
   }
 
-  // Delete snapshots
   const { error: delErr } = await supabase
     .from("player_rating_history")
     .delete()
@@ -273,7 +281,6 @@ async function revertForGame(supabase: any, gameId: string) {
 async function recalculateAll(supabase: any) {
   console.log("Starting full recalculation...");
 
-  // Reset all players
   const { error: resetErr } = await supabase
     .from("players")
     .update({ mu: 25, sigma: 8.333, skill_score: 0, rating_games: 0 })
@@ -281,7 +288,6 @@ async function recalculateAll(supabase: any) {
 
   if (resetErr) throw resetErr;
 
-  // Delete all history
   const { error: delErr } = await supabase
     .from("player_rating_history")
     .delete()
@@ -289,7 +295,6 @@ async function recalculateAll(supabase: any) {
 
   if (delErr) throw delErr;
 
-  // Get all completed games ordered by date
   const { data: games, error: gErr } = await supabase
     .from("games")
     .select("id, date")
@@ -304,6 +309,144 @@ async function recalculateAll(supabase: any) {
     const result = await response.json();
     if (result.success) processed++;
     console.log(`Processed game ${game.id}: ${JSON.stringify(result)}`);
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, games_processed: processed, total_games: games.length }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// ── ATP Functions ──────────────────────────────────────────────────────
+
+async function calculateAtpForGame(supabase: any, gameId: string) {
+  // 1. Get game players with results
+  const { data: gamePlayers, error: gpErr } = await supabase
+    .from("game_players")
+    .select("player_id, final_result, initial_buyin, total_rebuys")
+    .eq("game_id", gameId)
+    .not("final_result", "is", null);
+
+  if (gpErr) throw gpErr;
+  if (!gamePlayers || gamePlayers.length < 2) {
+    return new Response(
+      JSON.stringify({ message: "Not enough players for ATP", count: gamePlayers?.length }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // 2. Get skill_scores of all participants for SoS
+  const playerIds = gamePlayers.map((p: any) => p.player_id);
+  const { data: players, error: pErr } = await supabase
+    .from("players")
+    .select("id, skill_score")
+    .in("id", playerIds);
+
+  if (pErr) throw pErr;
+  const skillMap = new Map(players.map((p: any) => [p.id, Number(p.skill_score ?? 0)]));
+
+  // 3. Sort by final_result DESC to derive positions
+  const sorted = [...gamePlayers].sort(
+    (a: any, b: any) => b.final_result - a.final_result
+  );
+
+  // Assign positions (handle ties)
+  const positions: number[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i === 0) {
+      positions.push(1);
+    } else if (sorted[i].final_result === sorted[i - 1].final_result) {
+      positions.push(positions[i - 1]);
+    } else {
+      positions.push(i + 1);
+    }
+  }
+
+  const totalPlayers = sorted.length;
+  const atpRows: any[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const gp = sorted[i];
+    const pid = gp.player_id;
+    const position = positions[i];
+
+    // ROI calculation
+    const investment = gp.initial_buyin * (1 + gp.total_rebuys);
+    const roi = investment > 0 ? ((gp.final_result - investment) / gp.initial_buyin) * 100 : 0;
+
+    // Base points
+    const basePoints = calculateBasePoints(position, totalPlayers);
+
+    // SoS: average skill_score of OTHER players / 100, min 0.5
+    const otherSkills = sorted
+      .filter((_: any, j: number) => j !== i)
+      .map((p: any) => skillMap.get(p.player_id) ?? 0);
+    const avgSkill = otherSkills.length > 0
+      ? otherSkills.reduce((a: number, b: number) => a + b, 0) / otherSkills.length
+      : 0;
+    const sos = Math.max(0.5, avgSkill / 100);
+
+    // ROI factor
+    const roiFactor = calculateRoiFactor(roi);
+
+    // Raw points
+    const rawPoints = basePoints * sos * roiFactor;
+
+    atpRows.push({
+      player_id: pid,
+      game_id: gameId,
+      raw_points: rawPoints,
+      base_points: basePoints,
+      sos_multiplier: sos,
+      roi_factor: roiFactor,
+      position,
+      roi,
+    });
+  }
+
+  // Delete existing (idempotent)
+  await supabase.from("atp_points").delete().eq("game_id", gameId);
+
+  const { error: insertErr } = await supabase.from("atp_points").insert(atpRows);
+  if (insertErr) throw insertErr;
+
+  return new Response(
+    JSON.stringify({ success: true, atp_calculated: atpRows.length }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+async function revertAtpForGame(supabase: any, gameId: string) {
+  const { error } = await supabase.from("atp_points").delete().eq("game_id", gameId);
+  if (error) throw error;
+
+  return new Response(
+    JSON.stringify({ success: true, message: "ATP points reverted" }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+async function recalculateAllAtp(supabase: any) {
+  console.log("Starting full ATP recalculation...");
+
+  // Delete all ATP points
+  await supabase.from("atp_points").delete().gte("id", "00000000-0000-0000-0000-000000000000");
+
+  // Get all completed games ordered chronologically
+  const { data: games, error: gErr } = await supabase
+    .from("games")
+    .select("id, date")
+    .eq("status", "completed")
+    .order("date", { ascending: true });
+
+  if (gErr) throw gErr;
+
+  let processed = 0;
+  for (const game of games) {
+    const response = await calculateAtpForGame(supabase, game.id);
+    const result = await response.json();
+    if (result.success) processed++;
+    console.log(`ATP processed game ${game.id}: ${JSON.stringify(result)}`);
   }
 
   return new Response(
