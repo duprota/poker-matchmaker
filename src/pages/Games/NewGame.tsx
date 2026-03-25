@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
+import { Switch } from "@/components/ui/switch";
+import { Trophy } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -28,75 +30,47 @@ const NewGame = () => {
   const [name, setName] = useState<string>("");
   const [place, setPlace] = useState<string>("");
   const [date, setDate] = useState<Date>(new Date());
+  const [isGrandSlam, setIsGrandSlam] = useState(false);
 
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        console.log("Fetching players...");
         const { data, error } = await supabase.from("players").select("*");
         if (error) {
-          console.error("Error fetching players:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load players",
-            variant: "destructive",
-          });
+          toast({ title: "Error", description: "Failed to load players", variant: "destructive" });
           return;
         }
-        console.log("Players fetched successfully:", data);
         setPlayers(data);
-      } catch (error) {
-        console.error("Error in fetchPlayers:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load players",
-          variant: "destructive",
-        });
+      } catch {
+        toast({ title: "Error", description: "Failed to load players", variant: "destructive" });
       }
     };
-
     fetchPlayers();
   }, [toast]);
 
   const handleCreateGame = async () => {
     if (selectedPlayers.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one player",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please select at least one player", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
-      console.log("Starting game creation process...");
-      
-      // Create new game with 'created' status instead of 'ongoing'
       const { data: gameData, error: gameError } = await supabase
         .from("games")
         .insert([{ 
           status: "created",
           name,
           place,
-          date: date.toISOString()
+          date: date.toISOString(),
+          is_grand_slam: isGrandSlam,
         }])
         .select()
         .single();
 
-      if (gameError) {
-        console.error("Error creating game:", gameError);
-        throw new Error(gameError.message);
-      }
+      if (gameError) throw new Error(gameError.message);
+      if (!gameData) throw new Error("Failed to create game - no data returned");
 
-      if (!gameData) {
-        console.error("No game data returned after creation");
-        throw new Error("Failed to create game - no data returned");
-      }
-
-      console.log("Game created successfully:", gameData);
-
-      // Add selected players to the game
       const gamePlayers = selectedPlayers.map((playerId) => ({
         game_id: gameData.id,
         player_id: playerId,
@@ -108,21 +82,11 @@ const NewGame = () => {
         .from("game_players")
         .insert(gamePlayers);
 
-      if (playersError) {
-        console.error("Error adding players to game:", playersError);
-        throw new Error(playersError.message);
-      }
+      if (playersError) throw new Error(playersError.message);
 
-      console.log("Players added successfully");
-
-      toast({
-        title: "Success",
-        description: "Game created successfully",
-      });
-
+      toast({ title: "Success", description: "Game created successfully" });
       navigate("/games");
     } catch (error) {
-      console.error("Error in handleCreateGame:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create game",
@@ -204,6 +168,24 @@ const NewGame = () => {
                 value={buyIn}
                 onChange={(e) => setBuyIn(Number(e.target.value))}
                 className="max-w-xs"
+              />
+            </div>
+
+            {/* Grand Slam toggle */}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              <div className="flex-1">
+                <Label htmlFor="grand-slam" className="text-sm font-medium cursor-pointer">
+                  Grand Slam 🏆
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Marca este jogo como evento especial (2000 pts para o 1º)
+                </p>
+              </div>
+              <Switch
+                id="grand-slam"
+                checked={isGrandSlam}
+                onCheckedChange={setIsGrandSlam}
               />
             </div>
 

@@ -78,19 +78,18 @@ function skillScore(mu: number, sigma: number): number {
   return (mu - 3 * sigma) * 40;
 }
 
-// ── ATP Points Calculation ─────────────────────────────────────────────
-function calculateBasePoints(position: number, totalPlayers: number): number {
-  if (position === 1) return 100;
-  if (position === 2) return 60;
-  if (position === 3) return 40;
-  return Math.max(0, 10 * (totalPlayers - position));
-}
+// ── ATP Tier Points ───────────────────────────────────────────────────
+const TIER_POINTS: Record<string, number[]> = {
+  "250":        [250, 150, 100, 60, 30],
+  "500":        [500, 300, 200, 120, 60],
+  "1000":       [1000, 600, 400, 240, 120],
+  "grand_slam": [2000, 1200, 800, 480, 240],
+};
 
-function calculateRoiFactor(roi: number): number {
-  if (roi >= 0) {
-    return Math.log(Math.E + roi / 100);
-  }
-  return 1 / (1 + 0.5 * Math.abs(roi / 100));
+function getTierPointsForPosition(tier: string, position: number): number {
+  const points = TIER_POINTS[tier] || TIER_POINTS["250"];
+  if (position < 1 || position > 5) return 0;
+  return points[position - 1];
 }
 
 // ── Handler ────────────────────────────────────────────────────────────
@@ -317,7 +316,70 @@ async function recalculateAll(supabase: any) {
   );
 }
 
-// ── ATP Functions ──────────────────────────────────────────────────────
+// ── ATP Functions (Tier-based) ────────────────────────────────────────
+
+async function determineTier(supabase: any, gameId: string, avgSkill: number): Promise<string> {
+  // Check if game is marked as Grand Slam
+  const { data: game } = await supabase
+    .from("games")
+    .select("is_grand_slam")
+    .eq("id", gameId)
+    .single();
+
+  if (game?.is_grand_slam) return "grand_slam";
+
+  // Get avg skill_score of all completed games to compute percentiles
+  const { data: allGames } = await supabase
+    .from("games")
+    .select("id")
+    .eq("status", "completed");
+
+  if (!allGames || allGames.length < 3) {
+    // Not enough history — default to 250
+    return "250";
+  }
+
+  // Get avg skill per game
+  const gameIds = allGames.map((g: any) => g.id);
+  const { data: allGamePlayers } = await supabase
+    .from("game_players")
+    .select("game_id, player_id")
+    .in("game_id", gameIds)
+    .not("final_result", "is", null);
+
+  if (!allGamePlayers) return "250";
+
+  // Get all player skill scores
+  const allPlayerIds = [...new Set(allGamePlayers.map((gp: any) => gp.player_id))];
+  const { data: allPlayers } = await supabase
+    .from("players")
+    .select("id, skill_score")
+    .in("id", allPlayerIds);
+
+  const skillMap = new Map((allPlayers || []).map((p: any) => [p.id, Number(p.skill_score ?? 0)]));
+
+  // Compute avg skill per game
+  const gameSkillAvgs: number[] = [];
+  const gameGrouped = new Map<string, string[]>();
+  for (const gp of allGamePlayers) {
+    if (!gameGrouped.has(gp.game_id)) gameGrouped.set(gp.game_id, []);
+    gameGrouped.get(gp.game_id)!.push(gp.player_id);
+  }
+
+  for (const [, playerIds] of gameGrouped) {
+    const skills = playerIds.map((pid: string) => skillMap.get(pid) ?? 0);
+    const avg = skills.reduce((a: number, b: number) => a + b, 0) / skills.length;
+    gameSkillAvgs.push(avg);
+  }
+
+  gameSkillAvgs.sort((a, b) => a - b);
+  const p33 = gameSkillAvgs[Math.floor(gameSkillAvgs.length * 0.33)];
+  const p66 = gameSkillAvgs[Math.floor(gameSkillAvgs.length * 0.66)];
+
+  if (avgSkill <= p33) return "250";
+  if (avgSkill <= p66) return "500";
+  return "1000";
+}
 
 async function calculateAtpForGame(supabase: any, gameId: string) {
   // 1. Get game players with results
@@ -335,7 +397,7 @@ async function calculateAtpForGame(supabase: any, gameId: string) {
     );
   }
 
-  // 2. Get skill_scores of all participants for SoS
+  // 2. Get skill_scores of all participants
   const playerIds = gamePlayers.map((p: any) => p.player_id);
   const { data: players, error: pErr } = await supabase
     .from("players")
@@ -345,7 +407,15 @@ async function calculateAtpForGame(supabase: any, gameId: string) {
   if (pErr) throw pErr;
   const skillMap = new Map(players.map((p: any) => [p.id, Number(p.skill_score ?? 0)]));
 
-  // 3. Sort by final_result DESC to derive positions
+  // 3. Calculate avg skill of this game
+  const skills = playerIds.map((pid: string) => skillMap.get(pid) ?? 0);
+  const avgSkill = skills.reduce((a: number, b: number) => a + b, 0) / skills.length;
+
+  // 4. Determine tier
+  const tier = await determineTier(supabase, gameId, avgSkill);
+  console.log(`Game ${gameId}: avgSkill=${avgSkill.toFixed(1)}, tier=${tier}`);
+
+  // 5. Sort by final_result DESC to derive positions
   const sorted = [...gamePlayers].sort(
     (a: any, b: any) => b.final_result - a.final_result
   );
@@ -362,7 +432,6 @@ async function calculateAtpForGame(supabase: any, gameId: string) {
     }
   }
 
-  const totalPlayers = sorted.length;
   const atpRows: any[] = [];
 
   for (let i = 0; i < sorted.length; i++) {
@@ -370,37 +439,23 @@ async function calculateAtpForGame(supabase: any, gameId: string) {
     const pid = gp.player_id;
     const position = positions[i];
 
-    // ROI calculation
+    // Points based on tier and position (top 5 only)
+    const rawPoints = getTierPointsForPosition(tier, position);
+
+    // ROI for reference
     const investment = gp.initial_buyin * (1 + gp.total_rebuys);
     const roi = investment > 0 ? ((gp.final_result - investment) / gp.initial_buyin) * 100 : 0;
-
-    // Base points
-    const basePoints = calculateBasePoints(position, totalPlayers);
-
-    // SoS: average skill_score of OTHER players / 100, min 0.5
-    const otherSkills = sorted
-      .filter((_: any, j: number) => j !== i)
-      .map((p: any) => skillMap.get(p.player_id) ?? 0);
-    const avgSkill = otherSkills.length > 0
-      ? otherSkills.reduce((a: number, b: number) => a + b, 0) / otherSkills.length
-      : 0;
-    const sos = Math.max(0.5, avgSkill / 100);
-
-    // ROI factor
-    const roiFactor = calculateRoiFactor(roi);
-
-    // Raw points
-    const rawPoints = basePoints * sos * roiFactor;
 
     atpRows.push({
       player_id: pid,
       game_id: gameId,
       raw_points: rawPoints,
-      base_points: basePoints,
-      sos_multiplier: sos,
-      roi_factor: roiFactor,
+      base_points: rawPoints,
+      sos_multiplier: 1,
+      roi_factor: 1,
       position,
       roi,
+      tier,
     });
   }
 
@@ -411,7 +466,7 @@ async function calculateAtpForGame(supabase: any, gameId: string) {
   if (insertErr) throw insertErr;
 
   return new Response(
-    JSON.stringify({ success: true, atp_calculated: atpRows.length }),
+    JSON.stringify({ success: true, atp_calculated: atpRows.length, tier }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
