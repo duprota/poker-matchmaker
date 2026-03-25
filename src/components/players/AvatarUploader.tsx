@@ -13,6 +13,7 @@ interface AvatarUploaderProps {
   playerId: string;
   currentAvatar?: string | null;
   onAvatarChange: (url: string) => Promise<void>;
+  size?: 'sm' | 'lg';
 }
 
 export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: AvatarUploaderProps) => {
