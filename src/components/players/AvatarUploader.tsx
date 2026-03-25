@@ -16,7 +16,7 @@ interface AvatarUploaderProps {
   size?: 'sm' | 'lg';
 }
 
-export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange }: AvatarUploaderProps) => {
+export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size = 'sm' }: AvatarUploaderProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [sourceImg, setSourceImg] = useState<string | null>(null);
