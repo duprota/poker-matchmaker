@@ -7,6 +7,7 @@ import { LeaderboardHeader } from "@/components/leaderboard/LeaderboardHeader";
 import { LeaderboardShare } from "@/components/leaderboard/LeaderboardShare";
 import { LeaderboardRankings } from "@/components/leaderboard/LeaderboardRankings";
 import { LeaderboardProgress } from "@/components/leaderboard/LeaderboardProgress";
+import { SkillRatingTable } from "@/components/leaderboard/SkillRatingTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -280,9 +281,10 @@ const Leaderboard = () => {
         />
 
         <Tabs defaultValue="rankings" className="mt-4 md:mt-8">
-          <TabsList className="w-full grid grid-cols-2 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <TabsList className="w-full grid grid-cols-3 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <TabsTrigger value="rankings" className="text-sm md:text-base">Rankings</TabsTrigger>
-            <TabsTrigger value="progress" className="text-sm md:text-base">Progress Chart</TabsTrigger>
+            <TabsTrigger value="progress" className="text-sm md:text-base">Progresso</TabsTrigger>
+            <TabsTrigger value="skill" className="text-sm md:text-base">Skill Rating</TabsTrigger>
           </TabsList>
           
           <TabsContent value="rankings" className="mt-2 md:mt-4">
@@ -300,6 +302,10 @@ const Leaderboard = () => {
             ) : (
               <LeaderboardProgress playerProgressData={playerProgressData || []} />
             )}
+          </TabsContent>
+
+          <TabsContent value="skill" className="mt-2 md:mt-4">
+            <SkillRatingTable />
           </TabsContent>
         </Tabs>
 

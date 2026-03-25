@@ -17,7 +17,9 @@ import { PlayerGameHistory } from "@/components/players/PlayerGameHistory";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Pencil, Trash2, Key, Mail, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Key, Mail, TrendingUp, TrendingDown, Brain } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { Tables } from "@/integrations/supabase/types";
 import {
   LineChart,
@@ -31,6 +33,107 @@ import {
 } from "recharts";
 
 type Player = Tables<"players">;
+
+// ── Rating Card ──
+const RatingCard = ({ playerId, mu, sigma, skillScore, ratingGames }: {
+  playerId: string;
+  mu: number | null;
+  sigma: number | null;
+  skillScore: number | null;
+  ratingGames: number | null;
+}) => {
+  const games = ratingGames ?? 0;
+  const isProvisional = games < 3;
+  const rating = Math.round(skillScore ?? 0);
+
+  if (games === 0) return null;
+
+  return (
+    <Card className="p-3 mt-3 bg-card/80 backdrop-blur-sm border-border/50">
+      <div className="flex items-center gap-2 mb-1">
+        <Brain className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Skill Rating</span>
+        {isProvisional && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/50 text-yellow-500">
+            Provisório
+          </Badge>
+        )}
+      </div>
+      <div className="flex items-baseline gap-4">
+        <p className="text-2xl font-bold text-primary">{rating}</p>
+        <div className="flex gap-3 text-xs text-muted-foreground">
+          <span>μ {Number(mu ?? 25).toFixed(1)}</span>
+          <span>σ {Number(sigma ?? 8.333).toFixed(1)}</span>
+          <span>{games} {games === 1 ? "jogo" : "jogos"}</span>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// ── Rating History Chart ──
+const RatingHistoryChart = ({ playerId }: { playerId: string | undefined }) => {
+  const { data: history, isLoading } = useQuery({
+    queryKey: ["rating-history", playerId],
+    enabled: !!playerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_rating_history")
+        .select("skill_score_after, created_at, game_id, games!inner(date, name)")
+        .eq("player_id", playerId!)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        // Fallback: query without join if games relation fails
+        const { data: fallback, error: fbErr } = await supabase
+          .from("player_rating_history")
+          .select("skill_score_after, created_at, game_id")
+          .eq("player_id", playerId!)
+          .order("created_at", { ascending: true });
+        if (fbErr) throw fbErr;
+        return (fallback || []).map((r: any) => ({
+          date: new Date(r.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+          rating: Math.round(r.skill_score_after),
+        }));
+      }
+
+      return (data || []).map((r: any) => ({
+        date: new Date(r.games?.date || r.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        rating: Math.round(r.skill_score_after),
+      }));
+    },
+  });
+
+  if (isLoading) return <p className="text-center text-muted-foreground py-8">Carregando...</p>;
+  if (!history || history.length === 0) {
+    return <p className="text-center text-muted-foreground py-8">Sem histórico de rating ainda.</p>;
+  }
+
+  return (
+    <Card className="p-4 mt-2">
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart data={history}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="date" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+          <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+          <Tooltip
+            formatter={(value: number) => [`${value}`, "Rating"]}
+            labelFormatter={(label) => `Jogo: ${label}`}
+          />
+          <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+          <Line
+            type="monotone"
+            dataKey="rating"
+            name="Skill Rating"
+            stroke="hsl(var(--primary))"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
 
 const PlayerProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -153,6 +256,11 @@ const PlayerProfile = () => {
         {/* KPIs */}
         {stats && <PlayerKPICards stats={stats} />}
 
+        {/* Rating Card */}
+        {player && (
+          <RatingCard playerId={player.id} mu={player.mu} sigma={player.sigma} skillScore={player.skill_score} ratingGames={player.rating_games} />
+        )}
+
         {/* Extra stats row */}
         {stats && (
           <div className="flex justify-around mt-3 mb-4">
@@ -180,6 +288,9 @@ const PlayerProfile = () => {
           <TabsList className="w-full">
             <TabsTrigger value="progress" className="flex-1">
               <TrendingUp className="h-4 w-4 mr-1" /> Progresso
+            </TabsTrigger>
+            <TabsTrigger value="rating" className="flex-1">
+              <Brain className="h-4 w-4 mr-1" /> Rating
             </TabsTrigger>
             <TabsTrigger value="games" className="flex-1">
               <TrendingDown className="h-4 w-4 mr-1" /> Jogos
@@ -217,6 +328,10 @@ const PlayerProfile = () => {
                 Sem dados de progresso ainda.
               </p>
             )}
+          </TabsContent>
+
+          <TabsContent value="rating">
+            <RatingHistoryChart playerId={id} />
           </TabsContent>
 
           <TabsContent value="games">
