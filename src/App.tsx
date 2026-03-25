@@ -13,6 +13,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Financials from "./pages/Financials";
 import Expenses from "./pages/Expenses";
 import Bot from "./pages/Bot";
+import AtpInfo from "./pages/AtpInfo";
 
 const queryClient = new QueryClient({
   defaultOptions: {
