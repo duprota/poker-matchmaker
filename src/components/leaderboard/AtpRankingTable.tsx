@@ -12,6 +12,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AtpConfigPanel } from "./AtpConfigPanel";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface AtpPlayer {
   id: string;
@@ -21,10 +24,12 @@ interface AtpPlayer {
   games_scored: number;
 }
 
-interface AtpPointDetail {
-  raw_points: number;
-  game_id: string;
-}
+const TIER_LABELS: Record<string, { label: string; color: string }> = {
+  "250": { label: "ATP 250", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  "500": { label: "ATP 500", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  "1000": { label: "ATP 1000", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  "grand_slam": { label: "Grand Slam 🏆", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+};
 
 const fetchAtpRanking = async (): Promise<AtpPlayer[]> => {
   const { data, error } = await supabase
@@ -46,9 +51,7 @@ const fetchAtpConfig = async (): Promise<{ window_size: number }> => {
   return data as any;
 };
 
-// Fetch the oldest game in the window per player (the one that will drop next)
 const fetchDroppingPoints = async (): Promise<Record<string, number>> => {
-  // Get current window_size
   const { data: config } = await supabase
     .from("atp_config")
     .select("window_size")
@@ -58,7 +61,6 @@ const fetchDroppingPoints = async (): Promise<Record<string, number>> => {
   if (!config) return {};
   const windowSize = (config as any).window_size;
 
-  // Get recent games within window
   const { data: games } = await supabase
     .from("games")
     .select("id, date")
@@ -68,10 +70,8 @@ const fetchDroppingPoints = async (): Promise<Record<string, number>> => {
 
   if (!games || games.length < windowSize) return {};
 
-  // The oldest game in the window is the last one
   const oldestGameId = games[games.length - 1].id;
 
-  // Get ATP points for that game
   const { data: points } = await supabase
     .from("atp_points")
     .select("player_id, raw_points")
@@ -98,6 +98,9 @@ const RankIcon = ({ position }: { position: number }) => {
 };
 
 export const AtpRankingTable = () => {
+  const { toast } = useToast();
+  const [recalculating, setRecalculating] = useState(false);
+
   const { data: players, isLoading } = useQuery({
     queryKey: ["atp-ranking"],
     queryFn: fetchAtpRanking,
@@ -112,6 +115,22 @@ export const AtpRankingTable = () => {
     queryKey: ["atp-dropping-points"],
     queryFn: fetchDroppingPoints,
   });
+
+  const handleRecalculateAll = async () => {
+    setRecalculating(true);
+    try {
+      const { error } = await supabase.functions.invoke("calculate-ratings", {
+        body: { action: "recalculate-all-atp" },
+      });
+      if (error) throw error;
+      toast({ title: "Sucesso", description: "Pontos ATP recalculados com o novo sistema de tiers." });
+      window.location.reload();
+    } catch {
+      toast({ title: "Erro", description: "Falha ao recalcular.", variant: "destructive" });
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Carregando ranking ATP...</div>;
@@ -134,10 +153,22 @@ export const AtpRankingTable = () => {
       {/* Info banner */}
       <div className="flex items-start gap-2 mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
         <HelpCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-        <p className="text-xs text-muted-foreground">
-          Ranking baseado nos <strong className="text-foreground">últimos {windowSize} jogos</strong> do grupo.
-          Jogos anteriores são descartados automaticamente. Quando um novo jogo acontece, o jogo mais antigo da janela sai e seus pontos são perdidos.
-        </p>
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p>
+            Ranking baseado nos <strong className="text-foreground">últimos {windowSize} jogos</strong> do grupo.
+            Apenas os <strong className="text-foreground">top 5</strong> de cada mesa pontuam.
+          </p>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {Object.entries(TIER_LABELS).map(([key, { label, color }]) => (
+              <Badge key={key} variant="outline" className={cn("text-[10px] px-1.5 py-0", color)}>
+                {label}
+              </Badge>
+            ))}
+          </div>
+          <p className="text-[10px] mt-1">
+            Tier definido pela média de skill dos jogadores (percentis P33/P66). Grand Slam é manual.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -179,7 +210,7 @@ export const AtpRankingTable = () => {
                         <TooltipTrigger asChild>
                           <span className="flex items-center gap-0.5 text-orange-500 cursor-help">
                             <AlertTriangle className="w-3 h-3" />
-                            -{dropping.toFixed(1)}
+                            -{dropping}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-[220px] text-xs">
@@ -195,14 +226,13 @@ export const AtpRankingTable = () => {
                   <TooltipTrigger asChild>
                     <div className="text-right shrink-0 cursor-help">
                       <div className="text-lg font-bold text-primary">
-                        {player.score_atp.toFixed(1)}
+                        {Math.round(player.score_atp)}
                       </div>
                       <div className="text-[10px] text-muted-foreground">pts ATP</div>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="left" className="max-w-[260px] text-xs">
-                    Soma dos pontos brutos dos últimos {windowSize} jogos do grupo.
-                    Pontos = Base × SoS × f(ROI). Base: 1º=100, 2º=60, 3º=40.
+                    Soma dos pontos dos últimos {windowSize} jogos. Pontos por posição: 1º até 5º dependendo do tier (ATP 250/500/1000/Grand Slam).
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -213,6 +243,19 @@ export const AtpRankingTable = () => {
 
       {/* Config panel */}
       <AtpConfigPanel />
+
+      {/* Recalculate button */}
+      <div className="mt-3 text-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRecalculateAll}
+          disabled={recalculating}
+          className="text-xs text-muted-foreground"
+        >
+          {recalculating ? "Recalculando..." : "Recalcular todos os pontos ATP"}
+        </Button>
+      </div>
     </TooltipProvider>
   );
 };
