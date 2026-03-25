@@ -1,4 +1,5 @@
 import { Crown } from "lucide-react";
+import { Link } from "react-router-dom";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
 import { PlayerAvatar } from "./PlayerAvatar";
@@ -23,7 +24,7 @@ export const WinnerCard = ({ winner }: WinnerCardProps) => {
       </div>
 
       {/* Avatar with golden glow */}
-      <div className="relative mb-4">
+      <Link to={`/players/${winner.player.id}`} className="relative mb-4 cursor-pointer">
         <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 opacity-60 blur-md animate-pulse" />
         <div className="relative rounded-full ring-4 ring-yellow-500/80 overflow-hidden">
           <PlayerAvatar
@@ -32,12 +33,14 @@ export const WinnerCard = ({ winner }: WinnerCardProps) => {
             size={120}
           />
         </div>
-      </div>
+      </Link>
 
       {/* Name */}
-      <h2 className="relative text-2xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 bg-clip-text text-transparent mb-1">
-        {winner.player.name}
-      </h2>
+      <Link to={`/players/${winner.player.id}`}>
+        <h2 className="relative text-2xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 bg-clip-text text-transparent mb-1 hover:opacity-80 transition-opacity">
+          {winner.player.name}
+        </h2>
+      </Link>
 
       {/* Profit */}
       <p className="relative text-3xl font-bold text-green-500 mb-1">

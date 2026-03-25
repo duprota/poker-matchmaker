@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { GamePlayer } from "@/types/game";
 import { calculateFinalResult } from "../GameCalculations";
@@ -38,15 +39,17 @@ export const Rankings = ({ players, skipTop = 0 }: RankingsProps) => {
                   <span className="text-sm font-bold text-muted-foreground w-6">
                     #{position}
                   </span>
-                  <div className="rounded-full overflow-hidden flex-shrink-0">
+                  <Link to={`/players/${player.player.id}`} className="rounded-full overflow-hidden flex-shrink-0">
                     <PlayerAvatar
                       name={player.player.name}
                       avatarUrl={player.player.avatar_url}
                       size={32}
                     />
-                  </div>
+                  </Link>
                   <div>
-                    <p className="font-medium text-sm">{player.player.name}</p>
+                    <Link to={`/players/${player.player.id}`} className="hover:opacity-80 transition-opacity">
+                      <p className="font-medium text-sm">{player.player.name}</p>
+                    </Link>
                     {Object.entries(specialHands).length > 0 && (
                       <div className="flex items-center gap-1 mt-0.5">
                         {Object.entries(specialHands).map(([handType, count]) => (
