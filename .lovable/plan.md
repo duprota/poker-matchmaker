@@ -1,137 +1,123 @@
 
 
-# Skill Rating System (Weng-Lin / OpenSkill) — Plano de Implementação
+# Fase 2 — Ranking ATP com Janela Fixa (Sliding Window)
 
 ## Resumo
 
-Implementar um sistema de rating baseado no algoritmo Weng-Lin (Plackett-Luce) que calcula μ (habilidade estimada) e σ (incerteza) para cada jogador, gerando um `skill_score = (μ - 3σ) × 40`. O rating é recalculado automaticamente quando um jogo é finalizado e revertido se o jogo for reaberto.
+Ranking permanente onde apenas os pontos dos **últimos N jogos do grupo** são considerados. Jogos anteriores são completamente descartados. N é configurável pelo admin. Isso substitui o decay multiplicativo por uma janela fixa simples.
+
+## Mecânica Simplificada
+
+```text
+Score_ATP(jogador) = Σ raw_points(jogo_k)
+                     onde jogo_k está entre os últimos N jogos do grupo
+```
+
+- Se o grupo jogou 50 jogos e N=15, apenas os jogos #36 a #50 contam
+- Um jogador que não participou de nenhum dos últimos 15 jogos tem Score = 0 e não aparece no ranking
+- Quando um novo jogo acontece, o jogo #36 sai da janela automaticamente — os pontos daquele jogo são perdidos
+- Isso permite ao jogador ver exatamente quais pontos cairão no próximo jogo
 
 ## 1. Migration Supabase
 
-### 1a. Adicionar colunas em `players`
+### Tabela `atp_points`
+Armazena pontos brutos por jogador/jogo:
+- `id UUID PK`, `player_id` (FK players), `game_id` (FK games)
+- `raw_points NUMERIC`, `base_points NUMERIC`, `sos_multiplier NUMERIC`, `roi_factor NUMERIC`
+- `position INTEGER`, `roi NUMERIC`, `created_at TIMESTAMPTZ`
+- UNIQUE(player_id, game_id)
+- RLS: leitura pública, insert/delete público
+
+### Tabela `atp_config`
+Configuração global (1 linha):
+- `id UUID PK`, `window_size INTEGER NOT NULL DEFAULT 15` (CHECK >= 1 AND <= 100), `updated_at TIMESTAMPTZ`
+- Inserir linha inicial com window_size = 15
+- RLS: leitura pública, update para authenticated
+
+### View `atp_ranking`
 ```sql
-ALTER TABLE players
-  ADD COLUMN mu NUMERIC DEFAULT 25,
-  ADD COLUMN sigma NUMERIC DEFAULT 8.333,
-  ADD COLUMN skill_score NUMERIC DEFAULT 0,
-  ADD COLUMN rating_games INTEGER DEFAULT 0;
+WITH recent_games AS (
+  SELECT id, ROW_NUMBER() OVER (ORDER BY date DESC) AS rn
+  FROM games WHERE status = 'completed'
+),
+config AS (SELECT window_size FROM atp_config LIMIT 1)
+SELECT p.id, p.name, p.avatar_url,
+  ROUND(SUM(ap.raw_points)::numeric, 1) AS score_atp,
+  COUNT(ap.id) AS games_scored
+FROM players p
+JOIN atp_points ap ON ap.player_id = p.id
+JOIN recent_games rg ON rg.id = ap.game_id
+CROSS JOIN config c
+WHERE rg.rn <= c.window_size
+GROUP BY p.id, p.name, p.avatar_url
+ORDER BY score_atp DESC;
 ```
 
-### 1b. Criar tabela `player_rating_history`
-```sql
-CREATE TABLE player_rating_history (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-  game_id UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
-  mu_before NUMERIC NOT NULL,
-  sigma_before NUMERIC NOT NULL,
-  mu_after NUMERIC NOT NULL,
-  sigma_after NUMERIC NOT NULL,
-  skill_score_after NUMERIC NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(player_id, game_id)
-);
+## 2. Edge Function: Expandir `calculate-ratings`
 
-ALTER TABLE player_rating_history ENABLE ROW LEVEL SECURITY;
+Adicionar ações na Edge Function existente:
 
-CREATE POLICY "Everyone can view rating history"
-  ON player_rating_history FOR SELECT TO public USING (true);
+### `calculate-atp`
+Para cada participante do jogo finalizado:
+1. Derivar posição do `final_result` (DESC)
+2. `ROI = (final_result - initial_buyin*(1+total_rebuys)) / initial_buyin * 100`
+3. `base_points`: 1º=100, 2º=60, 3º=40, demais=max(0, 10*(n-pos))
+4. `SoS = MAX(0.5, AVG(skill_score dos outros jogadores) / 100)`
+5. `f(ROI)`: ROI>=0 → `ln(e + ROI/100)`, ROI<0 → `1/(1+0.5*|ROI/100|)`
+6. `raw_points = base_points * SoS * f(ROI)`
+7. Inserir em `atp_points`
 
-CREATE POLICY "Everyone can insert rating history"
-  ON player_rating_history FOR INSERT TO public WITH CHECK (true);
+### `revert-atp`
+Deleta registros de `atp_points` para o game_id.
 
-CREATE POLICY "Everyone can delete rating history"
-  ON player_rating_history FOR DELETE TO public USING (true);
-```
+### `recalculate-all-atp`
+Processa todos os jogos completed em ordem cronológica para popular dados históricos.
 
-**Nota:** `game_players` não tem coluna `position`. A posição será derivada do `final_result` (ordenado decrescente) no momento do cálculo — quem terminou com mais fichas = posição 1.
-
-## 2. Edge Function: `calculate-ratings`
-
-Uma Edge Function Deno que implementa o algoritmo Weng-Lin internamente (sem dependência externa, ~80 linhas de math puro — distribuição normal, update de μ/σ via Plackett-Luce simplificado).
-
-**Trigger:** Chamada pelo frontend após finalizar ou reabrir um jogo.
-
-**Fluxo — Jogo Finalizado (`completed`):**
-1. Buscar todos `game_players` do jogo com `final_result`
-2. Buscar `mu` e `sigma` atuais de cada jogador em `players`
-3. Ordenar por `final_result` DESC para derivar rankings (posição 1 = maior resultado)
-4. Aplicar algoritmo Weng-Lin (Plackett-Luce) para calcular novos μ e σ
-5. `skill_score = (μ_new - 3 * σ_new) * 40`
-6. Inserir snapshots em `player_rating_history`
-7. Atualizar `players.mu`, `players.sigma`, `players.skill_score`, incrementar `rating_games`
-
-**Fluxo — Jogo Reaberto (reverter):**
-1. Buscar snapshots de `player_rating_history` para o `game_id`
-2. Restaurar `mu_before` e `sigma_before` em `players`
-3. Recalcular `skill_score` com valores restaurados
-4. Deletar os snapshots do jogo
-5. Decrementar `rating_games`
-
-## 3. Integração no Frontend — Trigger Automático
+## 3. Frontend — Trigger
 
 ### `FinalizeGameForm.tsx`
-Após finalizar o jogo com sucesso (status = completed), chamar `supabase.functions.invoke('calculate-ratings', { body: { game_id, action: 'calculate' } })`.
+Após chamar `calculate` (skill rating), chamar `calculate-atp` na mesma Edge Function.
 
-### `GameActions.tsx` (ou onde reabre jogos)
-Ao reabrir jogo, chamar `supabase.functions.invoke('calculate-ratings', { body: { game_id, action: 'revert' } })` antes de mudar o status.
-
-## 4. Novo Tab "Skill Rating" no Leaderboard
+## 4. Nova Tab "Ranking ATP" no Leaderboard
 
 ### `src/pages/Leaderboard.tsx`
-- Adicionar terceira tab "Skill Rating" nas Tabs existentes (Rankings | Progress | Skill Rating)
-- Nova query que busca `players` com `rating_games >= 1`, ordenados por `skill_score DESC, rating_games DESC`
+- 4ª tab: Rankings | Progresso | Skill Rating | **Ranking ATP**
 
-### `src/components/leaderboard/SkillRatingTable.tsx` (novo)
-- Tabela com colunas: Posição | Avatar+Nome | Rating (skill_score formatado) | μ | Jogos
-- Badge "Provisório" para jogadores com `rating_games < 3` (cor amarela, texto menor)
-- Cards estilo mobile com layout similar ao LeaderboardCard existente
+### `src/components/leaderboard/AtpRankingTable.tsx` (novo)
+- Query na view `atp_ranking`
+- Colunas: Posição | Avatar+Nome | Score ATP | Jogos (na janela)
+- Info banner: "Considerando os últimos {N} jogos do grupo. Jogos anteriores não contam."
+- Para cada jogador: mostrar quais pontos cairão quando o próximo jogo acontecer (pontos do jogo mais antigo na janela daquele jogador)
+- Jogadores sem jogos na janela não aparecem
 
-## 5. Atualizar Perfil do Jogador
+### `src/components/leaderboard/AtpConfigPanel.tsx` (novo)
+- Input numérico para `window_size` (1–100)
+- Preview: "Janela atual: últimos {N} jogos. Jogos com mais de {N} partidas atrás são descartados."
+- Botão salvar → UPDATE em `atp_config`
+
+## 5. Perfil do Jogador
 
 ### `src/pages/Players/PlayerProfile.tsx`
-- Adicionar card de Rating acima das tabs existentes (ao lado dos KPIs)
-- Mostrar: skill_score atual, μ, σ, rating_games
-- Badge "Provisório" se < 3 jogos
-
-### Nova tab "Rating" nas tabs do perfil
-- Gráfico de linha (Recharts) com evolução do `skill_score_after` ao longo do tempo
-- Fonte: `player_rating_history` ordenado por `created_at`
-- Mesma estrutura visual do gráfico de progresso existente
-
-### `src/hooks/usePlayerStats.ts`
-- Adicionar query para `player_rating_history` do jogador para alimentar o gráfico
-
-## 6. Inicialização dos Ratings Históricos
-
-Após a migration, criar um script (via Edge Function `calculate-ratings` com action `recalculate-all`) que:
-1. Busca todos os jogos `completed` ordenados por `date ASC`
-2. Para cada jogo, simula o cálculo de rating na ordem cronológica
-3. Popula `player_rating_history` e atualiza `players` com os ratings finais
-
-Isso garante que os 50 jogos existentes gerem dados históricos reais.
+- Card "ATP Score" com: Score ATP atual, posição no ranking, pontos que cairão no próximo jogo
+- Tab "ATP" com gráfico de evolução: eixo X = jogos do grupo, eixo Y = Score ATP acumulado na janela naquele momento
 
 ## Arquivos Impactados
 
 | Arquivo | Ação |
 |---------|------|
-| Migration SQL | Criar colunas em players + tabela player_rating_history |
-| `supabase/functions/calculate-ratings/index.ts` | Criar — Edge Function com Weng-Lin |
-| `src/components/games/FinalizeGameForm.tsx` | Chamar Edge Function após finalizar |
-| `src/components/games/GameActions.tsx` | Chamar Edge Function ao reabrir |
-| `src/pages/Leaderboard.tsx` | Adicionar tab Skill Rating |
-| `src/components/leaderboard/SkillRatingTable.tsx` | Criar — tabela de skill rating |
-| `src/pages/Players/PlayerProfile.tsx` | Card de rating + tab com gráfico |
-| `src/hooks/usePlayerStats.ts` | Adicionar dados de rating history |
+| Migration SQL | Criar `atp_points`, `atp_config`, view `atp_ranking` |
+| `supabase/functions/calculate-ratings/index.ts` | Adicionar `calculate-atp`, `revert-atp`, `recalculate-all-atp` |
+| `src/components/games/FinalizeGameForm.tsx` | Chamar `calculate-atp` após finalizar |
+| `src/pages/Leaderboard.tsx` | Adicionar 4ª tab |
+| `src/components/leaderboard/AtpRankingTable.tsx` | Criar |
+| `src/components/leaderboard/AtpConfigPanel.tsx` | Criar |
+| `src/pages/Players/PlayerProfile.tsx` | Card ATP + tab gráfico |
+| `src/integrations/supabase/types.ts` | Atualizado pela migration |
 
-## Detalhes Técnicos — Weng-Lin (Plackett-Luce)
+## Vantagens da Janela Fixa vs Decay Multiplicativo
 
-Implementação interna na Edge Function (~80 linhas), sem npm. Fórmulas core:
-- **φ(x)**: PDF da normal padrão
-- **Φ(x)**: CDF da normal padrão
-- Para cada par (i vence j): calcular c = √(2β² + σᵢ² + σⱼ²), delta e update
-- β = σ_default / 2 = 4.1665
-- κ (fator de dinâmica) = 0.0001
-
-O skill_score conservador `(μ - 3σ) × 40` penaliza incerteza alta, garantindo que jogadores com poucos jogos não dominem o ranking mesmo com μ alto.
+- **Transparência**: jogador sabe exatamente quais pontos perderá
+- **Simplicidade**: sem fórmulas exponenciais, fácil de explicar
+- **Penaliza ausência**: jogador que para de jogar sai do ranking quando seus jogos saem da janela
+- **Configurável**: admin ajusta N para mais ou menos memória
 
