@@ -3,13 +3,41 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ChevronLeft, ChevronRight, Check, Shuffle } from 'lucide-react';
 
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg';
+
+const ANIMAL_EMOJIS = [
+  { code: '1f42e', label: 'Vaca' },
+  { code: '1f431', label: 'Gato' },
+  { code: '1f436', label: 'Cachorro' },
+  { code: '1f981', label: 'Leão' },
+  { code: '1f42f', label: 'Tigre' },
+  { code: '1f43b', label: 'Urso' },
+  { code: '1f98a', label: 'Raposa' },
+  { code: '1f43a', label: 'Lobo' },
+  { code: '1f985', label: 'Águia' },
+  { code: '1f989', label: 'Coruja' },
+  { code: '1f43c', label: 'Panda' },
+  { code: '1f435', label: 'Macaco' },
+  { code: '1f430', label: 'Coelho' },
+  { code: '1f418', label: 'Elefante' },
+  { code: '1f992', label: 'Girafa' },
+  { code: '1f988', label: 'Tubarão' },
+  { code: '1f40b', label: 'Baleia' },
+  { code: '1f40d', label: 'Cobra' },
+  { code: '1f40a', label: 'Jacaré' },
+  { code: '1f422', label: 'Tartaruga' },
+  { code: '1f427', label: 'Pinguim' },
+  { code: '1f9a9', label: 'Flamingo' },
+  { code: '1f99c', label: 'Papagaio' },
+  { code: '1f434', label: 'Cavalo' },
+  { code: '1f43e', label: 'Capivara' },
+  { code: '1f994', label: 'Ouriço' },
+  { code: '1f98e', label: 'Lagarto' },
+  { code: '1f409', label: 'Dragão' },
+];
+
 const DICEBEAR_STYLES = [
-  { id: 'fun-emoji', label: '🐾 Animais', fixedSeeds: [
-    'vaca', 'capivara', 'gato', 'cachorro', 'leao', 'tigre',
-    'urso', 'raposa', 'lobo', 'aguia', 'coruja', 'panda',
-    'macaco', 'coelho', 'elefante', 'girafa', 'tubarao', 'baleia',
-    'cobra', 'jacare', 'tartaruga', 'pinguim', 'flamingo', 'papagaio',
-  ]},
+  { id: '_animals', label: '🐾 Animais', isAnimalGrid: true },
   { id: 'adventurer', label: 'Aventureiro' },
   { id: 'adventurer-neutral', label: 'Neutro' },
   { id: 'avataaars', label: 'Avataaars' },
@@ -31,8 +59,6 @@ const DICEBEAR_STYLES = [
   { id: 'pixel-art-neutral', label: 'Pixel Neutro' },
   { id: 'thumbs', label: 'Thumbs' },
 ] as const;
-
-type StyleEntry = typeof DICEBEAR_STYLES[number];
 
 function getDiceBearUrl(style: string, seed: string) {
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
