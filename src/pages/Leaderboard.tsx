@@ -7,6 +7,7 @@ import { LeaderboardHeader } from "@/components/leaderboard/LeaderboardHeader";
 import { LeaderboardShare } from "@/components/leaderboard/LeaderboardShare";
 import { LeaderboardRankings } from "@/components/leaderboard/LeaderboardRankings";
 import { LeaderboardProgress } from "@/components/leaderboard/LeaderboardProgress";
+import { SkillRatingTable } from "@/components/leaderboard/SkillRatingTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
