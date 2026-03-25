@@ -60,7 +60,10 @@ function createImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size = 'sm' }: AvatarUploaderProps) => {
+export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAvatarChange, size = 'sm' }: AvatarUploaderProps) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
