@@ -41,6 +41,7 @@ const App = () => (
           <Route path="/financials" element={<Financials />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/bot" element={<Bot />} />
+          <Route path="/atp-info" element={<AtpInfo />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

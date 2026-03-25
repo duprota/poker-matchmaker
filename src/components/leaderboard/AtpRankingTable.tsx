@@ -15,6 +15,7 @@ import { AtpConfigPanel } from "./AtpConfigPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface AtpPlayer {
   id: string;
