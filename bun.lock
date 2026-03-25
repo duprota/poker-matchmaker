@@ -473,7 +473,7 @@
 
     "binary-extensions": ["binary-extensions@2.3.0", "", {}, "sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw=="],
 
-    "boring-avatars": ["boring-avatars@2.0.4", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/boring-avatars/-/boring-avatars-2.0.4.tgz", { "peerDependencies": { "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-xhZO/w/6aFmRfkaWohcl2NfyIy87gK5SBbys8kctZeTGF1Apjpv/10pfUuv+YEfVPkESU/h2Y6tt/Dwp+bIZPw=="],
+    "boring-avatars": ["boring-avatars@2.0.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/boring-avatars/-/boring-avatars-2.0.4.tgz", { "peerDependencies": { "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-xhZO/w/6aFmRfkaWohcl2NfyIy87gK5SBbys8kctZeTGF1Apjpv/10pfUuv+YEfVPkESU/h2Y6tt/Dwp+bIZPw=="],
 
     "brace-expansion": ["brace-expansion@1.1.11", "", { "dependencies": { "balanced-match": "^1.0.0", "concat-map": "0.0.1" } }, "sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA=="],
 
