@@ -1,10 +1,9 @@
-
-import { useState, useRef, useCallback } from 'react';
-import ReactCrop, { type Crop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
-import { Camera, Upload, Save, X } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import Cropper, { Area } from 'react-easy-crop';
+import { Camera, Upload, Save, X, SwitchCamera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -16,191 +15,184 @@ interface AvatarUploaderProps {
   size?: 'sm' | 'lg';
 }
 
+async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d')!;
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height,
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Canvas is empty'))),
+      'image/jpeg',
+      0.92,
+    );
+  });
+}
+
+function createImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.addEventListener('load', () => resolve(img));
+    img.addEventListener('error', (e) => reject(e));
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+  });
+}
+
 export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size = 'sm' }: AvatarUploaderProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [sourceImg, setSourceImg] = useState<string | null>(null);
-  const [crop, setCrop] = useState<Crop>({
-    unit: '%',
-    width: 90,
-    height: 90,
-    x: 5,
-    y: 5,
-  });
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
-  
+
+  const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const reader = new FileReader();
-      
       reader.addEventListener('load', () => {
         setSourceImg(reader.result as string);
         setIsDialogOpen(false);
         setIsCropperOpen(true);
+        setZoom(1);
+        setCrop({ x: 0, y: 0 });
       });
-      
       reader.readAsDataURL(file);
     }
   };
-  
-  const captureFromCamera = async () => {
+
+  // Start camera stream
+  const startCamera = useCallback(async (facing: 'user' | 'environment') => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast({
-          title: "Erro",
-          description: "Seu navegador não suporta acesso à câmera",
-          variant: "destructive"
-        });
+      // Stop any existing stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast({ title: 'Erro', description: 'Seu navegador não suporta acesso à câmera', variant: 'destructive' });
         return;
       }
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-      
-      const video = document.createElement('video');
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      
-      video.srcObject = stream;
-      video.play();
-      
-      video.onloadedmetadata = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        if (context) {
-          context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        }
-        
-        const imageDataUrl = canvas.toDataURL('image/jpeg');
-        setSourceImg(imageDataUrl);
-        
-        stream.getTracks().forEach(track => track.stop());
-        
-        setIsDialogOpen(false);
-        setIsCropperOpen(true);
-      };
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1280 } },
+      });
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível acessar a câmera",
-        variant: "destructive"
-      });
+      toast({ title: 'Erro', description: 'Não foi possível acessar a câmera', variant: 'destructive' });
+      setIsCameraOpen(false);
     }
+  }, [toast]);
+
+  const openCamera = () => {
+    setIsDialogOpen(false);
+    setIsCameraOpen(true);
   };
-  
-  const getCroppedImg = useCallback(async () => {
-    if (!imgRef.current) return null;
-    
-    const image = imgRef.current;
+
+  // Start stream when camera sheet opens
+  useEffect(() => {
+    if (isCameraOpen) {
+      startCamera(facingMode);
+    }
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCameraOpen, facingMode]);
+
+  const captureFrame = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    
-    // Get image dimensions
-    const { naturalWidth, naturalHeight } = image;
-    
-    // Calculate crop dimensions in pixels based on percentages
-    const cropWidthPx = (crop.width * naturalWidth) / 100;
-    const cropHeightPx = (crop.height * naturalHeight) / 100;
-    const cropXPx = (crop.x * naturalWidth) / 100;
-    const cropYPx = (crop.y * naturalHeight) / 100;
-    
-    // Set canvas size to be square (using the maximum dimension)
-    const size = Math.max(cropWidthPx, cropHeightPx);
-    canvas.width = size;
-    canvas.height = size;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-    
-    // Fill the canvas with a transparent background
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Enable high quality image rendering
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    // Calculate offsets to center the cropped portion
-    const offsetX = (size - cropWidthPx) / 2;
-    const offsetY = (size - cropHeightPx) / 2;
-    
-    // Draw the cropped portion of the image onto the canvas
-    ctx.drawImage(
-      image,
-      cropXPx,
-      cropYPx,
-      cropWidthPx,
-      cropHeightPx,
-      offsetX,
-      offsetY,
-      cropWidthPx,
-      cropHeightPx
-    );
-    
-    // Convert canvas to blob
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error('Canvas is empty'));
-            return;
-          }
-          resolve(blob);
-        },
-        'image/jpeg',
-        0.95 // High quality
-      );
-    });
-  }, [crop]);
-  
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg');
+
+    // Stop stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+
+    setSourceImg(dataUrl);
+    setIsCameraOpen(false);
+    setIsCropperOpen(true);
+    setZoom(1);
+    setCrop({ x: 0, y: 0 });
+  };
+
+  const toggleCamera = () => {
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
+  };
+
   const uploadImage = async () => {
     try {
-      if (!sourceImg) return;
-      
+      if (!sourceImg || !croppedAreaPixels) return;
       setIsUploading(true);
-      
-      const croppedImgBlob = await getCroppedImg();
-      if (!croppedImgBlob) {
-        throw new Error('Failed to crop image');
-      }
-      
+
+      const croppedBlob = await getCroppedImg(sourceImg, croppedAreaPixels);
       const fileName = `avatar-${playerId}-${Date.now()}.jpg`;
-      const file = new File([croppedImgBlob], fileName, { type: 'image/jpeg' });
-      
-      const { data, error } = await supabase.storage
-        .from('player-avatars')
-        .upload(fileName, file);
-      
+      const file = new File([croppedBlob], fileName, { type: 'image/jpeg' });
+
+      const { error } = await supabase.storage.from('player-avatars').upload(fileName, file);
       if (error) throw error;
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('player-avatars')
-        .getPublicUrl(fileName);
-      
+
+      const { data: { publicUrl } } = supabase.storage.from('player-avatars').getPublicUrl(fileName);
       await onAvatarChange(publicUrl);
-      
-      toast({
-        title: "Sucesso",
-        description: "Foto de perfil atualizada com sucesso"
-      });
-      
+
+      toast({ title: 'Sucesso', description: 'Foto de perfil atualizada com sucesso' });
       setIsCropperOpen(false);
       setSourceImg(null);
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível fazer upload da imagem",
-        variant: "destructive"
-      });
+      toast({ title: 'Erro', description: 'Não foi possível fazer upload da imagem', variant: 'destructive' });
     } finally {
       setIsUploading(false);
     }
   };
-  
+
   const sizeClasses = size === 'lg' ? 'w-24 h-24' : 'w-10 h-10';
   const textSize = size === 'lg' ? 'text-3xl' : 'text-sm';
 
@@ -211,25 +203,18 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
         onClick={() => setIsDialogOpen(true)}
       >
         {currentAvatar ? (
-          <img
-            src={currentAvatar}
-            alt="Avatar"
-            className="w-full h-full object-cover"
-          />
+          <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover" />
         ) : (
-          <div className={`${textSize} font-bold text-muted-foreground`}>
-            ?
-          </div>
+          <div className={`${textSize} font-bold text-muted-foreground`}>?</div>
         )}
       </div>
-      
-      {/* Dialog para escolher método de upload */}
+
+      {/* Dialog de escolha */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Foto de perfil</DialogTitle>
           </DialogHeader>
-          
           <div className="flex flex-col gap-4">
             <Button
               onClick={() => fileInputRef.current?.click()}
@@ -238,16 +223,14 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
               <Upload className="h-8 w-8" />
               <span>Fazer upload de uma imagem</span>
             </Button>
-            
             <Button
-              onClick={captureFromCamera}
+              onClick={openCamera}
               variant="outline"
               className="w-full py-8 flex flex-col items-center justify-center h-auto gap-2"
             >
               <Camera className="h-8 w-8" />
               <span>Tirar uma foto</span>
             </Button>
-            
             <input
               ref={fileInputRef}
               type="file"
@@ -258,54 +241,105 @@ export const AvatarUploader = ({ playerId, currentAvatar, onAvatarChange, size =
           </div>
         </DialogContent>
       </Dialog>
-      
-      {/* Tela de corte de imagem em tela cheia */}
+
+      {/* Viewfinder ao vivo */}
+      <Sheet open={isCameraOpen} onOpenChange={(open) => { if (!open) setIsCameraOpen(false); }}>
+        <SheetContent side="bottom" className="h-[100dvh] sm:max-w-full p-0 overflow-hidden">
+          <div className="flex flex-col h-full bg-black">
+            <SheetHeader className="p-4 border-b border-white/10">
+              <SheetTitle className="text-white">Tirar foto</SheetTitle>
+            </SheetHeader>
+
+            <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : undefined }}
+              />
+              {/* Circular overlay guide */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 rounded-full border-2 border-white/50" />
+              </div>
+            </div>
+
+            <div className="p-6 flex items-center justify-center gap-8 bg-black">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsCameraOpen(false)}
+                className="text-white hover:bg-white/10"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+
+              <button
+                onClick={captureFrame}
+                className="w-16 h-16 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-colors active:scale-95"
+                aria-label="Capturar foto"
+              />
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleCamera}
+                className="text-white hover:bg-white/10"
+              >
+                <SwitchCamera className="h-6 w-6" />
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Cropper com react-easy-crop */}
       <Sheet open={isCropperOpen} onOpenChange={setIsCropperOpen}>
-        <SheetContent side="bottom" className="h-[95vh] sm:max-w-full p-0 overflow-hidden">
+        <SheetContent side="bottom" className="h-[95dvh] sm:max-w-full p-0 overflow-hidden">
           <div className="flex flex-col h-full">
             <SheetHeader className="p-4 border-b">
-              <SheetTitle>Ajustar foto de perfil</SheetTitle>
+              <SheetTitle>Ajustar foto</SheetTitle>
             </SheetHeader>
-            
+
             {sourceImg && (
               <>
-                <div className="flex-1 overflow-auto flex items-center justify-center bg-black/60 p-2">
-                  <ReactCrop
+                <div className="flex-1 relative bg-black">
+                  <Cropper
+                    image={sourceImg}
                     crop={crop}
-                    onChange={(newCrop) => setCrop(newCrop)}
+                    zoom={zoom}
                     aspect={1}
-                    circularCrop
-                    className="max-h-full flex items-center justify-center"
-                  >
-                    <img
-                      src={sourceImg}
-                      alt="Crop"
-                      ref={imgRef}
-                      className="max-w-full max-h-[80vh] w-auto h-auto object-contain"
-                      style={{ display: 'block' }}
-                      crossOrigin="anonymous"
-                    />
-                  </ReactCrop>
+                    cropShape="round"
+                    showGrid={false}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropComplete={onCropComplete}
+                  />
                 </div>
-                
+
+                <div className="px-6 py-3 bg-background border-t flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">Zoom</span>
+                  <Slider
+                    value={[zoom]}
+                    min={1}
+                    max={3}
+                    step={0.05}
+                    onValueChange={(v) => setZoom(v[0])}
+                    className="flex-1"
+                  />
+                </div>
+
                 <div className="p-4 bg-background border-t flex justify-between items-center">
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setIsCropperOpen(false);
-                      setSourceImg(null);
-                    }}
+                    onClick={() => { setIsCropperOpen(false); setSourceImg(null); }}
                   >
                     <X className="mr-2 h-4 w-4" />
                     Cancelar
                   </Button>
-                  <Button 
-                    onClick={uploadImage} 
-                    disabled={isUploading}
-                  >
-                    {isUploading ? (
-                      <span>Salvando...</span>
-                    ) : (
+                  <Button onClick={uploadImage} disabled={isUploading}>
+                    {isUploading ? 'Salvando...' : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
                         Salvar
