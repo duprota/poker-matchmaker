@@ -589,14 +589,69 @@ export type Database = {
           },
         ]
       }
+      player_rating_history: {
+        Row: {
+          created_at: string | null
+          game_id: string
+          id: string
+          mu_after: number
+          mu_before: number
+          player_id: string
+          sigma_after: number
+          sigma_before: number
+          skill_score_after: number
+        }
+        Insert: {
+          created_at?: string | null
+          game_id: string
+          id?: string
+          mu_after: number
+          mu_before: number
+          player_id: string
+          sigma_after: number
+          sigma_before: number
+          skill_score_after: number
+        }
+        Update: {
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          mu_after?: number
+          mu_before?: number
+          player_id?: string
+          sigma_after?: number
+          sigma_before?: number
+          skill_score_after?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_rating_history_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rating_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           avatar_url: string | null
           created_at: string
           email: string | null
           id: string
+          mu: number | null
           name: string
           pix_key: string | null
+          rating_games: number | null
+          sigma: number | null
+          skill_score: number | null
           user_id: string | null
         }
         Insert: {
@@ -604,8 +659,12 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          mu?: number | null
           name: string
           pix_key?: string | null
+          rating_games?: number | null
+          sigma?: number | null
+          skill_score?: number | null
           user_id?: string | null
         }
         Update: {
@@ -613,8 +672,12 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          mu?: number | null
           name?: string
           pix_key?: string | null
+          rating_games?: number | null
+          sigma?: number | null
+          skill_score?: number | null
           user_id?: string | null
         }
         Relationships: []
