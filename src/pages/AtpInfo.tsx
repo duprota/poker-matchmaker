@@ -253,6 +253,9 @@ const AtpInfo = () => {
           </Card>
         </section>
 
+        {/* Comparação dos Rankings */}
+        <RankingComparisonTable />
+
         {/* Resumo rápido */}
         <section className="mb-6">
           <Card className="p-5 bg-primary/5 border-primary/20">

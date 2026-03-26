@@ -194,35 +194,8 @@ const SkillInfo = () => {
           </Card>
         </section>
 
-        {/* Skill vs ATP */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
-            Skill Rating vs ATP
-          </h2>
-          <Card className="p-5 bg-card/80 border-border/50">
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2 text-[11px] text-muted-foreground font-medium border-b border-border/30 pb-2">
-                <div />
-                <div className="text-center">Skill Rating</div>
-                <div className="text-center">ATP</div>
-              </div>
-              {[
-                { label: "Mede", skill: "Habilidade real", atp: "Desempenho recente" },
-                { label: "Janela", skill: "Todos os jogos", atp: "Últimos N jogos" },
-                { label: "Base", skill: "Resultado relativo", atp: "Posição no jogo" },
-                { label: "Volatilidade", skill: "Estabiliza com o tempo", atp: "Sempre varia" },
-                { label: "Uso", skill: "Classificar habilidade + definir tiers", atp: "Ranking competitivo" },
-              ].map((row) => (
-                <div key={row.label} className="grid grid-cols-3 gap-2 text-xs py-2 border-b border-border/10 last:border-0">
-                  <div className="font-medium text-foreground">{row.label}</div>
-                  <div className="text-center text-muted-foreground">{row.skill}</div>
-                  <div className="text-center text-muted-foreground">{row.atp}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </section>
+        {/* Comparação dos Rankings */}
+        <RankingComparisonTable />
 
         {/* Resumo */}
         <section className="mb-6">

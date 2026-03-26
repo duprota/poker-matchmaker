@@ -45,6 +45,7 @@ const App = () => (
           <Route path="/bot" element={<Bot />} />
           <Route path="/atp-info" element={<AtpInfo />} />
           <Route path="/skill-info" element={<SkillInfo />} />
+          <Route path="/ranking-info" element={<RankingInfo />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
