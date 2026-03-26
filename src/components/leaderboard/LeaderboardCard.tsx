@@ -32,7 +32,7 @@ interface PlayerCardProps {
 }
 
 export const LeaderboardCard = ({ entry, position, rankingType }: PlayerCardProps) => {
-  const archetypeInfo = getArchetypeInfo((entry as any).archetype);
+  const archetypeInfo = getArchetypeInfo(entry.archetype);
   const displayValue = rankingType === "total" 
     ? entry.net_earnings 
     : entry.average_net_earnings;
