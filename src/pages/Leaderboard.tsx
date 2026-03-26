@@ -41,8 +41,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
       game:games(id, date, status),
       final_result,
       initial_buyin,
-      total_rebuys,
-      special_hands
+      total_rebuys
     `)
     .not('final_result', 'is', null);
 
