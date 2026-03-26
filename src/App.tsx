@@ -14,6 +14,7 @@ import Financials from "./pages/Financials";
 import Expenses from "./pages/Expenses";
 import Bot from "./pages/Bot";
 import AtpInfo from "./pages/AtpInfo";
+import SkillInfo from "./pages/SkillInfo";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/bot" element={<Bot />} />
           <Route path="/atp-info" element={<AtpInfo />} />
+          <Route path="/skill-info" element={<SkillInfo />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

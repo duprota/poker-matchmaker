@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Brain, HelpCircle } from "lucide-react";
+import { Trophy, Medal, Brain, HelpCircle, Info } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -77,8 +78,12 @@ export const SkillRatingTable = () => {
         <p className="text-xs text-muted-foreground">
           O <strong className="text-foreground">Rating</strong> mede a habilidade conservadora do jogador usando o algoritmo Weng-Lin.{" "}
           <strong className="text-foreground">μ (mu)</strong> é a habilidade estimada — quanto maior, melhor.{" "}
-          Jogadores com menos de 3 partidas têm rating <strong className="text-foreground">Provisório</strong> (alta incerteza).
+         Jogadores com menos de 3 partidas têm rating <strong className="text-foreground">Provisório</strong> (alta incerteza).
         </p>
+        <Link to="/skill-info" className="flex items-center gap-1 text-xs text-primary hover:underline mt-2 shrink-0">
+          <Info className="w-3.5 h-3.5" />
+          Saiba mais sobre o Skill Rating
+        </Link>
       </div>
 
       <div className="space-y-3">
