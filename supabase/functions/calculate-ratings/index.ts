@@ -230,6 +230,9 @@ async function calculateForGame(supabase: any, gameId: string) {
     if (upErr) throw upErr;
   }
 
+  // Recalculate behavioral profiles for all participants
+  await calculateBehavioralProfiles(supabase, playerIds);
+
   return new Response(
     JSON.stringify({ success: true, updated: playerIds.length }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }

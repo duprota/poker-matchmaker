@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Trophy, Medal, Star, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LeaderboardEntry, RankingType } from "@/types/leaderboard";
+import { getArchetypeInfo } from "@/components/players/BehavioralProfileCard";
 
 const RankIcon = ({ position }: { position: number }) => {
   if (position === 1) return <Trophy className="w-6 h-6 text-yellow-500" />;

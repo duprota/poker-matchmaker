@@ -372,6 +372,17 @@ const PlayerProfile = () => {
         {/* ATP Card */}
         {player && <AtpCard playerId={player.id} />}
 
+        {/* Behavioral Profile Card */}
+        {player && stats && (
+          <BehavioralProfileCard
+            playerId={player.id}
+            rebuyTendency={(player as any).rebuy_tendency}
+            recoveryRate={(player as any).recovery_rate}
+            archetype={(player as any).archetype}
+            gamesPlayed={stats.gamesPlayed}
+          />
+        )}
+
         {/* Extra stats row */}
         {stats && (
           <div className="flex justify-around mt-3 mb-4">
