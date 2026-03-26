@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Trophy, Target, TrendingUp, Clock, Award, Star, Zap, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { RankingComparisonTable } from "@/components/leaderboard/RankingComparisonTable";
 
 const TIER_DATA = [
   {
