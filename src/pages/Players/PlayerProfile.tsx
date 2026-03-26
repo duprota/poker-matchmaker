@@ -18,6 +18,7 @@ import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Pencil, Trash2, Key, Mail, TrendingUp, TrendingDown, Brain, Target } from "lucide-react";
+import { BehavioralProfileCard } from "@/components/players/BehavioralProfileCard";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Tables } from "@/integrations/supabase/types";
