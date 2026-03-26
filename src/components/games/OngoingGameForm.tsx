@@ -44,25 +44,6 @@ export const OngoingGameForm = ({
       setIsProcessing(false);
     }
   };
-  const handleSpecialHandsChange = async (playerId: string, specialHands: {
-    [key: string]: number;
-  }) => {
-    setIsProcessing(true);
-    try {
-      const {
-        error
-      } = await supabase.from("game_players").update({
-        special_hands: specialHands
-      }).eq("id", playerId);
-      if (error) throw error;
-      toast.success("Mãos especiais atualizadas com sucesso!");
-    } catch (error) {
-      console.error("Error updating special hands:", error);
-      toast.error("Erro ao atualizar mãos especiais");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleCashOut = async (playerId: string, finalStack: number) => {
     setIsProcessing(true);
