@@ -30,9 +30,7 @@ export function PlayerGameCard({
 }: PlayerGameCardProps) {
   const isMobile = useIsMobile();
   const totalAmount = player.initial_buyin + player.total_rebuys * player.initial_buyin;
-  const specialHandsCount = player.special_hands ? Object.values(player.special_hands).reduce((sum, count) => sum + count, 0) : 0;
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const [openSpecialHands, setOpenSpecialHands] = useState(false);
   const [openRebuyPanel, setOpenRebuyPanel] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [showCashOut, setShowCashOut] = useState(false);
