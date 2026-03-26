@@ -31,7 +31,7 @@ export const useGameDetails = (gameId: string | undefined) => {
           final_result,
           payment_status,
           payment_amount,
-          special_hands,
+          
           player:players (
             id,
             name,
