@@ -181,7 +181,7 @@ const RankingInfo = () => {
             <ul className="space-y-1.5 text-xs text-muted-foreground">
               <li>✅ Baseado em <strong className="text-foreground">resultados financeiros reais</strong></li>
               <li>✅ Fórmula: <strong className="text-foreground">Resultado − (Buy-in × (1 + Rebuys))</strong></li>
-              <li>✅ 3 modos: <strong className="text-foreground">Total, Média e Special Hands</strong></li>
+              <li>✅ 2 modos: <strong className="text-foreground">Total e Média</strong></li>
               <li>✅ Filtro por <strong className="text-foreground">ano</strong> ou <strong className="text-foreground">All Time</strong></li>
               <li>✅ <strong className="text-foreground">Todos os jogadores</strong> aparecem no ranking</li>
               <li>✅ Inclui métricas como <strong className="text-foreground">ROI, Biggest Win e Total Spent</strong></li>
