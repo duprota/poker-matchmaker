@@ -37,7 +37,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
   let query = supabase
     .from('game_players')
     .select(`
-      player:players(name),
+      player:players(name, archetype),
       game:games(id, date, status),
       final_result,
       initial_buyin,
@@ -84,6 +84,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
         average_winnings: 0,
         net_earnings: 0,
         average_net_earnings: 0,
+        archetype: entry.player.archetype || null,
       };
     }
 

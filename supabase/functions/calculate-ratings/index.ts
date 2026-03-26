@@ -113,6 +113,10 @@ Deno.serve(async (req) => {
       return await recalculateAllAtp(supabase);
     }
 
+    if (action === "recalculate-behavioral") {
+      return await recalculateAllBehavioral(supabase);
+    }
+
     if (!game_id) {
       return new Response(JSON.stringify({ error: "game_id required" }), {
         status: 400,
@@ -229,6 +233,9 @@ async function calculateForGame(supabase: any, gameId: string) {
       .eq("id", playerIds[i]);
     if (upErr) throw upErr;
   }
+
+  // Recalculate behavioral profiles for all participants
+  await calculateBehavioralProfiles(supabase, playerIds);
 
   return new Response(
     JSON.stringify({ success: true, updated: playerIds.length }),
@@ -478,6 +485,63 @@ async function revertAtpForGame(supabase: any, gameId: string) {
 
   return new Response(
     JSON.stringify({ success: true, message: "ATP points reverted" }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// ── Behavioral Profile (RT/RR/Archetype) ────────────────────────────
+async function calculateBehavioralProfiles(supabase: any, playerIds: string[]) {
+  for (const pid of playerIds) {
+    const { data: gps, error } = await supabase
+      .from("game_players")
+      .select("total_rebuys, final_result, initial_buyin, game_id, games!inner(status)")
+      .eq("player_id", pid)
+      .eq("games.status", "completed")
+      .not("final_result", "is", null);
+
+    if (error) { console.error(`Behavioral calc error for ${pid}:`, error); continue; }
+    if (!gps || gps.length < 5) {
+      await supabase.from("players").update({ rebuy_tendency: null, recovery_rate: null, archetype: null }).eq("id", pid);
+      continue;
+    }
+
+    const totalRebuys = gps.reduce((s: number, g: any) => s + Number(g.total_rebuys), 0);
+    const rt = totalRebuys / gps.length;
+
+    const gamesWithRebuy = gps.filter((g: any) => g.total_rebuys > 0);
+    let rr: number | null = null;
+    if (gamesWithRebuy.length > 0) {
+      const recovered = gamesWithRebuy.filter((g: any) => {
+        const invested = g.initial_buyin * (1 + g.total_rebuys);
+        return g.final_result > invested;
+      }).length;
+      rr = (recovered / gamesWithRebuy.length) * 100;
+    } else {
+      rr = 0;
+    }
+
+    let archetype: string;
+    if (rt < 0.5) {
+      archetype = rr !== null && rr >= 50 ? "rocha" : "sniper";
+    } else {
+      archetype = rr !== null && rr >= 50 ? "fenix" : "sangrador";
+    }
+
+    await supabase.from("players").update({
+      rebuy_tendency: Math.round(rt * 100) / 100,
+      recovery_rate: rr !== null ? Math.round(rr * 10) / 10 : null,
+      archetype,
+    }).eq("id", pid);
+  }
+}
+
+async function recalculateAllBehavioral(supabase: any) {
+  console.log("Starting full behavioral recalculation...");
+  const { data: players, error } = await supabase.from("players").select("id");
+  if (error) throw error;
+  await calculateBehavioralProfiles(supabase, players.map((p: any) => p.id));
+  return new Response(
+    JSON.stringify({ success: true, players_processed: players.length }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
