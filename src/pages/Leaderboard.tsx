@@ -84,17 +84,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
         average_winnings: 0,
         net_earnings: 0,
         average_net_earnings: 0,
-        special_hands: {}
       };
-    }
-
-    if (entry.special_hands) {
-      Object.entries(entry.special_hands as { [key: string]: number }).forEach(([handType, count]) => {
-        if (!acc[playerName].special_hands![handType]) {
-          acc[playerName].special_hands![handType] = 0;
-        }
-        acc[playerName].special_hands![handType] += count as number;
-      });
     }
 
     acc[playerName].games_played += 1;
