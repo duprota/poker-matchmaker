@@ -22,7 +22,7 @@ export const PlayerRebuysCard = ({
 }: PlayerRebuysCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-  const [specialHand, setSpecialHand] = useState(null);
+  
   const { toast } = useToast();
   const totalAmount = player.initial_buyin + (player.total_rebuys * player.initial_buyin);
   const [isProcessing, setIsProcessing] = useState(false);
