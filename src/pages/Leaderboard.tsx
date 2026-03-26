@@ -84,6 +84,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
         average_winnings: 0,
         net_earnings: 0,
         average_net_earnings: 0,
+        archetype: entry.player.archetype || null,
       };
     }
 

@@ -50,6 +50,7 @@ export const LeaderboardCard = ({ entry, position, rankingType }: PlayerCardProp
         
         <div className="flex-1">
           <div className="flex items-center gap-2">
+            {archetypeInfo && <span title={archetypeInfo.label}>{archetypeInfo.icon}</span>}
             <span className="font-semibold">{entry.player_name}</span>
             <ROIIndicator value={entry.roi_percentage} />
           </div>

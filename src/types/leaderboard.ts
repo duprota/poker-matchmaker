@@ -14,3 +14,6 @@ export interface LeaderboardEntry {
 }
 
 export type RankingType = "total" | "average";
+
+export type ArchetypeType = "sniper" | "fenix" | "sangrador" | "rocha" | null;
+

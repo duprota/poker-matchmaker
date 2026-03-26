@@ -535,6 +535,17 @@ async function calculateBehavioralProfiles(supabase: any, playerIds: string[]) {
   }
 }
 
+async function recalculateAllBehavioral(supabase: any) {
+  console.log("Starting full behavioral recalculation...");
+  const { data: players, error } = await supabase.from("players").select("id");
+  if (error) throw error;
+  await calculateBehavioralProfiles(supabase, players.map((p: any) => p.id));
+  return new Response(
+    JSON.stringify({ success: true, players_processed: players.length }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
 async function recalculateAllAtp(supabase: any) {
   console.log("Starting full ATP recalculation...");
 
