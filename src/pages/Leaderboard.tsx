@@ -18,9 +18,6 @@ const calculateROI = (winnings: number, spent: number) => {
   return ((winnings - spent) / spent) * 100;
 };
 
-const calculateTotalSpecialHands = (specialHands: { [key: string]: number } = {}) => {
-  return Object.values(specialHands).reduce((sum, count) => sum + count, 0);
-};
 
 const fetchAvailableYears = async (): Promise<number[]> => {
   const { data, error } = await supabase
