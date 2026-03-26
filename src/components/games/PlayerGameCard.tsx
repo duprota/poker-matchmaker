@@ -54,23 +54,6 @@ export function PlayerGameCard({
     }
   };
 
-  const handleSpecialHandsChange = async (specialHands: {
-    [key: string]: number;
-  }) => {
-    if (isProcessing || processingAction) return;
-    setProcessingAction('hands');
-    try {
-      await onSpecialHandsChange(player.id, specialHands);
-      toast.success("Mãos especiais atualizadas!", {
-        description: `Jogadas de ${player.player.name} foram registradas`,
-        position: "top-center"
-      });
-      setOpenSpecialHands(false);
-    } finally {
-      setProcessingAction(null);
-    }
-  };
-
   const handleSetRebuyValue = async (value: number) => {
     if (isProcessing || processingAction) return;
     setProcessingAction('rebuy-set');
