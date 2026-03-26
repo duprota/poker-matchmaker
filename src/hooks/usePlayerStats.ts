@@ -19,7 +19,7 @@ export interface PlayerStats {
   bestGame: number;
   worstGame: number;
   avgNet: number;
-  totalSpecialHands: number;
+  
   progressData: { date: string; runningTotal: number }[];
   gameHistory: PlayerGameEntry[];
 }
