@@ -24,7 +24,6 @@ interface PlayerGameCardProps {
 export function PlayerGameCard({
   player,
   onRebuyChange,
-  onSpecialHandsChange,
   onCashOut,
   onRemovePlayer,
   isProcessing
