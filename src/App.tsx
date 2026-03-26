@@ -15,6 +15,7 @@ import Expenses from "./pages/Expenses";
 import Bot from "./pages/Bot";
 import AtpInfo from "./pages/AtpInfo";
 import SkillInfo from "./pages/SkillInfo";
+import RankingInfo from "./pages/RankingInfo";
 
 const queryClient = new QueryClient({
   defaultOptions: {
