@@ -2,12 +2,10 @@ import React from 'react';
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Trash2, Hand, RefreshCw, LogOut, Check, DollarSign } from "lucide-react";
+import { Plus, Loader2, Trash2, RefreshCw, LogOut, Check, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PlayerSpecialHandPanel } from "./PlayerSpecialHandPanel";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { GamePlayer } from "@/types/game";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
@@ -18,9 +16,6 @@ import { toast } from "sonner";
 interface PlayerGameCardProps {
   player: GamePlayer;
   onRebuyChange: (playerId: string, newRebuys: number) => Promise<void>;
-  onSpecialHandsChange: (playerId: string, specialHands: {
-    [key: string]: number;
-  }) => Promise<void>;
   onCashOut?: (playerId: string, finalStack: number) => Promise<void>;
   onRemovePlayer?: (playerId: string) => void;
   isProcessing: boolean;
