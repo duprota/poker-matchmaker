@@ -797,6 +797,7 @@ export type Database = {
       }
       players: {
         Row: {
+          archetype: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
@@ -805,11 +806,14 @@ export type Database = {
           name: string
           pix_key: string | null
           rating_games: number | null
+          rebuy_tendency: number | null
+          recovery_rate: number | null
           sigma: number | null
           skill_score: number | null
           user_id: string | null
         }
         Insert: {
+          archetype?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -818,11 +822,14 @@ export type Database = {
           name: string
           pix_key?: string | null
           rating_games?: number | null
+          rebuy_tendency?: number | null
+          recovery_rate?: number | null
           sigma?: number | null
           skill_score?: number | null
           user_id?: string | null
         }
         Update: {
+          archetype?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -831,6 +838,8 @@ export type Database = {
           name?: string
           pix_key?: string | null
           rating_games?: number | null
+          rebuy_tendency?: number | null
+          recovery_rate?: number | null
           sigma?: number | null
           skill_score?: number | null
           user_id?: string | null
