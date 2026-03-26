@@ -163,17 +163,6 @@ export function PlayerGameCard({
       </ContentComponent>
     </ControlComponent>;
 
-  const SpecialHandsPanel = () => <Sheet open={openSpecialHands} onOpenChange={setOpenSpecialHands}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={`relative bg-gradient-to-r ${specialHandsCount > 0 ? "from-amber-500/10 to-purple-500/10 hover:from-amber-500/20 hover:to-purple-500/20 border-amber-500/20" : "border-muted"}`}>
-          <Hand className={`w-4 h-4 mr-1 ${specialHandsCount > 0 ? "text-amber-500" : ""}`} />
-          {specialHandsCount > 0 ? `${specialHandsCount} mãos` : "Mãos"}
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="bottom" className="h-[80vh] rounded-t-[20px]">
-        <PlayerSpecialHandPanel specialHands={player.special_hands || {}} onChange={handleSpecialHandsChange} playerName={player.player.name} />
-      </SheetContent>
-    </Sheet>;
 
   // Cash-out dialog
   const CashOutDialog = () => <ControlComponent open={showCashOut} onOpenChange={(open) => {
