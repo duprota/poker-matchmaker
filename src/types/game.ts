@@ -12,7 +12,7 @@ export interface GamePlayer {
   final_result: number | null;
   payment_status: string;
   payment_amount: number;
-  special_hands?: { [key: string]: number } | null; // allow null from db, but code will treat it as {}
+  
 }
 
 export type GameStatus = string;

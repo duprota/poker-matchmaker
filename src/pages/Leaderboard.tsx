@@ -18,9 +18,6 @@ const calculateROI = (winnings: number, spent: number) => {
   return ((winnings - spent) / spent) * 100;
 };
 
-const calculateTotalSpecialHands = (specialHands: { [key: string]: number } = {}) => {
-  return Object.values(specialHands).reduce((sum, count) => sum + count, 0);
-};
 
 const fetchAvailableYears = async (): Promise<number[]> => {
   const { data, error } = await supabase
@@ -44,8 +41,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
       game:games(id, date, status),
       final_result,
       initial_buyin,
-      total_rebuys,
-      special_hands
+      total_rebuys
     `)
     .not('final_result', 'is', null);
 
@@ -88,17 +84,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
         average_winnings: 0,
         net_earnings: 0,
         average_net_earnings: 0,
-        special_hands: {}
       };
-    }
-
-    if (entry.special_hands) {
-      Object.entries(entry.special_hands as { [key: string]: number }).forEach(([handType, count]) => {
-        if (!acc[playerName].special_hands![handType]) {
-          acc[playerName].special_hands![handType] = 0;
-        }
-        acc[playerName].special_hands![handType] += count as number;
-      });
     }
 
     acc[playerName].games_played += 1;
@@ -230,12 +216,7 @@ const Leaderboard = () => {
     if (rankingType === "total") {
       return b.net_earnings - a.net_earnings;
     }
-    if (rankingType === "average") {
-      return b.average_net_earnings - a.average_net_earnings;
-    }
-    const totalHandsA = calculateTotalSpecialHands(a.special_hands);
-    const totalHandsB = calculateTotalSpecialHands(b.special_hands);
-    return totalHandsB - totalHandsA;
+    return b.average_net_earnings - a.average_net_earnings;
   });
 
   if (isLoading) {

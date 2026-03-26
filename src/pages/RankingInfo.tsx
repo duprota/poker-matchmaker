@@ -109,15 +109,6 @@ const RankingInfo = () => {
                   por sessão</strong>. Equilibra jogadores com poucos e muitos jogos.
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-foreground">🃏 Special Hands</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ordena pelo <strong className="text-foreground">total de mãos especiais</strong> (Full House, 
-                  Quadra, Straight Flush, Royal Flush). Celebra os momentos memoráveis da mesa.
-                </p>
-              </div>
             </div>
           </Card>
         </section>
@@ -190,7 +181,7 @@ const RankingInfo = () => {
             <ul className="space-y-1.5 text-xs text-muted-foreground">
               <li>✅ Baseado em <strong className="text-foreground">resultados financeiros reais</strong></li>
               <li>✅ Fórmula: <strong className="text-foreground">Resultado − (Buy-in × (1 + Rebuys))</strong></li>
-              <li>✅ 3 modos: <strong className="text-foreground">Total, Média e Special Hands</strong></li>
+              <li>✅ 2 modos: <strong className="text-foreground">Total e Média</strong></li>
               <li>✅ Filtro por <strong className="text-foreground">ano</strong> ou <strong className="text-foreground">All Time</strong></li>
               <li>✅ <strong className="text-foreground">Todos os jogadores</strong> aparecem no ranking</li>
               <li>✅ Inclui métricas como <strong className="text-foreground">ROI, Biggest Win e Total Spent</strong></li>

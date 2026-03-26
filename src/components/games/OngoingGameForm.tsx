@@ -44,25 +44,6 @@ export const OngoingGameForm = ({
       setIsProcessing(false);
     }
   };
-  const handleSpecialHandsChange = async (playerId: string, specialHands: {
-    [key: string]: number;
-  }) => {
-    setIsProcessing(true);
-    try {
-      const {
-        error
-      } = await supabase.from("game_players").update({
-        special_hands: specialHands
-      }).eq("id", playerId);
-      if (error) throw error;
-      toast.success("Mãos especiais atualizadas com sucesso!");
-    } catch (error) {
-      console.error("Error updating special hands:", error);
-      toast.error("Erro ao atualizar mãos especiais");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleCashOut = async (playerId: string, finalStack: number) => {
     setIsProcessing(true);
@@ -144,7 +125,7 @@ export const OngoingGameForm = ({
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onSpecialHandsChange={handleSpecialHandsChange} onCashOut={handleCashOut} isProcessing={isProcessing} />
+            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onCashOut={handleCashOut} isProcessing={isProcessing} />
           </motion.div>)}
       </motion.div>
       

@@ -2,12 +2,10 @@ import React from 'react';
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Trash2, Hand, RefreshCw, LogOut, Check, DollarSign } from "lucide-react";
+import { Plus, Loader2, Trash2, RefreshCw, LogOut, Check, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PlayerSpecialHandPanel } from "./PlayerSpecialHandPanel";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { GamePlayer } from "@/types/game";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
@@ -18,9 +16,6 @@ import { toast } from "sonner";
 interface PlayerGameCardProps {
   player: GamePlayer;
   onRebuyChange: (playerId: string, newRebuys: number) => Promise<void>;
-  onSpecialHandsChange: (playerId: string, specialHands: {
-    [key: string]: number;
-  }) => Promise<void>;
   onCashOut?: (playerId: string, finalStack: number) => Promise<void>;
   onRemovePlayer?: (playerId: string) => void;
   isProcessing: boolean;
@@ -29,16 +24,13 @@ interface PlayerGameCardProps {
 export function PlayerGameCard({
   player,
   onRebuyChange,
-  onSpecialHandsChange,
   onCashOut,
   onRemovePlayer,
   isProcessing
 }: PlayerGameCardProps) {
   const isMobile = useIsMobile();
   const totalAmount = player.initial_buyin + player.total_rebuys * player.initial_buyin;
-  const specialHandsCount = player.special_hands ? Object.values(player.special_hands).reduce((sum, count) => sum + count, 0) : 0;
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const [openSpecialHands, setOpenSpecialHands] = useState(false);
   const [openRebuyPanel, setOpenRebuyPanel] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [showCashOut, setShowCashOut] = useState(false);
@@ -57,23 +49,6 @@ export function PlayerGameCard({
         description: `${player.player.name} agora tem ${player.total_rebuys + 1} rebuys`,
         position: "top-center"
       });
-    } finally {
-      setProcessingAction(null);
-    }
-  };
-
-  const handleSpecialHandsChange = async (specialHands: {
-    [key: string]: number;
-  }) => {
-    if (isProcessing || processingAction) return;
-    setProcessingAction('hands');
-    try {
-      await onSpecialHandsChange(player.id, specialHands);
-      toast.success("Mãos especiais atualizadas!", {
-        description: `Jogadas de ${player.player.name} foram registradas`,
-        position: "top-center"
-      });
-      setOpenSpecialHands(false);
     } finally {
       setProcessingAction(null);
     }
@@ -188,17 +163,6 @@ export function PlayerGameCard({
       </ContentComponent>
     </ControlComponent>;
 
-  const SpecialHandsPanel = () => <Sheet open={openSpecialHands} onOpenChange={setOpenSpecialHands}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={`relative bg-gradient-to-r ${specialHandsCount > 0 ? "from-amber-500/10 to-purple-500/10 hover:from-amber-500/20 hover:to-purple-500/20 border-amber-500/20" : "border-muted"}`}>
-          <Hand className={`w-4 h-4 mr-1 ${specialHandsCount > 0 ? "text-amber-500" : ""}`} />
-          {specialHandsCount > 0 ? `${specialHandsCount} mãos` : "Mãos"}
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="bottom" className="h-[80vh] rounded-t-[20px]">
-        <PlayerSpecialHandPanel specialHands={player.special_hands || {}} onChange={handleSpecialHandsChange} playerName={player.player.name} />
-      </SheetContent>
-    </Sheet>;
 
   // Cash-out dialog
   const CashOutDialog = () => <ControlComponent open={showCashOut} onOpenChange={(open) => {
@@ -419,7 +383,7 @@ export function PlayerGameCard({
                 </Button>
                 
                 <RebuyPanel />
-                <SpecialHandsPanel />
+                
 
                 {onCashOut && (
                   <Button 

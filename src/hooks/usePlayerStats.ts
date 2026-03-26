@@ -19,7 +19,7 @@ export interface PlayerStats {
   bestGame: number;
   worstGame: number;
   avgNet: number;
-  totalSpecialHands: number;
+  
   progressData: { date: string; runningTotal: number }[];
   gameHistory: PlayerGameEntry[];
 }
@@ -69,13 +69,6 @@ export const usePlayerStats = (playerId: string | undefined) => {
       const worstGame = nets.length > 0 ? Math.min(...nets) : 0;
       const avgNet = gamesPlayed > 0 ? netEarnings / gamesPlayed : 0;
 
-      // Special hands count
-      const totalSpecialHands = (data || []).reduce((sum: number, gp: any) => {
-        if (gp.special_hands && typeof gp.special_hands === "object") {
-          return sum + Object.values(gp.special_hands as Record<string, number>).reduce((a: number, b: number) => a + b, 0);
-        }
-        return sum + (gp.special_hands_count || 0);
-      }, 0);
 
       // Progress data (running total)
       let runningTotal = 0;
@@ -95,7 +88,7 @@ export const usePlayerStats = (playerId: string | undefined) => {
         bestGame,
         worstGame,
         avgNet,
-        totalSpecialHands,
+        
         progressData,
         gameHistory: entries,
       };
