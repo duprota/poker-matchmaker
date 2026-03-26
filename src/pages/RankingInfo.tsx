@@ -109,15 +109,6 @@ const RankingInfo = () => {
                   por sessão</strong>. Equilibra jogadores com poucos e muitos jogos.
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-foreground">🃏 Special Hands</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ordena pelo <strong className="text-foreground">total de mãos especiais</strong> (Full House, 
-                  Quadra, Straight Flush, Royal Flush). Celebra os momentos memoráveis da mesa.
-                </p>
-              </div>
             </div>
           </Card>
         </section>

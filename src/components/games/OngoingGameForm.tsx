@@ -125,7 +125,7 @@ export const OngoingGameForm = ({
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onSpecialHandsChange={handleSpecialHandsChange} onCashOut={handleCashOut} isProcessing={isProcessing} />
+            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onCashOut={handleCashOut} isProcessing={isProcessing} />
           </motion.div>)}
       </motion.div>
       

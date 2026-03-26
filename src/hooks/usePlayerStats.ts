@@ -88,7 +88,7 @@ export const usePlayerStats = (playerId: string | undefined) => {
         bestGame,
         worstGame,
         avgNet,
-        totalSpecialHands,
+        
         progressData,
         gameHistory: entries,
       };

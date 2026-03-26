@@ -43,13 +43,6 @@ export const LeaderboardHeader = ({
           >
             Average Net per Game
           </Toggle>
-          <Toggle
-            pressed={rankingType === "special"}
-            onPressedChange={() => onRankingTypeChange("special")}
-            className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-          >
-            Special Hands
-          </Toggle>
         </div>
       </div>
     </>

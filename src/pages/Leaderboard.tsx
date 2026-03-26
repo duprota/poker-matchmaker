@@ -216,12 +216,7 @@ const Leaderboard = () => {
     if (rankingType === "total") {
       return b.net_earnings - a.net_earnings;
     }
-    if (rankingType === "average") {
-      return b.average_net_earnings - a.average_net_earnings;
-    }
-    const totalHandsA = calculateTotalSpecialHands(a.special_hands);
-    const totalHandsB = calculateTotalSpecialHands(b.special_hands);
-    return totalHandsB - totalHandsA;
+    return b.average_net_earnings - a.average_net_earnings;
   });
 
   if (isLoading) {

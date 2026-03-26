@@ -383,7 +383,7 @@ export function PlayerGameCard({
                 </Button>
                 
                 <RebuyPanel />
-                <SpecialHandsPanel />
+                
 
                 {onCashOut && (
                   <Button 
