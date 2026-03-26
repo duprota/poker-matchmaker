@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { GamePlayer } from "@/types/game";
 import { useToast } from "@/hooks/use-toast";
-import { PlayerSpecialHandReaction, EmojiSVGDefs } from "./PlayerSpecialHandReaction";
+
 
 interface PlayerRebuysCardProps {
   player: GamePlayer;
