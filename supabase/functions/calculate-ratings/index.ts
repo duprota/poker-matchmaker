@@ -113,6 +113,10 @@ Deno.serve(async (req) => {
       return await recalculateAllAtp(supabase);
     }
 
+    if (action === "recalculate-behavioral") {
+      return await recalculateAllBehavioral(supabase);
+    }
+
     if (!game_id) {
       return new Response(JSON.stringify({ error: "game_id required" }), {
         status: 400,
