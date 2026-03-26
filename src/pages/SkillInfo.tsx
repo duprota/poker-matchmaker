@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Brain, TrendingUp, BarChart3, Shield, HelpCircle, Sigma, Target, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { RankingComparisonTable } from "@/components/leaderboard/RankingComparisonTable";
 
 const SkillInfo = () => {
   const navigate = useNavigate();
