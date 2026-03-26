@@ -49,10 +49,7 @@ export const useGameDetails = (gameId: string | undefined) => {
       const gameWithPlayers: Game = {
         ...gameData,
         status: gameData.status,
-        players: (playersData as GamePlayer[]).map((p) => ({
-          ...p,
-          special_hands: p.special_hands ?? {}, // Ensure special_hands is at least an empty object
-        })),
+        players: playersData as GamePlayer[],
       };
 
       setGame(gameWithPlayers);
