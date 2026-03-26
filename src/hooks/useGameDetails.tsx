@@ -184,7 +184,7 @@ export const useGameDetails = (gameId: string | undefined) => {
     hasBalanceError,
     updatePlayerResult,
     updatePaymentStatus,
-    updateSpecialHands,
+    
     refreshGame: fetchGame
   };
 };

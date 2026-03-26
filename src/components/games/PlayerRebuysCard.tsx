@@ -90,16 +90,11 @@ export const PlayerRebuysCard = ({
 
   return (
     <>
-      <EmojiSVGDefs />
       <Card className="p-4 hover:bg-accent/5 transition-colors">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-lg">{player.player.name}</h3>
-              <PlayerSpecialHandReaction
-                value={specialHand}
-                onChange={setSpecialHand}
-              />
             </div>
             <div className="flex items-center gap-2">
               <Button
