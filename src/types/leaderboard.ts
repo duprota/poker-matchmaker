@@ -11,6 +11,7 @@ export interface LeaderboardEntry {
   average_winnings: number;
   net_earnings: number;
   average_net_earnings: number;
+  archetype?: string | null;
 }
 
 export type RankingType = "total" | "average";
