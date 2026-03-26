@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Trophy, Target, TrendingUp, Clock, Award, Star, Zap, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { RankingComparisonTable } from "@/components/leaderboard/RankingComparisonTable";
 
 const TIER_DATA = [
   {
@@ -251,6 +252,9 @@ const AtpInfo = () => {
             </p>
           </Card>
         </section>
+
+        {/* Comparação dos Rankings */}
+        <RankingComparisonTable />
 
         {/* Resumo rápido */}
         <section className="mb-6">
