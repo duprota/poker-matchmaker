@@ -699,9 +699,11 @@ export type Database = {
         Row: {
           game_id: string
           id: string
+          is_active: boolean
           personal_rebuys: number
           player_id: string
           posicao_esperada: number
+          saldo_saida: number | null
           score_normalizado: number
           snapshot_at: string
           total_rebuys_game: number
@@ -709,9 +711,11 @@ export type Database = {
         Insert: {
           game_id: string
           id?: string
+          is_active?: boolean
           personal_rebuys: number
           player_id: string
           posicao_esperada: number
+          saldo_saida?: number | null
           score_normalizado: number
           snapshot_at?: string
           total_rebuys_game: number
@@ -719,9 +723,11 @@ export type Database = {
         Update: {
           game_id?: string
           id?: string
+          is_active?: boolean
           personal_rebuys?: number
           player_id?: string
           posicao_esperada?: number
+          saldo_saida?: number | null
           score_normalizado?: number
           snapshot_at?: string
           total_rebuys_game?: number

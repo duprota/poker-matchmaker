@@ -1,0 +1,3 @@
+ALTER TABLE live_game_scores
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS saldo_saida NUMERIC;
