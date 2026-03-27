@@ -81,13 +81,13 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "game_players",
           filter: `game_id=eq.${gameId}`,
         },
         () => {
-          console.log("Rebuy detected, recalculating live scores...");
+          console.log("Game players changed, recalculating live scores...");
           fetchLiveScores();
         }
       )
