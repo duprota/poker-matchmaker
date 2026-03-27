@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     });
     const totalSkill = skillScores.reduce((a, b) => a + b, 0);
 
-    const rawScores: { player_id: string; name: string; personal_rebuys: number; score_vivo: number }[] = [];
+    const rawScores: { player_id: string; name: string; personal_rebuys: number; score_vivo: number; cashed_out: boolean }[] = [];
 
     gamePlayers.forEach((gp, i) => {
       const p = playerMap.get(gp.player_id);

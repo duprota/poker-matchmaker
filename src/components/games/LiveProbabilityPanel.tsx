@@ -131,7 +131,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="flex items-center gap-3"
+                  className={`flex items-center gap-3 ${score.cashed_out ? "opacity-50" : ""}`}
                 >
                   <span className="text-sm font-bold text-muted-foreground w-6 text-center">
                     {score.posicao_esperada}º
@@ -139,7 +139,14 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium truncate">{score.name}</span>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-sm font-medium truncate">{score.name}</span>
+                        {score.cashed_out && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-orange-500/40 text-orange-400 bg-orange-500/10">
+                            Saiu
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
                           R:{score.personal_rebuys}
