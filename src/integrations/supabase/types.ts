@@ -695,6 +695,61 @@ export type Database = {
           },
         ]
       }
+      live_game_scores: {
+        Row: {
+          game_id: string
+          id: string
+          personal_rebuys: number
+          player_id: string
+          posicao_esperada: number
+          score_normalizado: number
+          snapshot_at: string
+          total_rebuys_game: number
+        }
+        Insert: {
+          game_id: string
+          id?: string
+          personal_rebuys: number
+          player_id: string
+          posicao_esperada: number
+          score_normalizado: number
+          snapshot_at?: string
+          total_rebuys_game: number
+        }
+        Update: {
+          game_id?: string
+          id?: string
+          personal_rebuys?: number
+          player_id?: string
+          posicao_esperada?: number
+          score_normalizado?: number
+          snapshot_at?: string
+          total_rebuys_game?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_game_scores_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_game_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_game_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_feedback: {
         Row: {
           comment: string | null
@@ -731,6 +786,45 @@ export type Database = {
           {
             foreignKeyName: "player_feedback_to_player_id_fkey"
             columns: ["to_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_live_params: {
+        Row: {
+          delta: number
+          player_id: string
+          rb_bucket: string
+          sample_size: number
+          updated_at: string
+        }
+        Insert: {
+          delta?: number
+          player_id: string
+          rb_bucket: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Update: {
+          delta?: number
+          player_id?: string
+          rb_bucket?: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_live_params_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_live_params_player_id_fkey"
+            columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
