@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     // STEP 1 — Fetch current state
     const { data: gamePlayers, error: gpError } = await supabase
       .from("game_players")
-      .select("player_id, total_rebuys")
+      .select("player_id, total_rebuys, final_result")
       .eq("game_id", game_id);
 
     if (gpError) throw gpError;
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     });
     const totalSkill = skillScores.reduce((a, b) => a + b, 0);
 
-    const rawScores: { player_id: string; name: string; personal_rebuys: number; score_vivo: number }[] = [];
+    const rawScores: { player_id: string; name: string; personal_rebuys: number; score_vivo: number; cashed_out: boolean }[] = [];
 
     gamePlayers.forEach((gp, i) => {
       const p = playerMap.get(gp.player_id);
@@ -152,11 +152,14 @@ Deno.serve(async (req) => {
 
       const scoreVivo = Math.max(skillShare * timingFactor * (1 + delta), 0.001);
 
+      const cashedOut = gp.final_result !== null && gp.final_result !== undefined;
+
       rawScores.push({
         player_id: gp.player_id,
         name: p?.name || "Unknown",
         personal_rebuys: personalRebuys,
         score_vivo: scoreVivo,
+        cashed_out: cashedOut,
       });
     });
 
@@ -198,6 +201,7 @@ Deno.serve(async (req) => {
       personal_rebuys: r.personal_rebuys,
       score_normalizado: Math.round(r.score_normalizado * 10000) / 10000,
       posicao_esperada: (r as any).posicao_esperada,
+      cashed_out: r.cashed_out || false,
       phase,
     }));
 
