@@ -13,6 +13,7 @@ interface LiveScore {
   score_normalizado: number;
   posicao_esperada: number;
   phase: string;
+  cashed_out: boolean;
 }
 
 interface LiveProbabilityPanelProps {
