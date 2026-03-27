@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowDown, Minus, TrendingUp, LogOut } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, TrendingUp, LogOut, HelpCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface LiveScore {
