@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     // STEP 1 — Fetch current state
     const { data: gamePlayers, error: gpError } = await supabase
       .from("game_players")
-      .select("player_id, total_rebuys")
+      .select("player_id, total_rebuys, final_result")
       .eq("game_id", game_id);
 
     if (gpError) throw gpError;
