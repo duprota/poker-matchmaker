@@ -143,7 +143,12 @@ export const GameContainer = ({
   };
 
   if (game.status === "completed") {
-    return <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} />;
+    return (
+      <div className="grid gap-8">
+        <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} />
+        <LiveScoresChart gameId={game.id} />
+      </div>
+    );
   }
 
   // Permitir adicionar jogadores nos status "created" e "ongoing"
