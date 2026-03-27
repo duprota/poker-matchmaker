@@ -38,6 +38,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
   const [previousActiveIds, setPreviousActiveIds] = useState<Set<string>>(new Set());
   const initialFetched = useRef(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchLiveScores = async () => {
     if (gameStatus === "completed") return;
