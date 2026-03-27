@@ -2,6 +2,8 @@ import { Game, GamePlayer } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
 import { GameSummary } from "./GameSummary";
+import { LiveProbabilityPanel } from "./LiveProbabilityPanel";
+import { LiveScoresChart } from "./LiveScoresChart";
 import { Button } from "@/components/ui/button";
 import { Plus, UserMinus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
