@@ -105,6 +105,14 @@ export const GameContainer = ({
         total_rebuys: 0
       });
       if (gamePlayerError) throw gamePlayerError;
+
+      // Trigger live scores recalculation immediately for new player
+      if (game.status === "ongoing") {
+        supabase.functions.invoke("calculate-live-scores", {
+          body: { game_id: game.id },
+        }).catch((err) => console.error("Error recalculating live scores:", err));
+      }
+
       toast({
         description: "Player added successfully"
       });
