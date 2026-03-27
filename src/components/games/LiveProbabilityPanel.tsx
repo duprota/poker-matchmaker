@@ -165,6 +165,13 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-400" />
             <h3 className="font-bold text-lg">Probabilidades ao Vivo</h3>
+            <button
+              onClick={() => navigate("/live-probability-info")}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Como funciona?"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
           </div>
           <Badge variant="outline" className={`${phaseInfo.color} border`}>
             {phaseInfo.emoji} {phaseInfo.label}
