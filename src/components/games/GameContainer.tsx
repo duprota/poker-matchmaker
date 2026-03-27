@@ -2,6 +2,8 @@ import { Game, GamePlayer } from "@/types/game";
 import { OngoingGameForm } from "./OngoingGameForm";
 import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
 import { GameSummary } from "./GameSummary";
+import { LiveProbabilityPanel } from "./LiveProbabilityPanel";
+import { LiveScoresChart } from "./LiveScoresChart";
 import { Button } from "@/components/ui/button";
 import { Plus, UserMinus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -141,7 +143,12 @@ export const GameContainer = ({
   };
 
   if (game.status === "completed") {
-    return <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} />;
+    return (
+      <div className="grid gap-8">
+        <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} />
+        <LiveScoresChart gameId={game.id} />
+      </div>
+    );
   }
 
   // Permitir adicionar jogadores nos status "created" e "ongoing"
@@ -169,6 +176,8 @@ export const GameContainer = ({
 
         {game.status === "created" && null}
       </div>
+
+      {game.status === "ongoing" && <LiveProbabilityPanel gameId={game.id} gameStatus={game.status} />}
 
       <GameMoneyFlowChart players={game.players} gameHistory={[]} />
 

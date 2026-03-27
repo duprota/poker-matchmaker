@@ -91,6 +91,15 @@ export const FinalizeGameForm = ({
       if (atpError) {
         console.error("ATP calculation error (non-blocking):", atpError);
       }
+
+      // Recalibrate live probability params
+      console.log("Recalibrating live params for game:", gameId);
+      const { error: recalError } = await supabase.functions.invoke("calculate-live-scores", {
+        body: { game_id: gameId, action: "recalibrate" },
+      });
+      if (recalError) {
+        console.error("Recalibration error (non-blocking):", recalError);
+      }
       
       console.log("Game finalization completed successfully");
       toast({
