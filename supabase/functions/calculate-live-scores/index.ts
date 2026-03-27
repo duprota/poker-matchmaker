@@ -80,10 +80,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // STEP 1 — Fetch current state
+    // STEP 1 — Fetch current state (include initial_buyin for saldo calculation)
     const { data: gamePlayers, error: gpError } = await supabase
       .from("game_players")
-      .select("player_id, total_rebuys, final_result")
+      .select("player_id, total_rebuys, final_result, initial_buyin")
       .eq("game_id", game_id);
 
     if (gpError) throw gpError;
@@ -118,73 +118,141 @@ Deno.serve(async (req) => {
       deltaMap.get(lp.player_id)!.set(lp.rb_bucket, Number(lp.delta));
     });
 
-    // STEP 2 — Determine phase
+    // STEP 2 — Separate active from cashed-out players
+    const activePlayers: typeof gamePlayers = [];
+    const cashedOutPlayers: typeof gamePlayers = [];
+
+    gamePlayers.forEach((gp) => {
+      if (gp.final_result !== null && gp.final_result !== undefined) {
+        cashedOutPlayers.push(gp);
+      } else {
+        activePlayers.push(gp);
+      }
+    });
+
+    // If ALL players cashed out, no need to calculate
+    if (activePlayers.length === 0) {
+      const cashedResults = cashedOutPlayers.map((gp) => {
+        const p = playerMap.get(gp.player_id);
+        const investido = Number(gp.initial_buyin) + (Number(gp.total_rebuys) * Number(gp.initial_buyin));
+        const saldo = Number(gp.final_result) - investido;
+        return {
+          player_id: gp.player_id,
+          name: p?.name || "Unknown",
+          is_active: false,
+          personal_rebuys: Number(gp.total_rebuys),
+          score_normalizado: null,
+          posicao_esperada: null,
+          phase: null,
+          saldo_saida: saldo,
+        };
+      });
+      cashedResults.sort((a, b) => (b.saldo_saida ?? 0) - (a.saldo_saida ?? 0));
+      return new Response(JSON.stringify(cashedResults), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // STEP 3 — Determine phase (use ALL players' rebuys for phase)
     const totalRebuysGame = gamePlayers.reduce(
       (s, gp) => s + Number(gp.total_rebuys),
       0
     );
     const phase = getPhase(totalRebuysGame);
 
-    // STEP 3 — Calculate score_vivo for each player
+    // STEP 4 — Calculate score_vivo ONLY for active players
     const DEFAULT_SKILL = 800;
-    const skillScores = gamePlayers.map((gp) => {
+    const activeSkillScores = activePlayers.map((gp) => {
       const p = playerMap.get(gp.player_id);
       return Number(p?.skill_score) || DEFAULT_SKILL;
     });
-    const totalSkill = skillScores.reduce((a, b) => a + b, 0);
+    const totalSkill = activeSkillScores.reduce((a, b) => a + b, 0);
 
-    const rawScores: { player_id: string; name: string; personal_rebuys: number; score_vivo: number; cashed_out: boolean }[] = [];
+    const activeRawScores: { player_id: string; name: string; personal_rebuys: number; score_vivo: number }[] = [];
 
-    gamePlayers.forEach((gp, i) => {
+    activePlayers.forEach((gp, i) => {
       const p = playerMap.get(gp.player_id);
       const personalRebuys = Number(gp.total_rebuys);
-      const skillShare = skillScores[i] / totalSkill;
+      const skillShare = activeSkillScores[i] / totalSkill;
 
-      // Timing factor
       const rbKey = String(Math.min(personalRebuys, 4));
       const timingRow = TIMING[rbKey];
       const timingFactor = timingRow[phase];
 
-      // Delta
       const bucket = rbBucket(personalRebuys);
       const playerDeltas = deltaMap.get(gp.player_id);
       const delta = playerDeltas?.get(bucket) ?? FALLBACK_DELTA[bucket] ?? 0;
 
       const scoreVivo = Math.max(skillShare * timingFactor * (1 + delta), 0.001);
 
-      const cashedOut = gp.final_result !== null && gp.final_result !== undefined;
-
-      rawScores.push({
+      activeRawScores.push({
         player_id: gp.player_id,
         name: p?.name || "Unknown",
         personal_rebuys: personalRebuys,
         score_vivo: scoreVivo,
-        cashed_out: cashedOut,
       });
     });
 
-    // STEP 4 — Normalize
-    const totalRaw = rawScores.reduce((s, r) => s + r.score_vivo, 0);
-    const results = rawScores.map((r) => ({
-      ...r,
-      score_normalizado: r.score_vivo / totalRaw,
+    // STEP 5 — Normalize ONLY among active players
+    const totalRaw = activeRawScores.reduce((s, r) => s + r.score_vivo, 0);
+    const activeResults = activeRawScores.map((r) => ({
+      player_id: r.player_id,
+      name: r.name,
+      is_active: true,
+      personal_rebuys: r.personal_rebuys,
+      score_normalizado: Math.round((r.score_vivo / totalRaw) * 10000) / 10000,
+      posicao_esperada: 0,
+      phase,
+      saldo_saida: null as number | null,
     }));
 
-    // STEP 5 — Rank
-    results.sort((a, b) => b.score_normalizado - a.score_normalizado);
-    results.forEach((r, i) => {
-      (r as any).posicao_esperada = i + 1;
+    // Rank active players
+    activeResults.sort((a, b) => b.score_normalizado! - a.score_normalizado!);
+    activeResults.forEach((r, i) => {
+      r.posicao_esperada = i + 1;
     });
 
-    // STEP 6 — Insert snapshot
-    const snapshotRows = results.map((r) => ({
-      game_id,
-      player_id: r.player_id,
-      total_rebuys_game: totalRebuysGame,
-      personal_rebuys: r.personal_rebuys,
-      score_normalizado: r.score_normalizado,
-      posicao_esperada: (r as any).posicao_esperada,
-    }));
+    // STEP 6 — Build cashed-out results
+    const cashedResults = cashedOutPlayers.map((gp) => {
+      const p = playerMap.get(gp.player_id);
+      const investido = Number(gp.initial_buyin) + (Number(gp.total_rebuys) * Number(gp.initial_buyin));
+      const saldo = Number(gp.final_result) - investido;
+      return {
+        player_id: gp.player_id,
+        name: p?.name || "Unknown",
+        is_active: false,
+        personal_rebuys: Number(gp.total_rebuys),
+        score_normalizado: null as number | null,
+        posicao_esperada: null as number | null,
+        phase: null as string | null,
+        saldo_saida: saldo,
+      };
+    });
+    cashedResults.sort((a, b) => (b.saldo_saida ?? 0) - (a.saldo_saida ?? 0));
+
+    // STEP 7 — Insert snapshot
+    const snapshotRows = [
+      ...activeResults.map((r) => ({
+        game_id,
+        player_id: r.player_id,
+        total_rebuys_game: totalRebuysGame,
+        personal_rebuys: r.personal_rebuys,
+        score_normalizado: r.score_normalizado,
+        posicao_esperada: r.posicao_esperada,
+        is_active: true,
+        saldo_saida: null,
+      })),
+      ...cashedResults.map((r) => ({
+        game_id,
+        player_id: r.player_id,
+        total_rebuys_game: totalRebuysGame,
+        personal_rebuys: r.personal_rebuys,
+        score_normalizado: 0,
+        posicao_esperada: 0,
+        is_active: false,
+        saldo_saida: r.saldo_saida,
+      })),
+    ];
 
     const { error: insertError } = await supabase
       .from("live_game_scores")
@@ -194,16 +262,8 @@ Deno.serve(async (req) => {
       console.error("Error inserting snapshot:", insertError);
     }
 
-    // STEP 7 — Return
-    const response = results.map((r) => ({
-      player_id: r.player_id,
-      name: r.name,
-      personal_rebuys: r.personal_rebuys,
-      score_normalizado: Math.round(r.score_normalizado * 10000) / 10000,
-      posicao_esperada: (r as any).posicao_esperada,
-      cashed_out: r.cashed_out || false,
-      phase,
-    }));
+    // STEP 8 — Return all players (active first, then cashed out)
+    const response = [...activeResults, ...cashedResults];
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -229,7 +289,6 @@ async function handleRecalibrate(
     );
   }
 
-  // Get game players with final results
   const { data: gamePlayers, error: gpErr } = await supabase
     .from("game_players")
     .select("player_id, total_rebuys, final_result")
@@ -264,7 +323,6 @@ async function handleRecalibrate(
     0
   );
 
-  // Get existing live params
   const { data: existingParams } = await supabase
     .from("player_live_params")
     .select("player_id, rb_bucket, delta, sample_size")

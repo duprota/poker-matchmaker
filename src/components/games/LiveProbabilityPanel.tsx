@@ -3,17 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowDown, Minus, TrendingUp } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, TrendingUp, LogOut } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface LiveScore {
   player_id: string;
   name: string;
+  is_active: boolean;
   personal_rebuys: number;
-  score_normalizado: number;
-  posicao_esperada: number;
-  phase: string;
-  cashed_out: boolean;
+  score_normalizado: number | null;
+  posicao_esperada: number | null;
+  phase: string | null;
+  saldo_saida: number | null;
 }
 
 interface LiveProbabilityPanelProps {
@@ -31,11 +34,13 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
   const [scores, setScores] = useState<LiveScore[]>([]);
   const [initialPositions, setInitialPositions] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [previousActiveIds, setPreviousActiveIds] = useState<Set<string>>(new Set());
   const initialFetched = useRef(false);
+  const { toast } = useToast();
 
   const fetchLiveScores = async () => {
     if (gameStatus === "completed") return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("calculate-live-scores", {
@@ -47,13 +52,27 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
         return;
       }
 
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      const parsed: LiveScore[] = typeof data === "string" ? JSON.parse(data) : data;
       if (Array.isArray(parsed)) {
+        // Detect newly cashed-out players for exit narrative
+        const currentActiveIds = new Set(parsed.filter(s => s.is_active).map(s => s.player_id));
+        if (previousActiveIds.size > 0) {
+          const newlyCashedOut = parsed.filter(
+            s => !s.is_active && previousActiveIds.has(s.player_id)
+          );
+          for (const player of newlyCashedOut) {
+            showExitNarrative(player);
+          }
+        }
+        setPreviousActiveIds(currentActiveIds);
+
         setScores(parsed);
+
+        // Track initial positions for active players only
         if (!initialFetched.current && parsed.length > 0) {
           const init: Record<string, number> = {};
-          parsed.forEach((s: LiveScore) => {
-            init[s.player_id] = s.posicao_esperada;
+          parsed.filter(s => s.is_active && s.posicao_esperada != null).forEach((s) => {
+            init[s.player_id] = s.posicao_esperada!;
           });
           setInitialPositions(init);
           initialFetched.current = true;
@@ -64,6 +83,38 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
     } finally {
       setLoading(false);
     }
+  };
+
+  const showExitNarrative = async (player: LiveScore) => {
+    const saldo = player.saldo_saida ?? 0;
+    const rebuys = player.personal_rebuys;
+
+    // Try to get previous score from live_game_scores
+    let prevScore = 0;
+    try {
+      const { data } = await supabase
+        .from("live_game_scores")
+        .select("score_normalizado")
+        .eq("game_id", gameId)
+        .eq("player_id", player.player_id)
+        .eq("is_active", true)
+        .order("snapshot_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        prevScore = Number(data[0].score_normalizado);
+      }
+    } catch {}
+
+    let message: string;
+    if (saldo > 0 && prevScore > 0.20) {
+      message = `${player.name} saiu com +R$${saldo} — deixou ${Math.round(prevScore * 100)}% de chance na mesa`;
+    } else if (saldo > 0) {
+      message = `${player.name} fez a jogada certa — sacou +R$${saldo} antes de afundar`;
+    } else {
+      message = `${player.name} saiu com -R$${Math.abs(saldo)} após ${rebuys} rebuy${rebuys !== 1 ? 's' : ''}`;
+    }
+
+    toast({ description: message, duration: 5000 });
   };
 
   // Fetch on mount
@@ -100,7 +151,9 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
 
   if (gameStatus !== "ongoing" || scores.length === 0) return null;
 
-  const phase = scores[0]?.phase || "early";
+  const activePlayers = scores.filter(s => s.is_active);
+  const cashedOutPlayers = scores.filter(s => !s.is_active);
+  const phase = activePlayers[0]?.phase || "early";
   const phaseInfo = PHASE_CONFIG[phase] || PHASE_CONFIG.early;
 
   return (
@@ -116,12 +169,13 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
           </Badge>
         </div>
 
+        {/* Active Players */}
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
-            {scores.map((score, index) => {
-              const initialPos = initialPositions[score.player_id] || score.posicao_esperada;
-              const posDiff = initialPos - score.posicao_esperada;
-              const pct = Math.round(score.score_normalizado * 100);
+            {activePlayers.map((score) => {
+              const initialPos = initialPositions[score.player_id] || score.posicao_esperada || 0;
+              const posDiff = initialPos - (score.posicao_esperada || 0);
+              const pct = Math.round((score.score_normalizado || 0) * 100);
 
               return (
                 <motion.div
@@ -131,7 +185,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className={`flex items-center gap-3 ${score.cashed_out ? "opacity-50" : ""}`}
+                  className="flex items-center gap-3"
                 >
                   <span className="text-sm font-bold text-muted-foreground w-6 text-center">
                     {score.posicao_esperada}º
@@ -141,38 +195,72 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2 truncate">
                         <span className="text-sm font-medium truncate">{score.name}</span>
-                        {score.cashed_out && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-orange-500/40 text-orange-400 bg-orange-500/10">
-                            Saiu
-                          </Badge>
-                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
                           R:{score.personal_rebuys}
                         </span>
                         <span className="text-sm font-bold text-blue-400">{pct}%</span>
-                        {posDiff > 0 && (
-                          <ArrowUp className="h-3 w-3 text-green-400" />
-                        )}
-                        {posDiff < 0 && (
-                          <ArrowDown className="h-3 w-3 text-red-400" />
-                        )}
-                        {posDiff === 0 && (
-                          <Minus className="h-3 w-3 text-muted-foreground" />
-                        )}
+                        {posDiff > 0 && <ArrowUp className="h-3 w-3 text-green-400" />}
+                        {posDiff < 0 && <ArrowDown className="h-3 w-3 text-red-400" />}
+                        {posDiff === 0 && <Minus className="h-3 w-3 text-muted-foreground" />}
                       </div>
                     </div>
-                    <Progress
-                      value={pct}
-                      className="h-2 bg-zinc-800"
-                    />
+                    <Progress value={pct} className="h-2 bg-zinc-800" />
                   </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
         </div>
+
+        {/* Cashed Out Players */}
+        {cashedOutPlayers.length > 0 && (
+          <>
+            <Separator className="my-4 bg-zinc-700/50" />
+            <div className="flex items-center gap-2 mb-3">
+              <LogOut className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Saíram
+              </span>
+            </div>
+            <div className="space-y-2">
+              <AnimatePresence mode="popLayout">
+                {cashedOutPlayers.map((score) => {
+                  const saldo = score.saldo_saida ?? 0;
+                  const isPositive = saldo >= 0;
+
+                  return (
+                    <motion.div
+                      key={score.player_id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 0.6, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className="flex items-center justify-between gap-3 px-1"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm truncate">{score.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          R:{score.personal_rebuys}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-sm font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                          {isPositive ? '+' : '−'}R${Math.abs(saldo)}
+                        </span>
+                        <span className="text-lg">
+                          {isPositive ? '✅' : '❌'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          </>
+        )}
       </div>
     </Card>
   );
