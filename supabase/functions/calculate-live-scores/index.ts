@@ -152,11 +152,14 @@ Deno.serve(async (req) => {
 
       const scoreVivo = Math.max(skillShare * timingFactor * (1 + delta), 0.001);
 
+      const cashedOut = gp.final_result !== null && gp.final_result !== undefined;
+
       rawScores.push({
         player_id: gp.player_id,
         name: p?.name || "Unknown",
         personal_rebuys: personalRebuys,
         score_vivo: scoreVivo,
+        cashed_out: cashedOut,
       });
     });
 
