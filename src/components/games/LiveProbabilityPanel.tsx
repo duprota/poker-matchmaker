@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowDown, Minus, TrendingUp, LogOut } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, TrendingUp, LogOut, HelpCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface LiveScore {
@@ -37,6 +38,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
   const [previousActiveIds, setPreviousActiveIds] = useState<Set<string>>(new Set());
   const initialFetched = useRef(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchLiveScores = async () => {
     if (gameStatus === "completed") return;
@@ -163,6 +165,13 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-400" />
             <h3 className="font-bold text-lg">Probabilidades ao Vivo</h3>
+            <button
+              onClick={() => navigate("/live-probability-info")}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Como funciona?"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
           </div>
           <Badge variant="outline" className={`${phaseInfo.color} border`}>
             {phaseInfo.emoji} {phaseInfo.label}

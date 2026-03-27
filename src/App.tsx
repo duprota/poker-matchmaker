@@ -16,6 +16,7 @@ import Bot from "./pages/Bot";
 import AtpInfo from "./pages/AtpInfo";
 import SkillInfo from "./pages/SkillInfo";
 import RankingInfo from "./pages/RankingInfo";
+import LiveProbabilityInfo from "./pages/LiveProbabilityInfo";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/atp-info" element={<AtpInfo />} />
           <Route path="/skill-info" element={<SkillInfo />} />
           <Route path="/ranking-info" element={<RankingInfo />} />
+          <Route path="/live-probability-info" element={<LiveProbabilityInfo />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
