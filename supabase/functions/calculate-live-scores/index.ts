@@ -201,6 +201,7 @@ Deno.serve(async (req) => {
       personal_rebuys: r.personal_rebuys,
       score_normalizado: Math.round(r.score_normalizado * 10000) / 10000,
       posicao_esperada: (r as any).posicao_esperada,
+      cashed_out: r.cashed_out || false,
       phase,
     }));
 
