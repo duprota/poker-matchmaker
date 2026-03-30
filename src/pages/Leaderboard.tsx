@@ -37,7 +37,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
   let query = supabase
     .from('game_players')
     .select(`
-      player:players(name, archetype),
+      player:players(id, name, archetype),
       game:games(id, date, status),
       final_result,
       initial_buyin,
@@ -72,6 +72,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
     
     if (!acc[playerName]) {
       acc[playerName] = {
+        player_id: entry.player.id,
         player_name: playerName,
         games_played: 0,
         total_winnings: 0,

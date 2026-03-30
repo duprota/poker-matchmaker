@@ -100,6 +100,15 @@ export const FinalizeGameForm = ({
       if (recalError) {
         console.error("Recalibration error (non-blocking):", recalError);
       }
+
+      // Evaluate badges
+      console.log("Evaluating badges for game:", gameId);
+      const { error: badgeError } = await supabase.functions.invoke("evaluate-badges", {
+        body: { game_id: gameId },
+      });
+      if (badgeError) {
+        console.error("Badge evaluation error (non-blocking):", badgeError);
+      }
       
       console.log("Game finalization completed successfully");
       toast({

@@ -153,7 +153,7 @@ export const GameContainer = ({
   if (game.status === "completed") {
     return (
       <div className="grid gap-8">
-        <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} />
+        <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} gameId={game.id} />
         <LiveScoresChart gameId={game.id} />
       </div>
     );
