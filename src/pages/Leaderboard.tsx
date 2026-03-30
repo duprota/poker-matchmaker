@@ -72,6 +72,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
     
     if (!acc[playerName]) {
       acc[playerName] = {
+        player_id: entry.player.id,
         player_name: playerName,
         games_played: 0,
         total_winnings: 0,
