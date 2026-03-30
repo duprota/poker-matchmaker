@@ -96,6 +96,39 @@ export type Database = {
           },
         ]
       }
+      badge_definitions: {
+        Row: {
+          category: string
+          code: string
+          criteria_note: string | null
+          description: string
+          emoji: string
+          id: string
+          name: string
+          persistence: string
+        }
+        Insert: {
+          category: string
+          code: string
+          criteria_note?: string | null
+          description: string
+          emoji: string
+          id?: string
+          name: string
+          persistence: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          criteria_note?: string | null
+          description?: string
+          emoji?: string
+          id?: string
+          name?: string
+          persistence?: string
+        }
+        Relationships: []
+      }
       bot_config: {
         Row: {
           api_url: string | null
@@ -749,6 +782,68 @@ export type Database = {
           },
           {
             foreignKeyName: "live_game_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_badges: {
+        Row: {
+          badge_code: string
+          conquered_at: string
+          game_id: string | null
+          id: string
+          is_active: boolean
+          lost_at: string | null
+          metadata: Json
+          player_id: string
+        }
+        Insert: {
+          badge_code: string
+          conquered_at?: string
+          game_id?: string | null
+          id?: string
+          is_active?: boolean
+          lost_at?: string | null
+          metadata?: Json
+          player_id: string
+        }
+        Update: {
+          badge_code?: string
+          conquered_at?: string
+          game_id?: string | null
+          id?: string
+          is_active?: boolean
+          lost_at?: string | null
+          metadata?: Json
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_badges_badge_code_fkey"
+            columns: ["badge_code"]
+            isOneToOne: false
+            referencedRelation: "badge_definitions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "player_badges_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_badges_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "atp_ranking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_badges_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
