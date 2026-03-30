@@ -373,6 +373,9 @@ const PlayerProfile = () => {
         {/* ATP Card */}
         {player && <AtpCard playerId={player.id} />}
 
+        {/* Badges */}
+        {player && <PlayerBadgesSection playerId={player.id} isOwner={player.user_id === undefined} />}
+
         {/* Behavioral Profile Card */}
         {player && stats && (
           <BehavioralProfileCard

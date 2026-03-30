@@ -38,6 +38,28 @@ export const LeaderboardCard = ({ entry, position, rankingType }: PlayerCardProp
   const displayValue = rankingType === "total" 
     ? entry.net_earnings 
     : entry.average_net_earnings;
+
+  // Fetch elite badges for this player
+  const { data: eliteBadges } = useQuery({
+    queryKey: ["elite-badges", entry.player_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("player_badges")
+        .select("badge_code")
+        .eq("player_id", entry.player_id)
+        .eq("is_active", true)
+        .in("badge_code", ["cabeca_chave", "podio", "craque_rodada"]);
+      return data || [];
+    },
+    staleTime: 30000,
+  });
+
+  const eliteEmojis = (eliteBadges || []).map((b: any) => {
+    if (b.badge_code === "cabeca_chave") return "🥇";
+    if (b.badge_code === "podio") return "🥈";
+    if (b.badge_code === "craque_rodada") return "⭐";
+    return "";
+  }).filter(Boolean);
   
   return (
     <Card 
@@ -54,6 +76,7 @@ export const LeaderboardCard = ({ entry, position, rankingType }: PlayerCardProp
           <div className="flex items-center gap-2">
             {archetypeInfo && <span title={archetypeInfo.label}>{archetypeInfo.icon}</span>}
             <span className="font-semibold">{entry.player_name}</span>
+            {eliteEmojis.map((e, i) => <span key={i} className="text-sm">{e}</span>)}
             <ROIIndicator value={entry.roi_percentage} />
           </div>
           <div className="text-sm text-muted-foreground">
