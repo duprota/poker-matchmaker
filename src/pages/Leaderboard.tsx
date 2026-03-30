@@ -37,7 +37,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
   let query = supabase
     .from('game_players')
     .select(`
-      player:players(name, archetype),
+      player:players(id, name, archetype),
       game:games(id, date, status),
       final_result,
       initial_buyin,
