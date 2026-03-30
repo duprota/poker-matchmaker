@@ -4,6 +4,8 @@ import { Trophy, Medal, Star, TrendingUp, TrendingDown, DollarSign } from "lucid
 import { cn } from "@/lib/utils";
 import { LeaderboardEntry, RankingType } from "@/types/leaderboard";
 import { getArchetypeInfo } from "@/components/players/BehavioralProfileCard";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const RankIcon = ({ position }: { position: number }) => {
   if (position === 1) return <Trophy className="w-6 h-6 text-yellow-500" />;
