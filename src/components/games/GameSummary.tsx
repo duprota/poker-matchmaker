@@ -39,30 +39,39 @@ export const GameSummary = ({
     queryFn: async () => {
       // Get badges conquered in this game
       const { data: badges } = await supabase
-        .from("player_badges")
+        .from("player_badges" as any)
         .select("*")
         .eq("game_id", gameId!);
 
       if (!badges || badges.length === 0) return [];
 
+      // Get badge definitions
+      const { data: defs } = await supabase
+        .from("badge_definitions" as any)
+        .select("*");
+      const defMap = new Map((defs || []).map((d: any) => [d.code, d]));
+
       // Get player names
-      const playerIds = [...new Set(badges.map((b: any) => b.player_id))];
-      const { data: players } = await supabase
+      const playerIds = [...new Set((badges as any[]).map((b: any) => b.player_id))];
+      const { data: playersList } = await supabase
         .from("players")
         .select("id, name")
         .in("id", playerIds);
 
-      const playerMap = new Map((players || []).map((p: any) => [p.id, p.name]));
+      const playerMap = new Map((playersList || []).map((p: any) => [p.id, p.name]));
 
-      return badges.map((b: any) => ({
-        player_id: b.player_id,
-        player_name: playerMap.get(b.player_id) || "Unknown",
-        badge_code: b.badge_code,
-        badge_name: (b as any).badge_definitions?.name || b.badge_code,
-        emoji: (b as any).badge_definitions?.emoji || "🏅",
-        description: (b as any).badge_definitions?.description || "",
-        metadata: b.metadata,
-      }));
+      return (badges as any[]).map((b: any) => {
+        const def = defMap.get(b.badge_code);
+        return {
+          player_id: b.player_id,
+          player_name: playerMap.get(b.player_id) || "Unknown",
+          badge_code: b.badge_code,
+          badge_name: def?.name || b.badge_code,
+          emoji: def?.emoji || "🏅",
+          description: def?.description || "",
+          metadata: b.metadata,
+        };
+      });
     },
     staleTime: 60000,
   });
