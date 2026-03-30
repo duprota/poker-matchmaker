@@ -40,7 +40,7 @@ export const GameSummary = ({
       // Get badges conquered in this game
       const { data: badges } = await supabase
         .from("player_badges")
-        .select("*, badge_definitions!player_badges_badge_code_fkey(name, emoji, description)")
+        .select("*")
         .eq("game_id", gameId!);
 
       if (!badges || badges.length === 0) return [];
