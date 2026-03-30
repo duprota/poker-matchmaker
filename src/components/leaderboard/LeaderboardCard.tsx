@@ -44,7 +44,7 @@ export const LeaderboardCard = ({ entry, position, rankingType }: PlayerCardProp
     queryKey: ["elite-badges", entry.player_id],
     queryFn: async () => {
       const { data } = await supabase
-        .from("player_badges")
+        .from("player_badges" as any)
         .select("badge_code")
         .eq("player_id", entry.player_id)
         .eq("is_active", true)

@@ -35,14 +35,14 @@ export const PlayerBadgesSection = ({ playerId, isOwner = false }: { playerId: s
     queryKey: ["player-badges", playerId],
     queryFn: async () => {
       const { data: playerBadges, error } = await supabase
-        .from("player_badges")
+        .from("player_badges" as any)
         .select("*")
         .eq("player_id", playerId);
 
       if (error) throw error;
 
       const { data: definitions } = await supabase
-        .from("badge_definitions")
+        .from("badge_definitions" as any)
         .select("*");
 
       const defMap = new Map((definitions || []).map((d: any) => [d.code, d]));
