@@ -1,9 +1,9 @@
-import { Game, GamePlayer } from "@/types/game";
+import { Game } from "@/types/game";
 import { PlayerAvatar } from "@/components/games/summary/PlayerAvatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, DollarSign, TrendingUp, Swords, Crown } from "lucide-react";
+import { Plus, Users, DollarSign, Crown, Swords, Sparkles, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -21,11 +21,19 @@ interface PlayerExtra {
   archetype: string | null;
 }
 
-interface PlayerBadge {
+interface AtpEntry {
+  id: string | null;
+  score_atp: number | null;
+  name: string | null;
+}
+
+interface PlayerBadgeInfo {
   player_id: string;
   badge_code: string;
   emoji: string;
 }
+
+const DEFAULT_SKILL = 800;
 
 const archetypeLabels: Record<string, { label: string; emoji: string }> = {
   tubarao: { label: "Tubarão", emoji: "🦈" },
@@ -37,74 +45,363 @@ const archetypeLabels: Record<string, { label: string; emoji: string }> = {
 
 export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobbyProps) => {
   const [playerExtras, setPlayerExtras] = useState<PlayerExtra[]>([]);
-  const [eliteBadges, setEliteBadges] = useState<PlayerBadge[]>([]);
+  const [eliteBadges, setEliteBadges] = useState<PlayerBadgeInfo[]>([]);
+  const [atpRanking, setAtpRanking] = useState<AtpEntry[]>([]);
+  const [activeBadges, setActiveBadges] = useState<{ player_id: string; badge_code: string }[]>([]);
+  const [narratives, setNarratives] = useState<string[]>([]);
+  const [achievableBadges, setAchievableBadges] = useState<string[]>([]);
 
   const players = game.players;
   const buyIn = players.length > 0 ? players[0].initial_buyin : 100;
   const estimatedPot = buyIn * players.length;
+  const ids = players.map((p) => p.player.id);
 
   useEffect(() => {
     if (players.length === 0) return;
-    const ids = players.map((p) => p.player.id);
 
-    const fetchExtras = async () => {
-      const { data } = await supabase
-        .from("players")
-        .select("id, skill_score, archetype")
-        .in("id", ids);
-      if (data) setPlayerExtras(data);
-    };
+    const fetchAll = async () => {
+      // Parallel fetches
+      const [extrasRes, badgesRes, atpRes, allBadgesRes] = await Promise.all([
+        supabase.from("players").select("id, skill_score, archetype").in("id", ids),
+        supabase
+          .from("player_badges")
+          .select("player_id, badge_code, badge_definitions!inner(emoji)")
+          .in("player_id", ids)
+          .eq("is_active", true)
+          .in("badge_code", ["cabeca_chave", "podio", "craque_rodada"]),
+        supabase.from("atp_ranking").select("id, score_atp, name").order("score_atp", { ascending: false }),
+        supabase
+          .from("player_badges")
+          .select("player_id, badge_code")
+          .in("player_id", ids)
+          .eq("is_active", true),
+      ]);
 
-    const fetchBadges = async () => {
-      const { data } = await supabase
-        .from("player_badges")
-        .select("player_id, badge_code, badge_definitions!inner(emoji)")
-        .in("player_id", ids)
-        .eq("is_active", true)
-        .in("badge_code", ["cabeca_chave", "podio", "craque_rodada"]);
-      if (data) {
+      if (extrasRes.data) setPlayerExtras(extrasRes.data);
+      if (atpRes.data) setAtpRanking(atpRes.data as AtpEntry[]);
+      if (badgesRes.data) {
         setEliteBadges(
-          (data as any[]).map((b) => ({
+          (badgesRes.data as any[]).map((b) => ({
             player_id: b.player_id,
             badge_code: b.badge_code,
             emoji: b.badge_definitions?.emoji || "",
           }))
         );
       }
+      if (allBadgesRes.data) {
+        setActiveBadges(allBadgesRes.data as { player_id: string; badge_code: string }[]);
+      }
+
+      // Build narratives and achievable badges after data is available
+      const extras = extrasRes.data || [];
+      const allBadges = (allBadgesRes.data || []) as { player_id: string; badge_code: string }[];
+      const atp = (atpRes.data || []) as AtpEntry[];
+
+      await buildNarratives(extras, allBadges, atp);
+      await buildAchievableBadges(extras, allBadges);
     };
 
-    fetchExtras();
-    fetchBadges();
-  }, [players]);
+    fetchAll();
+  }, [players.length, ids.join(",")]);
 
-  const getExtra = (playerId: string) =>
-    playerExtras.find((p) => p.id === playerId);
+  const buildNarratives = async (
+    extras: PlayerExtra[],
+    allBadges: { player_id: string; badge_code: string }[],
+    atp: AtpEntry[]
+  ) => {
+    const result: string[] = [];
 
-  const getEliteBadge = (playerId: string) =>
-    eliteBadges.find((b) => b.player_id === playerId);
+    // Priority 1: trem_bala active (3+ win streak)
+    for (const p of players) {
+      const hasBadge = allBadges.some(
+        (b) => b.player_id === p.player.id && b.badge_code === "trem_bala"
+      );
+      if (hasBadge) {
+        result.push(`🚄 ${p.player.name} vem em sequência de vitórias`);
+        if (result.length >= 2) break;
+      }
+    }
 
-  // Skill share calculation
-  const totalSkill = playerExtras.reduce(
-    (sum, p) => sum + (p.skill_score || 0),
-    0
-  );
+    // Priority 2: espiral active (3+ loss streak)
+    if (result.length < 2) {
+      for (const p of players) {
+        const hasBadge = allBadges.some(
+          (b) => b.player_id === p.player.id && b.badge_code === "espiral"
+        );
+        if (hasBadge) {
+          result.push(`🌀 ${p.player.name} busca quebrar sequência de derrotas`);
+          if (result.length >= 2) break;
+        }
+      }
+    }
 
-  const getSkillShare = (playerId: string) => {
-    const extra = getExtra(playerId);
-    if (!extra?.skill_score || totalSkill === 0) return 0;
-    return (extra.skill_score / totalSkill) * 100;
+    // Priority 3: 2+ fenix archetypes
+    if (result.length < 2) {
+      const fenixCount = extras.filter((e) =>
+        ids.includes(e.id) && e.archetype === "fenix"
+      ).length;
+      if (fenixCount >= 2) {
+        result.push(`🔥 ${fenixCount} Fênix na mesa — noite promete ser longa`);
+      }
+    }
+
+    // Priority 4: foguete active
+    if (result.length < 2) {
+      for (const p of players) {
+        const hasBadge = allBadges.some(
+          (b) => b.player_id === p.player.id && b.badge_code === "foguete"
+        );
+        if (hasBadge) {
+          result.push(`🚀 ${p.player.name} em ascensão no ranking`);
+          if (result.length >= 2) break;
+        }
+      }
+    }
+
+    // Priority 5: Mesa forte (avg skill above historical avg * 1.10)
+    if (result.length < 2) {
+      const mesaSkills = extras
+        .filter((e) => ids.includes(e.id))
+        .map((e) => e.skill_score || DEFAULT_SKILL);
+      const sosMesa = mesaSkills.reduce((a, b) => a + b, 0) / (mesaSkills.length || 1);
+
+      // Fetch historical average
+      const { data: completedGames } = await supabase
+        .from("games")
+        .select("id")
+        .eq("status", "completed")
+        .limit(100);
+
+      if (completedGames && completedGames.length > 0) {
+        const gameIds = completedGames.map((g) => g.id);
+        const { data: gpData } = await supabase
+          .from("game_players")
+          .select("game_id, player_id")
+          .in("game_id", gameIds);
+
+        if (gpData && gpData.length > 0) {
+          const { data: allPlayers } = await supabase
+            .from("players")
+            .select("id, skill_score");
+
+          if (allPlayers) {
+            const skillMap = new Map(allPlayers.map((p) => [p.id, p.skill_score || DEFAULT_SKILL]));
+            const gameAvgs: number[] = [];
+            const byGame = new Map<string, string[]>();
+            gpData.forEach((gp) => {
+              if (!byGame.has(gp.game_id!)) byGame.set(gp.game_id!, []);
+              byGame.get(gp.game_id!)!.push(gp.player_id!);
+            });
+            byGame.forEach((pids) => {
+              const avg = pids.reduce((s, pid) => s + (skillMap.get(pid) || DEFAULT_SKILL), 0) / pids.length;
+              gameAvgs.push(avg);
+            });
+            const sosHistorico = gameAvgs.reduce((a, b) => a + b, 0) / (gameAvgs.length || 1);
+            if (sosMesa > sosHistorico * 1.1) {
+              result.push("💪 Mesa forte — pontos ATP valerão mais hoje");
+            }
+          }
+        }
+      }
+    }
+
+    // Priority 6: Win rate = 0% against composition
+    if (result.length < 2) {
+      for (const p of players) {
+        const otherIds = ids.filter((id) => id !== p.player.id);
+        if (otherIds.length === 0) continue;
+
+        // Games where this player participated
+        const { data: playerGames } = await supabase
+          .from("game_players")
+          .select("game_id")
+          .eq("player_id", p.player.id);
+
+        if (playerGames && playerGames.length >= 3) {
+          const playerGameIds = playerGames.map((g) => g.game_id!);
+
+          // Games where at least one other player also participated
+          const { data: sharedGames } = await supabase
+            .from("game_players")
+            .select("game_id")
+            .in("game_id", playerGameIds)
+            .in("player_id", otherIds);
+
+          if (sharedGames) {
+            const sharedGameIds = [...new Set(sharedGames.map((g) => g.game_id!))];
+            if (sharedGameIds.length >= 3) {
+              // Check wins (position 1 = lowest final_result rank or highest final_result)
+              const { data: results } = await supabase
+                .from("game_players")
+                .select("game_id, player_id, final_result")
+                .in("game_id", sharedGameIds)
+                .not("final_result", "is", null);
+
+              if (results) {
+                const gameResults = new Map<string, { player_id: string; final_result: number }[]>();
+                results.forEach((r) => {
+                  if (!gameResults.has(r.game_id!)) gameResults.set(r.game_id!, []);
+                  gameResults.get(r.game_id!)!.push({
+                    player_id: r.player_id!,
+                    final_result: r.final_result!,
+                  });
+                });
+
+                let wins = 0;
+                let total = 0;
+                gameResults.forEach((grs) => {
+                  const sorted = [...grs].sort((a, b) => b.final_result - a.final_result);
+                  if (sorted[0]?.player_id === p.player.id) wins++;
+                  total++;
+                });
+
+                if (wins === 0 && total >= 3) {
+                  result.push(`👀 ${p.player.name} ainda não venceu com essa composição`);
+                  if (result.length >= 2) break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Priority 7: 50%+ sangradores
+    if (result.length < 2) {
+      const sangradorCount = extras.filter(
+        (e) => ids.includes(e.id) && e.archetype === "sangrador"
+      ).length;
+      if (sangradorCount > players.length / 2) {
+        result.push(
+          `⚠️ ${sangradorCount} Sangradores na mesa — expectativa de rebuys acima da média`
+        );
+      }
+    }
+
+    setNarratives(result.slice(0, 2));
   };
 
-  // Sort by skill share descending for the confrontation panel
+  const buildAchievableBadges = async (
+    extras: PlayerExtra[],
+    allBadges: { player_id: string; badge_code: string }[]
+  ) => {
+    const result: string[] = [];
+
+    // Priority 1: Sniper — anyone hasn't won without rebuy in last 10 games
+    // Simplified: badge "sniper" not active for any player = opportunity
+    const anySniper = allBadges.some(
+      (b) => ids.includes(b.player_id) && b.badge_code === "sniper"
+    );
+    if (!anySniper) {
+      result.push("🎯 Sniper disponível — vença sem rebuyar");
+    }
+
+    // Priority 2: Career milestone (frequentador / da_casa / lenda)
+    if (result.length < 3) {
+      const { data: completedGames } = await supabase
+        .from("games")
+        .select("id")
+        .eq("status", "completed");
+
+      const totalGrupo = completedGames?.length || 0;
+      if (totalGrupo > 0) {
+        const milestones = [
+          { pct: 0.2, label: "Frequentador" },
+          { pct: 0.4, label: "Da Casa" },
+          { pct: 0.8, label: "Lenda" },
+        ];
+
+        for (const p of players) {
+          const { count } = await supabase
+            .from("game_players")
+            .select("id", { count: "exact", head: true })
+            .eq("player_id", p.player.id);
+
+          const nJogos = count || 0;
+          for (const m of milestones) {
+            const marco = Math.ceil(totalGrupo * m.pct);
+            if (marco > nJogos && marco - nJogos === 1) {
+              result.push(
+                `🎖️ ${p.player.name} joga seu ${nJogos + 1}º jogo — a um passo de ${m.label}`
+              );
+              break;
+            }
+          }
+          if (result.length >= 3) break;
+        }
+      }
+    }
+
+    // Priority 3: espiral active → Ave das Cinzas opportunity
+    if (result.length < 3) {
+      for (const p of players) {
+        const hasEspiral = allBadges.some(
+          (b) => b.player_id === p.player.id && b.badge_code === "espiral"
+        );
+        if (hasEspiral) {
+          result.push(`⚡ Ave das Cinzas disponível para ${p.player.name}`);
+          if (result.length >= 3) break;
+        }
+      }
+    }
+
+    // Priority 4: Zebra — underdog with positive delta
+    if (result.length < 3) {
+      const skillScores = extras
+        .filter((e) => ids.includes(e.id))
+        .map((e) => ({ id: e.id, skill: e.skill_score || DEFAULT_SKILL }));
+
+      if (skillScores.length > 0) {
+        const avgSkill = skillScores.reduce((s, p) => s + p.skill, 0) / skillScores.length;
+        const underdog = skillScores.find((p) => p.skill < avgSkill * 0.8);
+        if (underdog) {
+          const playerName = players.find((p) => p.player.id === underdog.id)?.player.name;
+          if (playerName) {
+            result.push(`🦓 Zebra pode aparecer — ${playerName} é o azarão da noite`);
+          }
+        }
+      }
+    }
+
+    // Priority 5: Regicida fallback
+    if (result.length < 3) {
+      result.push("👑 Regicida disponível — derrube o favorito");
+    }
+
+    setAchievableBadges(result.slice(0, 3));
+  };
+
+  // Helpers
+  const getExtra = (playerId: string) => playerExtras.find((p) => p.id === playerId);
+  const getEliteBadge = (playerId: string) => eliteBadges.find((b) => b.player_id === playerId);
+
+  const getAtpPosition = (playerId: string) => {
+    const idx = atpRanking.findIndex((r) => r.id === playerId);
+    return idx >= 0 ? idx + 1 : null;
+  };
+
+  const getSkill = (playerId: string) => {
+    const extra = getExtra(playerId);
+    return extra?.skill_score || DEFAULT_SKILL;
+  };
+
+  const totalSkill = ids.reduce((sum, id) => sum + getSkill(id), 0);
+
+  const getSkillShare = (playerId: string) => {
+    if (totalSkill === 0) return 0;
+    return (getSkill(playerId) / totalSkill) * 100;
+  };
+
   const sortedBySkill = [...players].sort(
     (a, b) => getSkillShare(b.player.id) - getSkillShare(a.player.id)
   );
-
   const favorite = sortedBySkill[0];
   const favoriteShare = favorite ? getSkillShare(favorite.player.id) : 0;
 
+  const enoughPlayers = players.length >= 3;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Player Arena */}
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader className="pb-3">
@@ -116,12 +413,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                 {players.length}
               </Badge>
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddPlayer}
-              className="gap-1.5"
-            >
+            <Button variant="outline" size="sm" onClick={onAddPlayer} className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />
               Adicionar
             </Button>
@@ -132,25 +424,19 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
               <p className="text-sm">Nenhum jogador adicionado ainda</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2"
-                onClick={onAddPlayer}
-              >
+              <Button variant="ghost" size="sm" className="mt-2" onClick={onAddPlayer}>
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Adicionar primeiro jogador
               </Button>
             </div>
           ) : (
             <div className="space-y-2">
-              {players.map((gp, index) => {
+              {sortedBySkill.map((gp, index) => {
                 const extra = getExtra(gp.player.id);
                 const elite = getEliteBadge(gp.player.id);
-                const arch = extra?.archetype
-                  ? archetypeLabels[extra.archetype]
-                  : null;
+                const arch = extra?.archetype ? archetypeLabels[extra.archetype] : null;
                 const skillShare = getSkillShare(gp.player.id);
+                const atpPos = getAtpPosition(gp.player.id);
 
                 return (
                   <motion.div
@@ -160,7 +446,6 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                     transition={{ delay: index * 0.06, duration: 0.3 }}
                   >
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors group">
-                      {/* Avatar */}
                       <Link to={`/players/${gp.player.id}`} className="shrink-0">
                         <div className="relative">
                           <PlayerAvatar
@@ -176,7 +461,6 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                         </div>
                       </Link>
 
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <Link
@@ -186,26 +470,23 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                             {gp.player.name}
                           </Link>
                           {arch && (
-                            <span className="text-xs text-muted-foreground">
-                              {arch.emoji}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {arch.emoji} {arch.label}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5">
-                          {extra?.skill_score != null && (
+                          <span className="text-xs font-medium text-primary tabular-nums">
+                            {skillShare.toFixed(1)}%
+                          </span>
+                          {atpPos && (
                             <span className="text-xs text-muted-foreground">
-                              Skill {extra.skill_score.toFixed(0)}
-                            </span>
-                          )}
-                          {players.length >= 2 && skillShare > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              {skillShare.toFixed(0)}% share
+                              #{atpPos} ATP
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Remove button */}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -223,9 +504,8 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
         </CardContent>
       </Card>
 
-      {/* Pot Preview & Favorite — side by side on wider screens, stacked on mobile */}
+      {/* Pot Preview & Favorite */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Pot Preview */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -245,7 +525,6 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
           </Card>
         </motion.div>
 
-        {/* Favorite */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -268,7 +547,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                     {favorite.player.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {favoriteShare.toFixed(0)}% skill share
+                    {favoriteShare.toFixed(1)}%
                   </p>
                 </>
               ) : (
@@ -281,7 +560,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
         </motion.div>
       </div>
 
-      {/* Confrontation Panel — Skill Share Bars */}
+      {/* Confrontation Panel */}
       {players.length >= 2 && totalSkill > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -311,9 +590,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                         <span className="truncate font-medium text-foreground">
                           {gp.player.name}
                         </span>
-                        {isFav && (
-                          <Crown className="h-3 w-3 text-amber-500 shrink-0" />
-                        )}
+                        {isFav && <Crown className="h-3 w-3 text-amber-500 shrink-0" />}
                       </div>
                       <span className="text-xs font-semibold text-muted-foreground tabular-nums">
                         {share.toFixed(1)}%
@@ -321,11 +598,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                     </div>
                     <div className="h-2 rounded-full bg-secondary overflow-hidden">
                       <motion.div
-                        className={`h-full rounded-full ${
-                          isFav
-                            ? "bg-amber-500"
-                            : "bg-primary/60"
-                        }`}
+                        className={`h-full rounded-full ${isFav ? "bg-amber-500" : "bg-primary/60"}`}
                         initial={{ width: 0 }}
                         animate={{ width: `${share}%` }}
                         transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
@@ -334,6 +607,68 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
                   </div>
                 );
               })}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Narratives — only with 3+ players */}
+      {enoughPlayers && narratives.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <Card className="border-border/50 bg-card/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-primary" />
+                Pré-Jogo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              {narratives.map((text, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + i * 0.1 }}
+                  className="text-sm text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2.5"
+                >
+                  {text}
+                </motion.div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Achievable Badges — only with 3+ players */}
+      {enoughPlayers && achievableBadges.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <Card className="border-border/50 bg-card/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Em Jogo Hoje
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              {achievableBadges.map((text, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + i * 0.1 }}
+                  className="text-sm text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2.5"
+                >
+                  {text}
+                </motion.div>
+              ))}
             </CardContent>
           </Card>
         </motion.div>
