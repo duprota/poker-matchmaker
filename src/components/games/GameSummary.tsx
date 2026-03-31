@@ -6,10 +6,9 @@ import { PodiumSection } from "./summary/PodiumSection";
 import { GameStats } from "./summary/GameStats";
 import { Rankings } from "./summary/Rankings";
 import { ShareButton } from "./summary/ShareButton";
-import { BadgeAnimation } from "@/components/badges/BadgeAnimation";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface GameSummaryProps {
   players: GamePlayer[];
@@ -30,14 +29,10 @@ export const GameSummary = ({
   startedAt,
   gameId,
 }: GameSummaryProps) => {
-  const [showBadges, setShowBadges] = useState(true);
-
-  // Fetch newly conquered badges for this game
   const { data: gameBadges } = useQuery({
     queryKey: ["game-badges", gameId],
     enabled: !!gameId,
     queryFn: async () => {
-      // Get badges conquered in this game
       const { data: badges } = await supabase
         .from("player_badges" as any)
         .select("*")
@@ -45,13 +40,11 @@ export const GameSummary = ({
 
       if (!badges || badges.length === 0) return [];
 
-      // Get badge definitions
       const { data: defs } = await supabase
         .from("badge_definitions" as any)
         .select("*");
       const defMap = new Map((defs || []).map((d: any) => [d.code, d]));
 
-      // Get player names
       const playerIds = [...new Set((badges as any[]).map((b: any) => b.player_id))];
       const { data: playersList } = await supabase
         .from("players")
@@ -76,10 +69,6 @@ export const GameSummary = ({
     staleTime: 60000,
   });
 
-  const handleBadgeAnimationComplete = useCallback(() => {
-    setShowBadges(false);
-  }, []);
-
   const sortedPlayers = [...players].sort((a, b) => {
     const resultA = calculateFinalResult(a);
     const resultB = calculateFinalResult(b);
@@ -89,18 +78,6 @@ export const GameSummary = ({
   const winner = sortedPlayers[0];
   const podiumPlayers = sortedPlayers.slice(1, 3);
   const hasEnoughForPodium = sortedPlayers.length >= 3;
-
-  // Show badge animation first if there are badges
-  if (showBadges && gameBadges && gameBadges.length > 0) {
-    return (
-      <div className="animate-fade-in">
-        <BadgeAnimation
-          badges={gameBadges}
-          onComplete={handleBadgeAnimationComplete}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -131,6 +108,30 @@ export const GameSummary = ({
       <div className="animate-fade-in" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
         <GameStats players={players} />
       </div>
+
+      {gameBadges && gameBadges.length > 0 && (
+        <div className="animate-fade-in" style={{ animationDelay: '700ms', animationFillMode: 'both' }}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">🏅 Badges Conquistadas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-2">
+                {gameBadges.map((badge, i) => (
+                  <div
+                    key={`${badge.badge_code}-${badge.player_id}-${i}`}
+                    className="flex flex-col items-center p-3 rounded-lg border bg-muted/30 text-center"
+                  >
+                    <span className="text-3xl mb-1">{badge.emoji}</span>
+                    <span className="text-sm font-semibold leading-tight">{badge.badge_name}</span>
+                    <span className="text-xs text-muted-foreground mt-1">{badge.player_name}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="animate-fade-in" style={{ animationDelay: '750ms', animationFillMode: 'both' }}>
         <ShareButton 
