@@ -50,6 +50,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
   const [activeBadges, setActiveBadges] = useState<{ player_id: string; badge_code: string }[]>([]);
   const [narratives, setNarratives] = useState<string[]>([]);
   const [achievableBadges, setAchievableBadges] = useState<string[]>([]);
+  const [gameTier, setGameTier] = useState<string>("250");
 
   const players = game.players;
   const buyIn = players.length > 0 ? players[0].initial_buyin : 100;
