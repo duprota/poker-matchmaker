@@ -108,6 +108,71 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
     fetchAll();
   }, [players.length, ids.join(",")]);
 
+  const calculateGameTier = async (extras: PlayerExtra[]) => {
+    // If game is Grand Slam, set it directly
+    if (game.is_grand_slam) {
+      setGameTier("grand_slam");
+      return;
+    }
+
+    const mesaSkills = extras
+      .filter((e) => ids.includes(e.id))
+      .map((e) => e.skill_score || DEFAULT_SKILL);
+    const sosMesa = mesaSkills.reduce((a, b) => a + b, 0) / (mesaSkills.length || 1);
+
+    // Fetch historical avg skill per completed game
+    const { data: completedGames } = await supabase
+      .from("games")
+      .select("id")
+      .eq("status", "completed")
+      .limit(200);
+
+    if (!completedGames || completedGames.length === 0) {
+      setGameTier("250");
+      return;
+    }
+
+    const gameIds = completedGames.map((g) => g.id);
+    const { data: gpData } = await supabase
+      .from("game_players")
+      .select("game_id, player_id")
+      .in("game_id", gameIds);
+
+    const { data: allPlayers } = await supabase
+      .from("players")
+      .select("id, skill_score");
+
+    if (!gpData || !allPlayers) {
+      setGameTier("250");
+      return;
+    }
+
+    const skillMap = new Map(allPlayers.map((p) => [p.id, p.skill_score || DEFAULT_SKILL]));
+    const gameAvgs: number[] = [];
+    const byGame = new Map<string, string[]>();
+    gpData.forEach((gp) => {
+      if (!byGame.has(gp.game_id!)) byGame.set(gp.game_id!, []);
+      byGame.get(gp.game_id!)!.push(gp.player_id!);
+    });
+    byGame.forEach((pids) => {
+      const avg = pids.reduce((s, pid) => s + (skillMap.get(pid) || DEFAULT_SKILL), 0) / pids.length;
+      gameAvgs.push(avg);
+    });
+
+    // Sort to find percentiles
+    gameAvgs.sort((a, b) => a - b);
+    const p50 = gameAvgs[Math.floor(gameAvgs.length * 0.50)] || 0;
+    const p85 = gameAvgs[Math.floor(gameAvgs.length * 0.85)] || 0;
+
+    if (sosMesa > p85) {
+      setGameTier("1000");
+    } else if (sosMesa > p50) {
+      setGameTier("500");
+    } else {
+      setGameTier("250");
+    }
+  };
+
   const buildNarratives = async (
     extras: PlayerExtra[],
     allBadges: { player_id: string; badge_code: string }[],
