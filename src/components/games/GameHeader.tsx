@@ -146,9 +146,6 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
         )}
       </div>
 
-      <div className="mt-2 text-sm text-muted-foreground flex items-center justify-between">
-        <span>Game Status: {status.charAt(0).toUpperCase() + status.slice(1)}</span>
-      </div>
     </div>
   );
 };
