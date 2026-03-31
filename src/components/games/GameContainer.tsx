@@ -4,6 +4,7 @@ import { GameMoneyFlowChart } from "./GameMoneyFlowChart";
 import { GameSummary } from "./GameSummary";
 import { LiveProbabilityPanel } from "./LiveProbabilityPanel";
 import { LiveScoresChart } from "./LiveScoresChart";
+import { PreGameLobby } from "./PreGameLobby";
 import { Button } from "@/components/ui/button";
 import { Plus, UserMinus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -182,7 +183,16 @@ export const GameContainer = ({
         fetchPlayers();
       }} />}
 
-        {game.status === "created" && null}
+        {game.status === "created" && (
+          <PreGameLobby
+            game={game}
+            onAddPlayer={() => {
+              setShowAddPlayerDialog(true);
+              fetchPlayers();
+            }}
+            onRemovePlayer={handleRemovePlayer}
+          />
+        )}
       </div>
 
       {game.status === "ongoing" && <LiveProbabilityPanel gameId={game.id} gameStatus={game.status} />}
