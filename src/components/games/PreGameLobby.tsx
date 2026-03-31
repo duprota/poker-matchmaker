@@ -3,7 +3,7 @@ import { PlayerAvatar } from "@/components/games/summary/PlayerAvatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, DollarSign, Crown, Swords, Sparkles, BookOpen } from "lucide-react";
+import { Plus, Users, DollarSign, Crown, Swords, Sparkles, BookOpen, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
