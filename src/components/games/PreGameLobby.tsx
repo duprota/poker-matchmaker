@@ -573,7 +573,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
         </CardContent>
       </Card>
 
-      {/* Pot Preview & Favorite */}
+      {/* Pot Preview & ATP Tier */}
       <div className="grid grid-cols-2 gap-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -582,7 +582,7 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
         >
           <Card className="border-border/50 bg-card/50 h-full">
             <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
-              <DollarSign className="h-5 w-5 text-green-500 mb-1" />
+              <DollarSign className="h-5 w-5 text-primary mb-1" />
               <p className="text-xs text-muted-foreground">Pot Estimado</p>
               <p className="text-2xl font-bold text-foreground mt-1">
                 R$ {estimatedPot}
@@ -599,31 +599,50 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="border-border/50 bg-card/50 h-full">
+          <Card className={`border-border/50 h-full ${
+            gameTier === "grand_slam" ? "bg-amber-500/10 border-amber-500/30" :
+            gameTier === "1000" ? "bg-purple-500/10 border-purple-500/30" :
+            gameTier === "500" ? "bg-blue-500/10 border-blue-500/30" :
+            "bg-emerald-500/10 border-emerald-500/30"
+          }`}>
             <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
-              <Crown className="h-5 w-5 text-amber-500 mb-1" />
-              <p className="text-xs text-muted-foreground">Favorito</p>
-              {favorite && favoriteShare > 0 ? (
-                <>
-                  <div className="mt-1.5">
-                    <PlayerAvatar
-                      name={favorite.player.name}
-                      avatarUrl={favorite.player.avatar_url}
-                      size={36}
-                    />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground mt-1 truncate max-w-full">
-                    {favorite.player.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {favoriteShare.toFixed(1)}%
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {players.length < 2 ? "Adicione jogadores" : "—"}
-                </p>
-              )}
+              <Trophy className={`h-5 w-5 mb-1 ${
+                gameTier === "grand_slam" ? "text-amber-500" :
+                gameTier === "1000" ? "text-purple-500" :
+                gameTier === "500" ? "text-blue-500" :
+                "text-emerald-500"
+              }`} />
+              <p className="text-xs text-muted-foreground">Nível ATP</p>
+              <p className={`text-lg font-bold mt-1 ${
+                gameTier === "grand_slam" ? "text-amber-500" :
+                gameTier === "1000" ? "text-purple-500" :
+                gameTier === "500" ? "text-blue-500" :
+                "text-emerald-500"
+              }`}>
+                {gameTier === "grand_slam" ? "🏆 Grand Slam" : `ATP ${gameTier}`}
+              </p>
+              <div className="text-xs text-muted-foreground mt-1.5 space-y-0.5">
+                {(() => {
+                  const tierKey = gameTier === "grand_slam" ? "grand_slam" : gameTier;
+                  const pts: Record<string, number[]> = {
+                    "250": [250, 150, 100, 60, 30],
+                    "500": [500, 300, 200, 120, 60],
+                    "1000": [1000, 600, 400, 240, 120],
+                    "grand_slam": [2000, 1200, 800, 480, 240],
+                  };
+                  const p = pts[tierKey] || pts["250"];
+                  const maxToShow = Math.min(players.length, 5);
+                  return (
+                    <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5">
+                      {p.slice(0, maxToShow).map((v, i) => (
+                        <span key={i} className="tabular-nums">
+                          {i + 1}º:{v}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
