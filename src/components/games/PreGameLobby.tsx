@@ -98,6 +98,9 @@ export const PreGameLobby = ({ game, onAddPlayer, onRemovePlayer }: PreGameLobby
       const allBadges = (allBadgesRes.data || []) as { player_id: string; badge_code: string }[];
       const atp = (atpRes.data || []) as AtpEntry[];
 
+      // Calculate tier based on mesa skill vs historical percentiles
+      await calculateGameTier(extras);
+
       await buildNarratives(extras, allBadges, atp);
       await buildAchievableBadges(extras, allBadges);
     };
