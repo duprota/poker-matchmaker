@@ -183,7 +183,16 @@ export const GameContainer = ({
         fetchPlayers();
       }} />}
 
-        {game.status === "created" && null}
+        {game.status === "created" && (
+          <PreGameLobby
+            game={game}
+            onAddPlayer={() => {
+              setShowAddPlayerDialog(true);
+              fetchPlayers();
+            }}
+            onRemovePlayer={handleRemovePlayer}
+          />
+        )}
       </div>
 
       {game.status === "ongoing" && <LiveProbabilityPanel gameId={game.id} gameStatus={game.status} />}
