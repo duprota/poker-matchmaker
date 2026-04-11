@@ -1,0 +1,3 @@
+## 2024-05-18 - Missing Accessibility Context on Icon Buttons
+**Learning:** Many core interactive components in the app (like `GameHeader` and `LiveProbabilityPanel`) rely heavily on icon-only buttons (e.g. pencil, trash, checkmarks) that lack `aria-label` attributes. This makes navigation difficult for screen readers, as the context is lost.
+**Action:** When working on interactive UI elements or standard ShadCN/Radix primitives, always verify if `size="icon"` components or icon-only layouts have explicit descriptive `aria-label` tags, and add them proactively to ensure the interface is accessible.
