@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -60,9 +61,14 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
     <div className="mb-8">
       <div className="flex items-center justify-between">
         <Link to="/games" className="mr-4">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Back to games">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Back to games</TooltipContent>
+          </Tooltip>
         </Link>
         
         <div className="flex-1 min-w-0">
@@ -75,25 +81,37 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                 className="w-full text-2xl font-bold"
                 autoFocus
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleUpdateName}
-                className="text-green-500 hover:text-green-600"
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setIsEditing(false);
-                  setNewName(name || "");
-                }}
-                className="text-red-500 hover:text-red-600"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Save name"
+                    onClick={handleUpdateName}
+                    className="text-green-500 hover:text-green-600"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Save name</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Cancel editing"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setNewName(name || "");
+                    }}
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Cancel editing</TooltipContent>
+              </Tooltip>
             </div>
           ) : (
             <div className="flex items-center gap-3">
@@ -101,14 +119,20 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                 {name || "Unnamed Game"}
               </h1>
               {canEdit && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsEditing(true)}
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Edit name"
+                      onClick={() => setIsEditing(true)}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit name</TooltipContent>
+                </Tooltip>
               )}
             </div>
           )}
@@ -116,15 +140,21 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
         
         {onDeleteGame && (
           <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
+            <Tooltip>
+              <AlertDialogTrigger asChild>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Delete game"
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+              </AlertDialogTrigger>
+              <TooltipContent>Delete game</TooltipContent>
+            </Tooltip>
             <AlertDialogContent className={isMobile ? "w-[95vw]" : ""}>
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure you want to delete this game?</AlertDialogTitle>
