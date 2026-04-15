@@ -40,6 +40,7 @@ export const ExpenseCard = ({ expense, onDelete }: ExpenseCardProps) => {
               size="icon"
               className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
               onClick={onDelete}
+              aria-label="Delete expense"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
