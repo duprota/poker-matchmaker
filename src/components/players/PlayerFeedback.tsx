@@ -210,11 +210,13 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
             size="sm"
             onClick={() => handleVote('like')}
             disabled={isSubmitting}
+            aria-label={`Like player, ${stats.likes} likes`}
+            aria-pressed={currentVote === 'like'}
             className={`flex items-center gap-2 ${
               currentVote === 'like' ? 'bg-green-500/10 text-green-500' : ''
             }`}
           >
-            <ThumbsUp className="w-4 h-4" />
+            <ThumbsUp className="w-4 h-4" aria-hidden="true" />
             <span className="text-sm font-medium">{stats.likes}</span>
           </Button>
           <Button
@@ -222,11 +224,13 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
             size="sm"
             onClick={() => handleVote('dislike')}
             disabled={isSubmitting}
+            aria-label={`Dislike player, ${stats.dislikes} dislikes`}
+            aria-pressed={currentVote === 'dislike'}
             className={`flex items-center gap-2 ${
               currentVote === 'dislike' ? 'bg-red-500/10 text-red-500' : ''
             }`}
           >
-            <ThumbsDown className="w-4 h-4" />
+            <ThumbsDown className="w-4 h-4" aria-hidden="true" />
             <span className="text-sm font-medium">{stats.dislikes}</span>
           </Button>
         </div>
@@ -234,9 +238,11 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
           variant="ghost"
           size="sm"
           onClick={() => setShowCommentField(!showCommentField)}
+          aria-label={showCommentField ? "Hide comment field" : "Write a comment"}
+          aria-expanded={showCommentField}
           className="hover:bg-primary/10"
         >
-          <MessageSquare className="w-4 h-4" />
+          <MessageSquare className="w-4 h-4" aria-hidden="true" />
         </Button>
       </div>
 
@@ -248,8 +254,9 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
               variant="ghost"
               size="sm"
               onClick={() => setShowCommentField(false)}
+              aria-label="Close comment field"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
           <div className="flex gap-2">
@@ -258,14 +265,16 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
               value={comment}
               onChange={(e) => setComment(e.target.value.slice(0, maxCharacters))}
               className="min-h-[80px] text-sm"
+              aria-label="Comment text"
             />
             <Button
               size="sm"
               onClick={handleSubmitComment}
               disabled={isSubmitting || !comment.trim()}
               className="self-end"
+              aria-label="Submit comment"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
