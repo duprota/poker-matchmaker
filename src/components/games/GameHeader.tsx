@@ -1,5 +1,5 @@
 
-import { ArrowLeft, Pencil, X, Check, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, X, Check, Trash2, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
   const isMobile = useIsMobile();
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(name || "");
+  const [isSaving, setIsSaving] = useState(false);
   const canEdit = status !== "completed";
 
   const handleUpdateName = async () => {
@@ -39,6 +40,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
       return;
     }
 
+    setIsSaving(true);
     try {
       const { error } = await supabase
         .from("games")
@@ -53,6 +55,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
     } catch (error) {
       console.error("Error updating game name:", error);
       toast.error("Failed to update game name");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -60,7 +64,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
     <div className="mb-8">
       <div className="flex items-center justify-between">
         <Link to="/games" className="mr-4">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back to games">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -73,24 +77,33 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter game name"
                 className="w-full text-2xl font-bold"
+                disabled={isSaving}
                 autoFocus
               />
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleUpdateName}
-                className="text-green-500 hover:text-green-600"
+                disabled={isSaving}
+                aria-label="Save game name"
+                className="text-green-500 hover:text-green-600 disabled:opacity-50"
               >
-                <Check className="h-4 w-4" />
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
+                disabled={isSaving}
                 onClick={() => {
                   setIsEditing(false);
                   setNewName(name || "");
                 }}
-                className="text-red-500 hover:text-red-600"
+                aria-label="Cancel editing"
+                className="text-red-500 hover:text-red-600 disabled:opacity-50"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -105,6 +118,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsEditing(true)}
+                  aria-label="Edit game name"
                   className="text-muted-foreground hover:text-primary"
                 >
                   <Pencil className="h-4 w-4" />
@@ -120,6 +134,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
               <Button 
                 variant="ghost" 
                 size="icon"
+                aria-label="Delete game"
                 className="text-muted-foreground hover:text-destructive transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
