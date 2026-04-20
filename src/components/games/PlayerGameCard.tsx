@@ -312,7 +312,7 @@ export function PlayerGameCard({
                   <h3 className="font-bold">{player.player.name}</h3>
                   
                 </div>
-                {onRemovePlayer && <Button variant="ghost" size="icon" className="absolute top-3 right-3 text-muted-foreground hover:text-destructive" onClick={() => setConfirmRemove(true)}>
+                {onRemovePlayer && <Button variant="ghost" size="icon" aria-label="Remove player" className="absolute top-3 right-3 text-muted-foreground hover:text-destructive" onClick={() => setConfirmRemove(true)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>}
               </div>
