@@ -115,11 +115,11 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
 
           {/* Style selector */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
-            <Button variant="ghost" size="icon" onClick={prevStyle}>
+            <Button variant="ghost" size="icon" aria-label="Previous style" onClick={prevStyle}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <span className="text-sm font-medium">{style.label}</span>
-            <Button variant="ghost" size="icon" onClick={nextStyle}>
+            <Button variant="ghost" size="icon" aria-label="Next style" onClick={nextStyle}>
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
@@ -193,7 +193,7 @@ export const AvatarGallery = ({ open, onOpenChange, playerName, onSelect }: Avat
           {/* Actions */}
           <div className="p-4 border-t bg-background flex items-center gap-3">
             {!isAnimalGrid && (
-              <Button variant="outline" size="icon" onClick={shuffleSeeds}>
+              <Button variant="outline" size="icon" aria-label="Shuffle avatars" onClick={shuffleSeeds}>
                 <Shuffle className="h-4 w-4" />
               </Button>
             )}

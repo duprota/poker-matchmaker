@@ -1,0 +1,1 @@
+## 2024-04-20 - Missing ARIA Labels on Icon Buttons\n **Learning:** Icon-only buttons (like those using Lucide React icons) often lack ARIA labels, which is a common accessibility issue.\n **Action:** Added `aria-label` attributes to icon-only buttons across multiple components to improve accessibility.
