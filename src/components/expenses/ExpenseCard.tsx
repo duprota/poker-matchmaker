@@ -38,6 +38,8 @@ export const ExpenseCard = ({ expense, onDelete }: ExpenseCardProps) => {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Delete expense"
+              title="Delete expense"
               className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
               onClick={onDelete}
             >
