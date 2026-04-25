@@ -1,0 +1,3 @@
+## 2024-05-18 - Missing ARIA Labels on Icon-Only Buttons
+**Learning:** Found several instances across the application where `Button` components configured with `size="icon"` lacked `aria-label`s. This is a common accessibility issue that renders these buttons completely inaccessible to screen reader users, who will just hear "button" without context.
+**Action:** When using or reviewing `Button` components with `size="icon"`, always explicitly add an `aria-label` attribute with a concise, descriptive string explaining the button's action. This practice has been added to memory for future reference.
