@@ -60,7 +60,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
     <div className="mb-8">
       <div className="flex items-center justify-between">
         <Link to="/games" className="mr-4">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back to games">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
