@@ -1,0 +1,1 @@
+## 2024-03-21 - Icon Buttons Need ARIA Labels\n**Learning:** Icon-only buttons using Shadcn UI's `<Button size="icon">` often lack context for screen readers.\n**Action:** Always add descriptive `aria-label` attributes to `<Button size="icon">` components to maintain accessibility standards.
