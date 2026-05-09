@@ -60,7 +60,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
     <div className="mb-8">
       <div className="flex items-center justify-between">
         <Link to="/games" className="mr-4">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Back to games">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -78,6 +78,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Save game name"
                 onClick={handleUpdateName}
                 className="text-green-500 hover:text-green-600"
               >
@@ -86,6 +87,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Cancel editing"
                 onClick={() => {
                   setIsEditing(false);
                   setNewName(name || "");
@@ -104,6 +106,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Edit game name"
                   onClick={() => setIsEditing(true)}
                   className="text-muted-foreground hover:text-primary"
                 >
@@ -120,6 +123,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
               <Button 
                 variant="ghost" 
                 size="icon"
+                aria-label="Delete game"
                 className="text-muted-foreground hover:text-destructive transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
