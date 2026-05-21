@@ -235,6 +235,8 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
           size="sm"
           onClick={() => setShowCommentField(!showCommentField)}
           className="hover:bg-primary/10"
+          aria-label={showCommentField ? "Hide comment field" : "Add comment"}
+          title={showCommentField ? "Hide comment field" : "Add comment"}
         >
           <MessageSquare className="w-4 h-4" />
         </Button>
@@ -248,6 +250,8 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
               variant="ghost"
               size="sm"
               onClick={() => setShowCommentField(false)}
+              aria-label="Cancel comment"
+              title="Cancel comment"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -264,6 +268,8 @@ export const PlayerFeedback = ({ playerId, playerName, onFeedbackSubmitted }: Pl
               onClick={handleSubmitComment}
               disabled={isSubmitting || !comment.trim()}
               className="self-end"
+              aria-label="Submit comment"
+              title="Submit comment"
             >
               <Send className="w-4 h-4" />
             </Button>
