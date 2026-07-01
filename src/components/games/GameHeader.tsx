@@ -60,7 +60,12 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
     <div className="mb-8">
       <div className="flex items-center justify-between">
         <Link to="/games" className="mr-4">
-          <Button variant="ghost" size="icon">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Back to games"
+            title="Back to games"
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -80,6 +85,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                 size="icon"
                 onClick={handleUpdateName}
                 className="text-green-500 hover:text-green-600"
+                aria-label="Save name"
+                title="Save name"
               >
                 <Check className="h-4 w-4" />
               </Button>
@@ -91,6 +98,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                   setNewName(name || "");
                 }}
                 className="text-red-500 hover:text-red-600"
+                aria-label="Cancel editing"
+                title="Cancel editing"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -106,6 +115,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                   size="icon"
                   onClick={() => setIsEditing(true)}
                   className="text-muted-foreground hover:text-primary"
+                  aria-label="Edit name"
+                  title="Edit name"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -121,6 +132,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                 variant="ghost" 
                 size="icon"
                 className="text-muted-foreground hover:text-destructive transition-colors"
+                aria-label="Delete game"
+                title="Delete game"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
