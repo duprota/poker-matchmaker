@@ -260,6 +260,8 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleSave(entry)}
+                        aria-label="Save"
+                        title="Save"
                       >
                         <Save className="h-4 w-4" />
                       </Button>
@@ -267,6 +269,8 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
                         variant="ghost"
                         size="icon"
                         onClick={handleCancel}
+                        aria-label="Cancel"
+                        title="Cancel"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -277,6 +281,8 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(entry)}
+                        aria-label="Edit"
+                        title="Edit"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -285,6 +291,8 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label="Delete"
+                            title="Delete"
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
