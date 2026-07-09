@@ -1,0 +1,3 @@
+## 2026-07-09 - Consistent label language
+**Learning:** In projects with mixed languages (e.g., codebase in Portuguese, UI in Portuguese), it's important to standardize the language for accessibility attributes like `aria-label`. Screen readers rely on the declared language of the page, but developer consistency is also key. In this Poker Manager app, English is used for these attributes even if the UI text is in Portuguese.
+**Action:** Always write `aria-label` and `title` attributes in English unless explicitly instructed otherwise or if the `<html lang="pt-BR">` tag strictly requires Portuguese labels for local screen readers (which requires specific testing).
