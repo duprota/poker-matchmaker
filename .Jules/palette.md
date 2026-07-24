@@ -1,0 +1,3 @@
+## 2024-03-24 - Add ARIA Labels and Titles to Icon-Only Buttons
+**Learning:** Icon-only buttons (using `<Button size="icon">`) are widely used in this application (e.g., in Navigation, GameHeader, EditableRebuys) but they lack descriptive `aria-label` and `title` attributes, making them inaccessible to screen readers and lacking helpful hover tooltips for visual users.
+**Action:** Ensure all `<Button size="icon">` components have appropriate `aria-label` and `title` attributes. Apply this pattern specifically to `src/components/Navigation.tsx`, `src/components/games/GameHeader.tsx`, and `src/components/games/table/EditableRebuys.tsx`.
