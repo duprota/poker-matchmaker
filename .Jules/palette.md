@@ -1,0 +1,3 @@
+## 2026-07-30 - Adding accessibility labels and tooltips to icon-only buttons
+**Learning:** Sighted users navigating the game details page benefit significantly from native HTML `title` attributes on icon-only buttons, as they provide immediate context on hover without requiring complex custom tooltip components. Screen reader users require `aria-label` attributes on the same buttons to understand their function.
+**Action:** Always pair `aria-label` (for screen readers) and `title` (for visual tooltips) on all `<Button size="icon">` components across the application to ensure universal accessibility and clarity.
