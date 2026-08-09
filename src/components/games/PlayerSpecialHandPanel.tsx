@@ -114,6 +114,8 @@ export function PlayerSpecialHandPanel({
                     onClick={() => decrementHand(option.value)}
                     disabled={!handCount || isSubmitting}
                     className="h-8 w-8 rounded-full"
+                    aria-label="Decrease hand count"
+                    title="Decrease hand count"
                   >
                     -
                   </Button>
@@ -136,6 +138,8 @@ export function PlayerSpecialHandPanel({
                     onClick={() => incrementHand(option.value)}
                     disabled={isSubmitting}
                     className="h-8 w-8 rounded-full"
+                    aria-label="Increase hand count"
+                    title="Increase hand count"
                   >
                     +
                   </Button>
