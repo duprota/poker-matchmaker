@@ -57,7 +57,7 @@ export const useChartResponsive = () => {
     let rightMargin = 30;
     let leftMargin = 15;
     let bottomMargin = 30;
-    let topMargin = 20;
+    const topMargin = 20;
     let fontSize = 12;
     let tickCount = 8;
     let minTickGap = 60;

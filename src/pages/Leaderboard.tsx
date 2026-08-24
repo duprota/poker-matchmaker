@@ -34,7 +34,7 @@ const fetchAvailableYears = async (): Promise<number[]> => {
 const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntry[]> => {
   console.log("Fetching leaderboard data for filter:", yearFilter);
   
-  let query = supabase
+  const query = supabase
     .from('game_players')
     .select(`
       player:players(id, name, archetype),
@@ -113,7 +113,7 @@ const fetchLeaderboardData = async (yearFilter: string): Promise<LeaderboardEntr
 const fetchPlayerProgressData = async (leaderboardData: LeaderboardEntry[], yearFilter: string) => {
   console.log("Processing player progress data...");
   
-  let query = supabase
+  const query = supabase
     .from('games')
     .select(`
       id,
