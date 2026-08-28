@@ -32,10 +32,10 @@ export const EditableRebuys = ({ playerId, initialValue, onSave }: EditableRebuy
           onChange={(e) => setEditValue(Number(e.target.value))}
           className="w-20 ml-auto"
         />
-        <Button variant="ghost" size="icon" onClick={handleSave}>
+        <Button aria-label="Save rebuys" title="Save rebuys" variant="ghost" size="icon" onClick={handleSave}>
           <Save className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={handleCancel}>
+        <Button aria-label="Cancel editing" title="Cancel editing" variant="ghost" size="icon" onClick={handleCancel}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -45,7 +45,7 @@ export const EditableRebuys = ({ playerId, initialValue, onSave }: EditableRebuy
   return (
     <div className="flex justify-end gap-2">
       <span className="mr-2">{initialValue}</span>
-      <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
+      <Button aria-label="Edit rebuys" title="Edit rebuys" variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
         <Pencil className="h-4 w-4" />
       </Button>
     </div>
