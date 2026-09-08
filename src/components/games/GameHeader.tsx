@@ -60,7 +60,7 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
     <div className="mb-8">
       <div className="flex items-center justify-between">
         <Link to="/games" className="mr-4">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Back to games" title="Back to games">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -79,6 +79,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                 variant="ghost"
                 size="icon"
                 onClick={handleUpdateName}
+                aria-label="Save name"
+                title="Save name"
                 className="text-green-500 hover:text-green-600"
               >
                 <Check className="h-4 w-4" />
@@ -90,6 +92,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                   setIsEditing(false);
                   setNewName(name || "");
                 }}
+                aria-label="Cancel editing"
+                title="Cancel editing"
                 className="text-red-500 hover:text-red-600"
               >
                 <X className="h-4 w-4" />
@@ -105,6 +109,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsEditing(true)}
+                  aria-label="Edit game name"
+                  title="Edit game name"
                   className="text-muted-foreground hover:text-primary"
                 >
                   <Pencil className="h-4 w-4" />
@@ -120,6 +126,8 @@ export const GameHeader = ({ status, name, gameId, onDeleteGame, onNameUpdated }
               <Button 
                 variant="ghost" 
                 size="icon"
+                aria-label="Delete game"
+                title="Delete game"
                 className="text-muted-foreground hover:text-destructive transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
