@@ -286,7 +286,7 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsCameraOpen(false)}
+                onClick={() => setIsCameraOpen(false)} aria-label="Close" title="Close"
                 className="text-white hover:bg-white/10"
               >
                 <X className="h-6 w-6" />
@@ -301,7 +301,7 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={toggleCamera}
+                onClick={toggleCamera} aria-label="Switch camera" title="Switch camera"
                 className="text-white hover:bg-white/10"
               >
                 <SwitchCamera className="h-6 w-6" />

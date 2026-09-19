@@ -1,0 +1,3 @@
+## 2024-05-19 - Accessible UI Elements
+**Learning:** Icon-only buttons without `aria-label` or `title` attributes are prevalent across various components in the application, making it difficult for screen reader users and keyboard navigators to understand their purpose.
+**Action:** Adding `aria-label` and `title` to these buttons ensures that they are accessible and provide context to all users. Specifically focusing on `src/components/Navigation.tsx` (the hamburger menu button), `src/components/games/GameHeader.tsx` (the back button), and `src/components/games/table/EditableRebuys.tsx` (the edit/save/cancel buttons) where interaction is critical for basic usage.
