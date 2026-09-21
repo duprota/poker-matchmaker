@@ -1,0 +1,3 @@
+## 2025-01-21 - Accessible Icon Buttons Pattern
+**Learning:** Found several instances where functional actions (Edit, Save, Cancel) were represented only by icons without `aria-label` or `title` attributes. This makes them completely invisible to screen readers and difficult to understand for users who rely on tooltips for iconography meaning.
+**Action:** Always add `aria-label` (for screen readers) and `title` (for native browser tooltips) to icon-only buttons to ensure they are accessible and intuitive for all users. Ensure any inline inputs also have proper `aria-label` if a visual label is absent.
