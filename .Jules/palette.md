@@ -1,0 +1,3 @@
+## 2024-05-20 - Icon-Only Button Accessibility Pattern
+**Learning:** The application heavily uses Shadcn UI's `Button` component with `size="icon"` for primary actions (like editing, deleting, navigating, and toggling menus). However, there's a recurring pattern where these buttons lack both `aria-label` and `title` attributes. This makes them completely invisible to screen readers and prevents sighted users from seeing native tooltips to clarify the icon's meaning.
+**Action:** Always implement a dual-labeling approach when using `<Button size="icon">` by adding an `aria-label` for screen reader accessibility and a `title` to provide native tooltips.
