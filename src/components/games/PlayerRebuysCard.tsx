@@ -128,6 +128,7 @@ export const PlayerRebuysCard = ({
                   size="icon"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   title="Remover jogador"
+                  aria-label="Remover jogador"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
