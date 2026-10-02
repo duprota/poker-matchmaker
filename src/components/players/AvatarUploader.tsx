@@ -288,6 +288,8 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
                 size="icon"
                 onClick={() => setIsCameraOpen(false)}
                 className="text-white hover:bg-white/10"
+                title="Fechar câmera"
+                aria-label="Fechar câmera"
               >
                 <X className="h-6 w-6" />
               </Button>
@@ -296,6 +298,7 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
                 onClick={captureFrame}
                 className="w-16 h-16 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-colors active:scale-95"
                 aria-label="Capturar foto"
+                title="Capturar foto"
               />
 
               <Button
@@ -303,6 +306,8 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
                 size="icon"
                 onClick={toggleCamera}
                 className="text-white hover:bg-white/10"
+                title="Trocar câmera"
+                aria-label="Trocar câmera"
               >
                 <SwitchCamera className="h-6 w-6" />
               </Button>
