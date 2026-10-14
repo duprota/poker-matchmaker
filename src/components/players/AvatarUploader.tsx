@@ -286,6 +286,8 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Close camera"
+                title="Close camera"
                 onClick={() => setIsCameraOpen(false)}
                 className="text-white hover:bg-white/10"
               >
@@ -301,6 +303,8 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Switch camera"
+                title="Switch camera"
                 onClick={toggleCamera}
                 className="text-white hover:bg-white/10"
               >
@@ -350,6 +354,8 @@ export const AvatarUploader = ({ playerId, playerName = '', currentAvatar, onAva
                 <div className="p-4 bg-background border-t flex justify-between items-center">
                   <Button
                     variant="outline"
+                    aria-label="Cancel crop"
+                    title="Cancel crop"
                     onClick={() => { setIsCropperOpen(false); setSourceImg(null); }}
                   >
                     <X className="mr-2 h-4 w-4" />
