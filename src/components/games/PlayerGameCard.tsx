@@ -152,7 +152,7 @@ export function PlayerGameCard({
         <div className="p-6">
           <h2 className="text-xl font-bold mb-4">Rebuys de {player.player.name}</h2>
           <div className="grid grid-cols-4 gap-3 mb-6">
-            {[0, 1, 2, 3, 4, 5, 6, 7].map(value => <Button key={value} onClick={() => handleSetRebuyValue(value)} variant={player.total_rebuys === value ? "default" : "outline"} className={player.total_rebuys === value ? "bg-blue-500 hover:bg-blue-600" : ""} disabled={processingAction === 'rebuy-set'}>
+            {[0, 1, 2, 3, 4, 5, 6, 7].map(value => <Button key={value} onClick={() => handleSetRebuyValue(value)} variant={rebuys === value ? "default" : "outline"} className={rebuys === value ? "bg-blue-500 hover:bg-blue-600" : ""}>
                 {value}
               </Button>)}
           </div>
@@ -173,7 +173,7 @@ export function PlayerGameCard({
         <div className="p-6">
           <h2 className="text-xl font-bold mb-2">Encerrar {player.player.name}</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Total investido: ${totalAmount} (buy-in + {player.total_rebuys} rebuys)
+            Total investido: ${totalAmount} (buy-in + {rebuys} rebuys)
           </p>
           <div className="space-y-4">
             <div>
@@ -344,7 +344,7 @@ export function PlayerGameCard({
                     </motion.p>
                   </AnimatePresence>
                 </motion.div>
-                <motion.div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-3 rounded-lg" key={`rebuys-${player.total_rebuys}`} initial={{
+                <motion.div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-3 rounded-lg" key={`rebuys-${rebuys}`} initial={{
                 scale: 1
               }} animate={{
                 scale: [1, 1.05, 1]
@@ -354,7 +354,7 @@ export function PlayerGameCard({
               }}>
                   <p className="text-xs text-muted-foreground mb-1">Rebuys</p>
                   <AnimatePresence mode="wait">
-                    <motion.p key={player.total_rebuys} initial={{
+                    <motion.p key={rebuys} initial={{
                     opacity: 0,
                     y: -5
                   }} animate={{
@@ -366,19 +366,18 @@ export function PlayerGameCard({
                   }} transition={{
                     duration: 0.2
                   }} className="text-2xl font-bold text-purple-500">
-                      {player.total_rebuys}
+                      {rebuys}
                     </motion.p>
                   </AnimatePresence>
                 </motion.div>
               </div>
               
               <div className="flex flex-wrap gap-2">
-                <Button 
-                  onClick={handleQuickRebuy} 
-                  disabled={isProcessing || processingAction !== null} 
+                <Button
+                  onClick={handleQuickRebuy}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
                 >
-                  {isProcessing || processingAction === 'rebuy' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                  <Plus className="h-4 w-4 mr-2" />
                   Rebuy
                 </Button>
                 
