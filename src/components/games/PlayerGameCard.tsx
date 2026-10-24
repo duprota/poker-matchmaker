@@ -29,7 +29,10 @@ export function PlayerGameCard({
   isProcessing
 }: PlayerGameCardProps) {
   const isMobile = useIsMobile();
-  const totalAmount = player.initial_buyin + player.total_rebuys * player.initial_buyin;
+  // Optimistic rebuys: increment instantly on click, sync to DB in background
+  const [optimisticRebuys, setOptimisticRebuys] = useState<number | null>(null);
+  const rebuys = optimisticRebuys ?? player.total_rebuys;
+  const totalAmount = player.initial_buyin + rebuys * player.initial_buyin;
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [openRebuyPanel, setOpenRebuyPanel] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
