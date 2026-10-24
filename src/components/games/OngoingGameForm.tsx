@@ -36,7 +36,6 @@ export const OngoingGameForm = ({
         total_rebuys: newRebuys
       }).eq("id", playerId);
       if (error) throw error;
-      toast.success("Rebuys atualizados com sucesso!");
     } catch (error) {
       console.error("Error updating rebuys:", error);
       toast.error("Erro ao atualizar rebuys");
