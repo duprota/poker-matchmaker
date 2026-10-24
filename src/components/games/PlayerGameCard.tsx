@@ -43,33 +43,30 @@ export function PlayerGameCard({
   const isCashedOut = player.final_result !== null;
   const netResult = isCashedOut ? (player.final_result! - totalAmount) : 0;
 
-  const handleQuickRebuy = async () => {
-    if (isProcessing || processingAction) return;
-    setProcessingAction('rebuy');
-    try {
-      await onRebuyChange(player.id, player.total_rebuys + 1);
-      toast.success("Rebuy adicionado com sucesso!", {
-        description: `${player.player.name} agora tem ${player.total_rebuys + 1} rebuys`,
-        position: "top-center"
-      });
-    } finally {
-      setProcessingAction(null);
+  // Clear optimistic value once the server value catches up
+  useEffect(() => {
+    if (optimisticRebuys !== null && player.total_rebuys >= optimisticRebuys) {
+      setOptimisticRebuys(null);
     }
+  }, [player.total_rebuys, optimisticRebuys]);
+
+  const handleQuickRebuy = () => {
+    const newValue = rebuys + 1;
+    setOptimisticRebuys(newValue);
+    // Fire-and-forget: user can fix mistakes later via the edit panel
+    onRebuyChange(player.id, newValue).catch(() => {
+      setOptimisticRebuys(null);
+      toast.error("Erro ao registrar rebuy — tente novamente", { position: "top-center" });
+    });
   };
 
-  const handleSetRebuyValue = async (value: number) => {
-    if (isProcessing || processingAction) return;
-    setProcessingAction('rebuy-set');
-    try {
-      await onRebuyChange(player.id, value);
-      toast.success("Rebuys atualizados!", {
-        description: `${player.player.name} agora tem ${value} rebuys`,
-        position: "top-center"
-      });
-      setOpenRebuyPanel(false);
-    } finally {
-      setProcessingAction(null);
-    }
+  const handleSetRebuyValue = (value: number) => {
+    setOptimisticRebuys(value);
+    setOpenRebuyPanel(false);
+    onRebuyChange(player.id, value).catch(() => {
+      setOptimisticRebuys(null);
+      toast.error("Erro ao atualizar rebuys — tente novamente", { position: "top-center" });
+    });
   };
 
   const handleRemovePlayer = () => {
