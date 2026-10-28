@@ -41,7 +41,7 @@ export function PlayerGameCard({
   const [editingCashOut, setEditingCashOut] = useState(false);
 
   const isCashedOut = player.final_result !== null;
-  const netResult = isCashedOut ? (player.final_result! - totalAmount) : 0;
+  const netResult = (player.final_result ?? 0) - totalAmount;
 
   // Clear optimistic value once the server value catches up
   useEffect(() => {
@@ -84,6 +84,7 @@ export function PlayerGameCard({
       return;
     }
     setProcessingAction('cashout');
+    setShowCashOut(false);
     try {
       await onCashOut(player.id, value);
       toast.success(`${player.player.name} encerrou a mesa!`, {
@@ -92,6 +93,11 @@ export function PlayerGameCard({
       });
       setShowCashOut(false);
       setEditingCashOut(false);
+      setCashOutValue("");
+    } catch (error) {
+      setShowCashOut(true);
+      console.error("Error cashing out:", error);
+      toast.error("Erro ao encerrar jogador — tente novamente", { position: "top-center" });
     } finally {
       setProcessingAction(null);
     }
@@ -109,6 +115,9 @@ export function PlayerGameCard({
       await onCashOut(player.id, value);
       toast.success("Valor atualizado!", { position: "top-center" });
       setEditingCashOut(false);
+    } catch (error) {
+      console.error("Error updating cashout:", error);
+      toast.error("Erro ao atualizar saída — tente novamente", { position: "top-center" });
     } finally {
       setProcessingAction(null);
     }
@@ -232,6 +241,7 @@ export function PlayerGameCard({
                   <Badge variant="outline" className="text-xs mt-1">
                     <LogOut className="w-3 h-3 mr-1" /> Encerrado
                   </Badge>
+                  {isProcessing && <span role="status" className="text-xs text-muted-foreground ml-2">Salvando…</span>}
                 </div>
               </div>
               
@@ -267,14 +277,14 @@ export function PlayerGameCard({
                 {editingCashOut ? (
                   <>
                     <Button variant="outline" size="sm" onClick={() => setEditingCashOut(false)}>Cancelar</Button>
-                    <Button size="sm" onClick={handleUpdateCashOut} disabled={processingAction === 'cashout-edit'}
+                    <Button size="sm" onClick={handleUpdateCashOut} disabled={isProcessing || processingAction === 'cashout-edit'}
                       className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
                       {processingAction === 'cashout-edit' ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
                       Salvar
                     </Button>
                   </>
                 ) : (
-                  <Button variant="outline" size="sm" onClick={() => {
+                  <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => {
                     setCashOutValue(String(player.final_result || 0));
                     setEditingCashOut(true);
                   }}>
@@ -287,6 +297,7 @@ export function PlayerGameCard({
         </Card>
       </motion.div>
       <ConfirmDialog />
+      {CashOutDialog()}
     </>;
   }
 
@@ -375,6 +386,7 @@ export function PlayerGameCard({
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={handleQuickRebuy}
+                  disabled={isProcessing}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -402,6 +414,6 @@ export function PlayerGameCard({
       </motion.div>
       
       <ConfirmDialog />
-      <CashOutDialog />
+      {CashOutDialog()}
     </>;
 }

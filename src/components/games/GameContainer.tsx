@@ -12,10 +12,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useOptimisticCashOut } from "@/hooks/useOptimisticCashOut";
 
 interface GameContainerProps {
   game: Game;
-  refreshGame: () => void;
+  refreshGame: () => Promise<void>;
 }
 
 export const GameContainer = ({
@@ -29,6 +30,14 @@ export const GameContainer = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [players, setPlayers] = useState<any[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const cashOut = useOptimisticCashOut(game.id, game.players || []);
+  const [liveRefreshVersion, setLiveRefreshVersion] = useState(0);
+
+  const handleCashOut = async (id: string, value: number, persist: () => Promise<void>) => {
+    await cashOut.save(id, value, persist);
+    setLiveRefreshVersion(previous => previous + 1);
+    await refreshGame();
+  };
 
   // Optimistic rebuy overrides: local state is the source of truth on screen,
   // the server confirms in the background. Cleared when server data catches up.
@@ -67,7 +76,7 @@ export const GameContainer = ({
 
   // Players with optimistic overrides applied — used by ALL displays
   // (cards, Total in Play, money flow chart) so everything updates together
-  const displayPlayers = (game.players || []).map(p =>
+  const displayPlayers = cashOut.players.map(p =>
     rebuyOverrides[p.id] !== undefined ? { ...p, total_rebuys: rebuyOverrides[p.id] } : p
   );
 
@@ -193,7 +202,7 @@ export const GameContainer = ({
         console.log("Rebuys saved");
       }} savingRebuys={false} setRebuys={() => {
         console.log("Rebuys updated");
-      }} onOptimisticRebuy={setRebuyOverride} onRemovePlayer={handleRemovePlayer} onAddPlayer={() => {
+      }} onOptimisticRebuy={setRebuyOverride} onCashOutSave={handleCashOut} cashOutOverrides={cashOut.overrides} onRemovePlayer={handleRemovePlayer} onAddPlayer={() => {
         setShowAddPlayerDialog(true);
         fetchPlayers();
       }} />}
@@ -210,7 +219,7 @@ export const GameContainer = ({
         )}
       </div>
 
-      {game.status === "ongoing" && <LiveProbabilityPanel gameId={game.id} gameStatus={game.status} />}
+      {game.status === "ongoing" && <LiveProbabilityPanel gameId={game.id} gameStatus={game.status} players={displayPlayers} cashOutOverrides={cashOut.overrides} refreshVersion={liveRefreshVersion} />}
 
       {game.status !== "created" && <GameMoneyFlowChart players={displayPlayers} gameHistory={[]} />}
 

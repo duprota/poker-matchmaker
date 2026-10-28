@@ -8,6 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, ArrowDown, Minus, TrendingUp, LogOut, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import type { GamePlayer } from "@/types/game";
+import type { CashOutOverrides } from "@/hooks/cashOutState";
+import { Button } from "@/components/ui/button";
 
 interface LiveScore {
   player_id: string;
@@ -23,6 +26,9 @@ interface LiveScore {
 interface LiveProbabilityPanelProps {
   gameId: string;
   gameStatus: string;
+  players: GamePlayer[];
+  cashOutOverrides: CashOutOverrides;
+  refreshVersion: number;
 }
 
 const PHASE_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
@@ -31,17 +37,19 @@ const PHASE_CONFIG: Record<string, { label: string; emoji: string; color: string
   late: { label: "Reta Final", emoji: "🔴", color: "bg-red-500/20 text-red-400 border-red-500/30" },
 };
 
-export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPanelProps) => {
+export const LiveProbabilityPanel = ({ gameId, gameStatus, players, cashOutOverrides, refreshVersion }: LiveProbabilityPanelProps) => {
   const [scores, setScores] = useState<LiveScore[]>([]);
   const [initialPositions, setInitialPositions] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
-  const [previousActiveIds, setPreviousActiveIds] = useState<Set<string>>(new Set());
+  const previousActiveIds = useRef<Set<string>>(new Set());
+  const requestVersion = useRef(0);
   const initialFetched = useRef(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const fetchLiveScores = async () => {
     if (gameStatus === "completed") return;
+    const version = ++requestVersion.current;
 
     setLoading(true);
     try {
@@ -49,6 +57,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
         body: { game_id: gameId },
       });
 
+      if (version !== requestVersion.current) return;
       if (error) {
         console.error("Error fetching live scores:", error);
         return;
@@ -58,15 +67,15 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
       if (Array.isArray(parsed)) {
         // Detect newly cashed-out players for exit narrative
         const currentActiveIds = new Set(parsed.filter(s => s.is_active).map(s => s.player_id));
-        if (previousActiveIds.size > 0) {
+        if (previousActiveIds.current.size > 0) {
           const newlyCashedOut = parsed.filter(
-            s => !s.is_active && previousActiveIds.has(s.player_id)
+            s => !s.is_active && previousActiveIds.current.has(s.player_id)
           );
           for (const player of newlyCashedOut) {
             showExitNarrative(player);
           }
         }
-        setPreviousActiveIds(currentActiveIds);
+        previousActiveIds.current = currentActiveIds;
 
         setScores(parsed);
 
@@ -74,7 +83,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
         if (!initialFetched.current && parsed.length > 0) {
           const init: Record<string, number> = {};
           parsed.filter(s => s.is_active && s.posicao_esperada != null).forEach((s) => {
-            init[s.player_id] = s.posicao_esperada!;
+            if (s.posicao_esperada != null) init[s.player_id] = s.posicao_esperada;
           });
           setInitialPositions(init);
           initialFetched.current = true;
@@ -83,7 +92,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
     } catch (err) {
       console.error("Live scores error:", err);
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   };
 
@@ -123,12 +132,13 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
   useEffect(() => {
     if (gameStatus !== "ongoing") return;
     fetchLiveScores();
-  }, [gameId, gameStatus]);
+  }, [gameId, gameStatus, refreshVersion]);
 
   // Subscribe to real-time changes on game_players
   useEffect(() => {
     if (gameStatus !== "ongoing") return;
 
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const channel = supabase
       .channel(`live-scores-${gameId}`)
       .on(
@@ -141,20 +151,38 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
         },
         () => {
           console.log("Game players changed, recalculating live scores...");
-          fetchLiveScores();
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => fetchLiveScores(), 300);
         }
       )
       .subscribe();
 
     return () => {
+      if (timer) clearTimeout(timer);
+      requestVersion.current += 1;
       supabase.removeChannel(channel);
     };
   }, [gameId, gameStatus]);
 
   if (gameStatus !== "ongoing" || scores.length === 0) return null;
 
-  const activePlayers = scores.filter(s => s.is_active);
-  const cashedOutPlayers = scores.filter(s => !s.is_active);
+  const displayedScores = scores.map(score => {
+    const player = players.find(p => p.player.id === score.player_id);
+    if (!player || player.final_result === null) return score;
+    return {
+      ...score,
+      is_active: false,
+      score_normalizado: null,
+      posicao_esperada: null,
+      saldo_saida: (player.final_result ?? 0) - player.initial_buyin * (1 + player.total_rebuys),
+      personal_rebuys: player.total_rebuys,
+    };
+  });
+  const activePlayers = displayedScores.filter(s => s.is_active);
+  const cashedOutPlayers = displayedScores.filter(s => !s.is_active);
+  const awaitingConfirmation = Object.keys(cashOutOverrides).length > 0 || scores.some(score =>
+    score.is_active && players.some(player => player.player.id === score.player_id && player.final_result !== null)
+  );
   const phase = activePlayers[0]?.phase || "early";
   const phaseInfo = PHASE_CONFIG[phase] || PHASE_CONFIG.early;
 
@@ -165,18 +193,19 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus }: LiveProbabilityPane
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-400" />
             <h3 className="font-bold text-lg">Probabilidades ao Vivo</h3>
-            <button
+            <Button variant="ghost" size="icon"
               onClick={() => navigate("/live-probability-info")}
               className="text-muted-foreground hover:text-foreground transition-colors"
               title="Como funciona?"
             >
               <HelpCircle className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
           <Badge variant="outline" className={`${phaseInfo.color} border`}>
             {phaseInfo.emoji} {phaseInfo.label}
           </Badge>
         </div>
+        {(loading || awaitingConfirmation) && <p role="status" className="text-xs text-muted-foreground mb-3">Atualizando probabilidades…</p>}
 
         {/* Active Players */}
         <div className="space-y-3">

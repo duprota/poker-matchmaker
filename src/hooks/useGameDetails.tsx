@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, GamePlayer } from "@/types/game";
@@ -9,8 +9,10 @@ export const useGameDetails = (gameId: string | undefined) => {
   const [loading, setLoading] = useState(true);
   const [hasBalanceError, setHasBalanceError] = useState(false);
   const { toast } = useToast();
+  const fetchVersion = useRef(0);
 
   const fetchGame = async () => {
+    const version = ++fetchVersion.current;
     try {
       console.log("Fetching game details for ID:", gameId);
       const { data: gameData, error: gameError } = await supabase
@@ -52,6 +54,7 @@ export const useGameDetails = (gameId: string | undefined) => {
         players: playersData as GamePlayer[],
       };
 
+      if (version !== fetchVersion.current) return;
       setGame(gameWithPlayers);
 
       // Check balance after setting game data
@@ -62,6 +65,7 @@ export const useGameDetails = (gameId: string | undefined) => {
       setHasBalanceError(totalBuyIns !== totalResults);
 
     } catch (error) {
+      if (version !== fetchVersion.current) return;
       console.error("Error fetching game:", error);
       toast({
         title: "Error",
@@ -69,7 +73,7 @@ export const useGameDetails = (gameId: string | undefined) => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (version === fetchVersion.current) setLoading(false);
     }
   };
 
@@ -101,6 +105,7 @@ export const useGameDetails = (gameId: string | undefined) => {
 
       // Cleanup subscription on unmount
       return () => {
+        fetchVersion.current += 1;
         if (refetchTimer) clearTimeout(refetchTimer);
         channel.unsubscribe();
       };
