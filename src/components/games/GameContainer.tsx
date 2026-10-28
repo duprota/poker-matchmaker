@@ -71,31 +71,8 @@ export const GameContainer = ({
     rebuyOverrides[p.id] !== undefined ? { ...p, total_rebuys: rebuyOverrides[p.id] } : p
   );
 
-  useEffect(() => {
-    if (!game?.id) return;
-
-    // Subscribe to real-time updates for game_players table
-    const channel = supabase
-      .channel('game-players-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'game_players',
-          filter: `game_id=eq.${game.id}`
-        },
-        (payload) => {
-          console.log('Real-time update received in GameContainer:', payload);
-          refreshGame();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [game?.id, refreshGame]);
+  // Note: realtime updates for game_players are handled (debounced) in
+  // useGameDetails — no duplicate subscription needed here.
 
   const fetchPlayers = async () => {
     try {
