@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Estabilizar a janela de saída durante a digitação e com teclado aberto
+- [ ] Verificar foco, posição do campo, rolagem interna e confirmação sem alterar jogo real
 - [x] Corrigir 9 final_result NULL → 0 (5 jogos, 2025-2026)
 - [x] Lançar débito faltante de R$700 do Bruno Mineiro no ledger do jogo "Chopp"
 - [x] Registrar cada rebuy no game_history com timestamp (delta)

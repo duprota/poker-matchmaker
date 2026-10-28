@@ -24,6 +24,10 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.75rem;
+    --cashout-positive: 142 71% 35%;
+    --cashout-positive-background: 142 50% 94%;
+    --cashout-negative: 0 72% 45%;
+    --cashout-negative-background: 0 70% 96%;
   }
 
   .dark {
@@ -46,6 +50,10 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    --cashout-positive: 142 69% 65%;
+    --cashout-positive-background: 142 28% 15%;
+    --cashout-negative: 0 85% 72%;
+    --cashout-negative-background: 0 30% 16%;
   }
 }
 
@@ -95,6 +103,26 @@
 
 .hover-scale {
   @apply transition-transform duration-200;
+}
+
+.cashout-mobile-content {
+  bottom: var(--cashout-keyboard-offset, 0px);
+  max-height: calc(var(--cashout-visible-height, 100dvh) - 16px);
+  margin-top: 0;
+}
+
+.cashout-actions {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.cashout-result-positive {
+  color: hsl(var(--cashout-positive));
+  background: hsl(var(--cashout-positive-background));
+}
+
+.cashout-result-negative {
+  color: hsl(var(--cashout-negative));
+  background: hsl(var(--cashout-negative-background));
 }
 
 /* Only apply hover effects on non-touch devices */
