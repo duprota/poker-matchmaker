@@ -1,0 +1,4 @@
+
+## 2024-05-24 - Missing accessibility patterns for icon-only action buttons
+**Learning:** Discovered a pervasive pattern across the app where icon-only action buttons (e.g., in GameHeader and EditableRebuys) completely lack accessible names. Relying solely on `size="icon"` with Radix/Shadcn buttons leaves screen reader users with zero context for critical game management actions (edit, delete, save, cancel). Additionally, the lack of native tooltips (`title`) hides functional intent from sighted users.
+**Action:** When creating or modifying icon-only buttons (`size="icon"`), always implement a dual-labeling approach: apply `aria-label` to provide the accessible name for assistive technologies, and simultaneously apply `title` to provide immediate, native tooltip feedback for sighted users on hover.
