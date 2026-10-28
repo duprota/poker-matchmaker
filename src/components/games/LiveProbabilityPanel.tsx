@@ -168,7 +168,7 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus, players, cashOutOverr
 
   const displayedScores = scores.map(score => {
     const player = players.find(p => p.player.id === score.player_id);
-    if (!player || !cashOutOverrides[player.id]) return score;
+    if (!player || player.final_result === null) return score;
     return {
       ...score,
       is_active: false,
@@ -180,7 +180,9 @@ export const LiveProbabilityPanel = ({ gameId, gameStatus, players, cashOutOverr
   });
   const activePlayers = displayedScores.filter(s => s.is_active);
   const cashedOutPlayers = displayedScores.filter(s => !s.is_active);
-  const awaitingConfirmation = Object.keys(cashOutOverrides).length > 0;
+  const awaitingConfirmation = Object.keys(cashOutOverrides).length > 0 || scores.some(score =>
+    score.is_active && players.some(player => player.player.id === score.player_id && player.final_result !== null)
+  );
   const phase = activePlayers[0]?.phase || "early";
   const phaseInfo = PHASE_CONFIG[phase] || PHASE_CONFIG.early;
 
