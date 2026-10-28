@@ -84,6 +84,7 @@ export function PlayerGameCard({
       return;
     }
     setProcessingAction('cashout');
+    setShowCashOut(false);
     try {
       await onCashOut(player.id, value);
       toast.success(`${player.player.name} encerrou a mesa!`, {
@@ -92,7 +93,9 @@ export function PlayerGameCard({
       });
       setShowCashOut(false);
       setEditingCashOut(false);
+      setCashOutValue("");
     } catch (error) {
+      setShowCashOut(true);
       console.error("Error cashing out:", error);
       toast.error("Erro ao encerrar jogador — tente novamente", { position: "top-center" });
     } finally {
