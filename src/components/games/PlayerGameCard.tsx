@@ -294,7 +294,7 @@ export function PlayerGameCard({
         </Card>
       </motion.div>
       <ConfirmDialog />
-      <CashOutDialog />
+      {CashOutDialog()}
     </>;
   }
 
@@ -411,6 +411,6 @@ export function PlayerGameCard({
       </motion.div>
       
       <ConfirmDialog />
-      <CashOutDialog />
+      {CashOutDialog()}
     </>;
 }
