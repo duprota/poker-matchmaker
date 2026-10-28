@@ -3,3 +3,6 @@
 - [x] Lançar débito faltante de R$700 do Bruno Mineiro no ledger do jogo "Chopp"
 - [x] Registrar cada rebuy no game_history com timestamp (delta)
 - [x] Limpar pontos fora de ordem do gráfico de probabilidades ao encerrar o jogo
+- [ ] Atualizar saída imediatamente em toda a mesa e confirmar sem depender de Realtime
+- [ ] Recuperar falhas sem falso sucesso e bloquear apenas o jogador em salvamento
+- [ ] Verificar saída, edição e falha com testes
