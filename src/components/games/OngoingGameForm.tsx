@@ -30,12 +30,28 @@ export const OngoingGameForm = ({
   const handleRebuyChange = async (playerId: string, newRebuys: number) => {
     setIsProcessing(true);
     try {
+      const player = players.find(p => p.id === playerId);
+      const previousRebuys = player?.total_rebuys ?? 0;
       const {
         error
       } = await supabase.from("game_players").update({
         total_rebuys: newRebuys
       }).eq("id", playerId);
       if (error) throw error;
+
+      // Record the rebuy event in game history (fire-and-forget, never blocks the click)
+      const delta = newRebuys - previousRebuys;
+      if (player && delta !== 0) {
+        supabase.from("game_history").insert({
+          game_id: player.game_id,
+          game_player_id: playerId,
+          player_id: player.player_id,
+          event_type: "rebuy" as const,
+          amount: delta,
+        }).then(({ error: historyError }) => {
+          if (historyError) console.error("Error recording rebuy history:", historyError);
+        });
+      }
     } catch (error) {
       console.error("Error updating rebuys:", error);
       toast.error("Erro ao atualizar rebuys");

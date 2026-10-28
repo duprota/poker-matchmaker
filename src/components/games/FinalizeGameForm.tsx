@@ -74,6 +74,32 @@ export const FinalizeGameForm = ({
       }).eq("id", gameId);
       if (gameError) throw gameError;
 
+      // Clean up live score snapshots: keep only the monotonic (non-decreasing)
+      // rebuy totals so the evolution chart shows a clean sequence
+      try {
+        const { data: snapshots } = await supabase
+          .from("live_game_scores")
+          .select("id, snapshot_at, total_rebuys_game")
+          .eq("game_id", gameId)
+          .order("snapshot_at", { ascending: true });
+        if (snapshots && snapshots.length > 0) {
+          let runningMax = -1;
+          const staleIds: string[] = [];
+          for (const snap of snapshots) {
+            if (snap.total_rebuys_game < runningMax) {
+              staleIds.push(snap.id);
+            } else {
+              runningMax = snap.total_rebuys_game;
+            }
+          }
+          if (staleIds.length > 0) {
+            await supabase.from("live_game_scores").delete().in("id", staleIds);
+          }
+        }
+      } catch (cleanupError) {
+        console.error("Live scores cleanup error (non-blocking):", cleanupError);
+      }
+
       // Calculate skill ratings
       console.log("Calculating skill ratings for game:", gameId);
       const { error: ratingError } = await supabase.functions.invoke("calculate-ratings", {
