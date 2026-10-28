@@ -77,7 +77,10 @@ export const useGameDetails = (gameId: string | undefined) => {
     if (gameId) {
       fetchGame();
 
-      // Subscribe to real-time updates for game_players table
+      // Subscribe to real-time updates for game_players table.
+      // Refetches are debounced (300ms trailing) so bursts of rapid rebuy
+      // clicks trigger a single reload instead of a storm of competing ones.
+      let refetchTimer: ReturnType<typeof setTimeout> | null = null;
       const channel = supabase
         .channel('game-player-updates')
         .on(
@@ -90,14 +93,15 @@ export const useGameDetails = (gameId: string | undefined) => {
           },
           (payload) => {
             console.log('Realtime update received:', payload);
-            // Refresh game data when changes are detected
-            fetchGame();
+            if (refetchTimer) clearTimeout(refetchTimer);
+            refetchTimer = setTimeout(() => fetchGame(), 300);
           }
         )
         .subscribe();
 
       // Cleanup subscription on unmount
       return () => {
+        if (refetchTimer) clearTimeout(refetchTimer);
         channel.unsubscribe();
       };
     }
