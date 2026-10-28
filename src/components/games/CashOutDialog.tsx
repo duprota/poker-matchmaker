@@ -70,7 +70,7 @@ export function CashOutDialog({ open, onOpenChange, mobile, name, invested, rebu
         />
       </label>
       <div className={`cashout-result min-h-[72px] mt-4 p-3 rounded-lg ${balance === null ? "bg-muted" : balance >= 0 ? "cashout-result-positive" : "cashout-result-negative"}`}>
-        <p className="text-sm text-muted-foreground">Resultado líquido</p>
+        <p className="text-sm">Resultado líquido</p>
         <p className="text-xl font-bold">{balance === null ? "—" : `${balance >= 0 ? "+" : ""}$${balance}`}</p>
       </div>
     </div>
