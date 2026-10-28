@@ -30,6 +30,47 @@ export const GameContainer = ({
   const [players, setPlayers] = useState<any[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
 
+  // Optimistic rebuy overrides: local state is the source of truth on screen,
+  // the server confirms in the background. Cleared when server data catches up.
+  const [rebuyOverrides, setRebuyOverrides] = useState<Record<string, number>>({});
+
+  const setRebuyOverride = (gamePlayerId: string, value: number | null) => {
+    setRebuyOverrides(prev => {
+      const next = { ...prev };
+      if (value === null) {
+        delete next[gamePlayerId];
+      } else {
+        next[gamePlayerId] = value;
+      }
+      return next;
+    });
+  };
+
+  // Clear each override once the server value matches it (confirmation received)
+  useEffect(() => {
+    if (!game?.players) return;
+    setRebuyOverrides(prev => {
+      const entries = Object.entries(prev);
+      if (entries.length === 0) return prev;
+      let changed = false;
+      const next = { ...prev };
+      for (const [gpId, value] of entries) {
+        const serverPlayer = game.players.find(p => p.id === gpId);
+        if (serverPlayer && serverPlayer.total_rebuys === value) {
+          delete next[gpId];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [game?.players]);
+
+  // Players with optimistic overrides applied — used by ALL displays
+  // (cards, Total in Play, money flow chart) so everything updates together
+  const displayPlayers = (game.players || []).map(p =>
+    rebuyOverrides[p.id] !== undefined ? { ...p, total_rebuys: rebuyOverrides[p.id] } : p
+  );
+
   useEffect(() => {
     if (!game?.id) return;
 
@@ -169,16 +210,13 @@ export const GameContainer = ({
         </div>}
 
       <div className="grid gap-4">
-        {game.status === "ongoing" && <OngoingGameForm players={game.players} rebuys={{}} onRebuyChange={() => {
+        {game.status === "ongoing" && <OngoingGameForm players={displayPlayers} rebuys={{}} onRebuyChange={() => {
         console.log("Rebuy change detected");
-        refreshGame();
       }} onSaveRebuys={() => {
         console.log("Rebuys saved");
-        refreshGame();
       }} savingRebuys={false} setRebuys={() => {
         console.log("Rebuys updated");
-        refreshGame();
-      }} onRemovePlayer={handleRemovePlayer} onAddPlayer={() => {
+      }} onOptimisticRebuy={setRebuyOverride} onRemovePlayer={handleRemovePlayer} onAddPlayer={() => {
         setShowAddPlayerDialog(true);
         fetchPlayers();
       }} />}
