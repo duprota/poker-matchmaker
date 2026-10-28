@@ -2,7 +2,7 @@ import React from 'react';
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Trash2, RefreshCw, LogOut, Check, DollarSign } from "lucide-react";
+import { Plus, Trash2, LogOut, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -10,7 +10,6 @@ import type { GamePlayer } from "@/types/game";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CashOutDialog } from "./CashOutDialog";
 
@@ -40,6 +39,7 @@ export function PlayerGameCard({
   const [showCashOut, setShowCashOut] = useState(false);
   const [cashOutValue, setCashOutValue] = useState("");
   const [editingCashOut, setEditingCashOut] = useState(false);
+  const [cashOutError, setCashOutError] = useState<string | null>(null);
 
   const isCashedOut = player.final_result !== null;
   const netResult = (player.final_result ?? 0) - totalAmount;
@@ -77,48 +77,27 @@ export function PlayerGameCard({
     setConfirmRemove(false);
   };
 
+  const openCashOut = (editing: boolean) => {
+    setEditingCashOut(editing);
+    setCashOutError(null);
+    setCashOutValue(editing ? String(player.final_result ?? 0) : "");
+    setShowCashOut(true);
+  };
+
   const handleCashOut = async () => {
     if (!onCashOut || isProcessing || processingAction) return;
-    const value = parseFloat(cashOutValue);
-    if (isNaN(value) || value < 0) {
-      toast.error("Informe um valor válido para o stack final");
-      return;
-    }
+    const value = Number(cashOutValue);
+    if (cashOutValue.trim() === "" || !Number.isFinite(value) || value < 0) return;
+    setCashOutError(null);
     setProcessingAction('cashout');
-    setShowCashOut(false);
     try {
       await onCashOut(player.id, value);
-      toast.success(`${player.player.name} encerrou a mesa!`, {
-        description: `Stack final: $${value}`,
-        position: "top-center"
-      });
       setShowCashOut(false);
       setEditingCashOut(false);
       setCashOutValue("");
     } catch (error) {
-      setShowCashOut(true);
       console.error("Error cashing out:", error);
-      toast.error("Erro ao encerrar jogador — tente novamente", { position: "top-center" });
-    } finally {
-      setProcessingAction(null);
-    }
-  };
-
-  const handleUpdateCashOut = async () => {
-    if (!onCashOut || isProcessing || processingAction) return;
-    const value = parseFloat(cashOutValue);
-    if (isNaN(value) || value < 0) {
-      toast.error("Informe um valor válido");
-      return;
-    }
-    setProcessingAction('cashout-edit');
-    try {
-      await onCashOut(player.id, value);
-      toast.success("Valor atualizado!", { position: "top-center" });
-      setEditingCashOut(false);
-    } catch (error) {
-      console.error("Error updating cashout:", error);
-      toast.error("Erro ao atualizar saída — tente novamente", { position: "top-center" });
+      setCashOutError("Não foi possível salvar. O valor foi mantido; tente novamente.");
     } finally {
       setProcessingAction(null);
     }
@@ -177,15 +156,19 @@ export function PlayerGameCard({
   const cashOutDialog = <CashOutDialog
     open={showCashOut}
     onOpenChange={open => {
+      if (processingAction === "cashout" || isProcessing) return;
       setShowCashOut(open);
-      if (!open) setCashOutValue("");
+      if (!open) { setCashOutValue(""); setCashOutError(null); }
     }}
     mobile={isMobile}
     name={player.player.name}
+    avatarUrl={player.player.avatar_url}
+    editing={editingCashOut}
+    error={cashOutError}
     invested={totalAmount}
     rebuys={rebuys}
     value={cashOutValue}
-    onValueChange={setCashOutValue}
+    onValueChange={value => { setCashOutValue(value); setCashOutError(null); }}
     onConfirm={handleCashOut}
     saving={processingAction === "cashout" || isProcessing}
   />;
@@ -221,18 +204,7 @@ export function PlayerGameCard({
                 </div>
                 <div className="bg-muted/30 p-3 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Stack Final</p>
-                  {editingCashOut ? (
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      value={cashOutValue}
-                      onChange={e => setCashOutValue(e.target.value)}
-                      className="h-8 text-sm w-full"
-                      autoFocus
-                    />
-                  ) : (
-                    <p className="text-lg font-bold">${player.final_result}</p>
-                  )}
+                  <p className="text-lg font-bold">${player.final_result}</p>
                 </div>
                 <div className={`p-3 rounded-lg ${netResult >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
                   <p className="text-xs text-muted-foreground mb-1">Resultado</p>
@@ -243,23 +215,9 @@ export function PlayerGameCard({
               </div>
 
               <div className="flex gap-2">
-                {editingCashOut ? (
-                  <>
-                    <Button variant="outline" size="sm" onClick={() => setEditingCashOut(false)}>Cancelar</Button>
-                    <Button size="sm" onClick={handleUpdateCashOut} disabled={isProcessing || processingAction === 'cashout-edit'}
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-                      {processingAction === 'cashout-edit' ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
-                      Salvar
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => {
-                    setCashOutValue(String(player.final_result || 0));
-                    setEditingCashOut(true);
-                  }}>
-                    <DollarSign className="h-4 w-4 mr-1" /> Editar valor
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => openCashOut(true)}>
+                  <DollarSign className="h-4 w-4 mr-1" /> Editar valor
+                </Button>
               </div>
             </div>
           </div>
@@ -369,11 +327,12 @@ export function PlayerGameCard({
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setShowCashOut(true)}
+                    disabled={isProcessing}
+                    onClick={() => openCashOut(false)}
                     className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border-green-500/20"
                   >
                     <LogOut className="w-4 h-4 mr-1 text-green-500" />
-                    Encerrar
+                    Registrar saída
                   </Button>
                 )}
               </div>
