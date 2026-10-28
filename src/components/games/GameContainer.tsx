@@ -235,7 +235,7 @@ export const GameContainer = ({
 
       {game.status === "ongoing" && <LiveProbabilityPanel gameId={game.id} gameStatus={game.status} />}
 
-      {game.status !== "created" && <GameMoneyFlowChart players={game.players} gameHistory={[]} />}
+      {game.status !== "created" && <GameMoneyFlowChart players={displayPlayers} gameHistory={[]} />}
 
       <Dialog open={showAddPlayerDialog} onOpenChange={setShowAddPlayerDialog}>
         <DialogContent>

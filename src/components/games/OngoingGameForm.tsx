@@ -15,6 +15,7 @@ export interface OngoingGameFormProps {
   onSaveRebuys: () => void;
   savingRebuys: boolean;
   setRebuys: (rebuys: Record<string, number>) => void;
+  onOptimisticRebuy?: (gamePlayerId: string, value: number | null) => void;
   onRemovePlayer?: (playerId: string) => void;
   onAddPlayer?: () => void;
 }
