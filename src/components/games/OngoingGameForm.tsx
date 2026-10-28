@@ -21,6 +21,7 @@ export interface OngoingGameFormProps {
 }
 export const OngoingGameForm = ({
   players,
+  onOptimisticRebuy,
   onRemovePlayer,
   onAddPlayer
 }: OngoingGameFormProps) => {
@@ -29,7 +30,9 @@ export const OngoingGameForm = ({
   const sortedPlayers = [...players].sort((a, b) => a.player.name.localeCompare(b.player.name));
   const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
   const handleRebuyChange = async (playerId: string, newRebuys: number) => {
-    setIsProcessing(true);
+    // Optimistic: update the shared local state immediately so the counter,
+    // Total in Play and money flow chart all update together on click
+    onOptimisticRebuy?.(playerId, newRebuys);
     try {
       const player = players.find(p => p.id === playerId);
       const previousRebuys = player?.total_rebuys ?? 0;
@@ -55,9 +58,9 @@ export const OngoingGameForm = ({
       }
     } catch (error) {
       console.error("Error updating rebuys:", error);
+      // Rollback: clear the override so the confirmed server value shows again
+      onOptimisticRebuy?.(playerId, null);
       toast.error("Erro ao atualizar rebuys");
-    } finally {
-      setIsProcessing(false);
     }
   };
 
