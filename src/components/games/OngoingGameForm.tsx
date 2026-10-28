@@ -8,6 +8,7 @@ import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import type { CashOutOverrides } from "@/hooks/cashOutState";
 export interface OngoingGameFormProps {
   players: any[];
   rebuys: Record<string, number>;
@@ -16,17 +17,20 @@ export interface OngoingGameFormProps {
   savingRebuys: boolean;
   setRebuys: (rebuys: Record<string, number>) => void;
   onOptimisticRebuy?: (gamePlayerId: string, value: number | null) => void;
+  onCashOutSave: (id: string, value: number, persist: () => Promise<void>) => Promise<void>;
+  cashOutOverrides: CashOutOverrides;
   onRemovePlayer?: (playerId: string) => void;
   onAddPlayer?: () => void;
 }
 export const OngoingGameForm = ({
   players,
   onOptimisticRebuy,
+  onCashOutSave,
+  cashOutOverrides,
   onRemovePlayer,
   onAddPlayer
 }: OngoingGameFormProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
   const sortedPlayers = [...players].sort((a, b) => a.player.name.localeCompare(b.player.name));
   const filteredPlayers = sortedPlayers.filter(player => player.player.name.toLowerCase().includes(searchTerm.toLowerCase()));
   const handleRebuyChange = async (playerId: string, newRebuys: number) => {
@@ -65,35 +69,34 @@ export const OngoingGameForm = ({
   };
 
   const handleCashOut = async (playerId: string, finalStack: number) => {
-    setIsProcessing(true);
-    try {
+    await onCashOutSave(playerId, finalStack, async () => {
       const player = players.find(p => p.id === playerId);
       if (!player) throw new Error("Player not found");
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("game_players")
         .update({ final_result: finalStack })
-        .eq("id", playerId);
+        .eq("id", playerId)
+        .select("id, final_result")
+        .single();
       if (error) throw error;
+      if (!data || data.final_result !== finalStack) throw new Error("Cashout not confirmed");
 
       // Record in game history
-      const { error: historyError } = await supabase
+      void supabase
         .from("game_history")
         .insert({
           game_id: player.game_id,
           game_player_id: playerId,
           event_type: "result_update" as const,
           amount: finalStack,
+        }).then(({ error: historyError }) => {
+          if (historyError) {
+            console.error("Error recording history:", historyError);
+            toast.error("Saída salva, mas houve erro ao registrar o histórico");
+          }
         });
-      if (historyError) console.error("Error recording history:", historyError);
-
-      toast.success("Jogador encerrado com sucesso!");
-    } catch (error) {
-      console.error("Error cashing out:", error);
-      toast.error("Erro ao encerrar jogador");
-    } finally {
-      setIsProcessing(false);
-    }
+    });
   };
   useEffect(() => {
     const gameId = players[0]?.game_id;
@@ -144,7 +147,7 @@ export const OngoingGameForm = ({
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onCashOut={handleCashOut} isProcessing={isProcessing} />
+            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onCashOut={handleCashOut} isProcessing={cashOutOverrides[gamePlayer.id]?.saving ?? false} />
           </motion.div>)}
       </motion.div>
       
