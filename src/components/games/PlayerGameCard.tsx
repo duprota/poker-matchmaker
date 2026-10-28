@@ -12,6 +12,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { CashOutDialog } from "./CashOutDialog";
 
 interface PlayerGameCardProps {
   player: GamePlayer;
@@ -173,53 +174,21 @@ export function PlayerGameCard({
     </ControlComponent>;
 
 
-  // Cash-out dialog
-  const CashOutDialog = () => <ControlComponent open={showCashOut} onOpenChange={(open) => {
-    setShowCashOut(open);
-    if (!open) setCashOutValue("");
-  }}>
-      <ContentComponent className="sm:max-w-[425px]">
-        <div className="p-6">
-          <h2 className="text-xl font-bold mb-2">Encerrar {player.player.name}</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Total investido: ${totalAmount} (buy-in + {rebuys} rebuys)
-          </p>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Stack final ($)</label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                value={cashOutValue}
-                onChange={e => setCashOutValue(e.target.value)}
-                placeholder="Valor do stack final"
-                className="h-12 text-lg"
-                autoFocus
-              />
-            </div>
-            {cashOutValue && !isNaN(parseFloat(cashOutValue)) && (
-              <div className={`p-3 rounded-lg ${parseFloat(cashOutValue) - totalAmount >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                <p className="text-sm text-muted-foreground">Resultado líquido</p>
-                <p className={`text-xl font-bold ${parseFloat(cashOutValue) - totalAmount >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {parseFloat(cashOutValue) - totalAmount >= 0 ? '+' : ''}${parseFloat(cashOutValue) - totalAmount}
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" onClick={() => setShowCashOut(false)}>Cancelar</Button>
-            <Button 
-              onClick={handleCashOut} 
-              disabled={!cashOutValue || isNaN(parseFloat(cashOutValue)) || processingAction === 'cashout'}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
-            >
-              {processingAction === 'cashout' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
-              Confirmar
-            </Button>
-          </div>
-        </div>
-      </ContentComponent>
-    </ControlComponent>;
+  const cashOutDialog = <CashOutDialog
+    open={showCashOut}
+    onOpenChange={open => {
+      setShowCashOut(open);
+      if (!open) setCashOutValue("");
+    }}
+    mobile={isMobile}
+    name={player.player.name}
+    invested={totalAmount}
+    rebuys={rebuys}
+    value={cashOutValue}
+    onValueChange={setCashOutValue}
+    onConfirm={handleCashOut}
+    saving={processingAction === "cashout" || isProcessing}
+  />;
 
   // If player is cashed out, show different card
   if (isCashedOut) {
@@ -297,7 +266,7 @@ export function PlayerGameCard({
         </Card>
       </motion.div>
       <ConfirmDialog />
-      {CashOutDialog()}
+      {cashOutDialog}
     </>;
   }
 
@@ -414,6 +383,6 @@ export function PlayerGameCard({
       </motion.div>
       
       <ConfirmDialog />
-      {CashOutDialog()}
+      {cashOutDialog}
     </>;
 }
