@@ -1,6 +1,6 @@
 # Roadmap
-- [ ] Unificar registro e correção de saída em janela estável, com Zerou, confirmação e erro preservado
-- [ ] Verificar digitação, salvamento e correção sem alterar o jogo real
+- [x] Unificar registro e correção de saída em janela estável, com Zerou, confirmação e erro preservado
+- [x] Verificar digitação, salvamento e correção em simulação desktop/mobile sem alterar o jogo real; teclado nativo ainda não verificado
 - [x] Estabilizar a janela de saída durante a digitação e com espaço reduzido; teclado nativo do aparelho não disponível no teste
 - [x] Verificar foco, posição do campo, rolagem interna e confirmação sem alterar jogo real
 - [x] Corrigir 9 final_result NULL → 0 (5 jogos, 2025-2026)
