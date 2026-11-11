@@ -57,15 +57,15 @@ export async function evaluateBadges(req: Request, replayStore?: any) {
       .from("players")
       .select("id, name, skill_score, rebuy_tendency, recovery_rate, archetype, rating_games")
       .in("id", participantIds);
-    const playerMap = new Map((players || []).map((p: any) => [p.id, p]));
+    const playerMap = new Map<string, any>((players || []).map((p: any) => [p.id, p]));
 
     // Get all players (for behavior/elite badges)
     const { data: allPlayers } = await supabase.from("players").select("id, name, skill_score, rebuy_tendency, recovery_rate, archetype, rating_games");
-    const allPlayerMap = new Map((allPlayers || []).map((p: any) => [p.id, p]));
+    const allPlayerMap = new Map<string, any>((allPlayers || []).map((p: any) => [p.id, p]));
 
     // Badge definitions lookup
     const { data: badgeDefs } = await supabase.from("badge_definitions").select("*");
-    const badgeMap = new Map((badgeDefs || []).map((b: any) => [b.code, b]));
+    const badgeMap = new Map<string, any>((badgeDefs || []).map((b: any) => [b.code, b]));
 
     // Helper to insert badge and track
     async function awardBadge(playerId: string, badgeCode: string, gameId: string | null, metadata: any = {}) {

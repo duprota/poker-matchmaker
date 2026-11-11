@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { gameCorrection } from '@/lib/gameCorrection';
 
 export interface ExpenseWithSplits {
   id: string;
@@ -26,6 +27,21 @@ interface CreateExpenseInput {
   game_id?: string | null;
   splits: { player_id: string; amount: number }[];
 }
+
+export const useEditExpense = (expenseId?: string) => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateExpenseInput) => {
+      if (!expenseId) throw new Error('Despesa não encontrada.');
+      return gameCorrection('edit-expense', { expense_id: expenseId, ...input });
+    },
+    onSuccess: async () => {
+      await client.invalidateQueries();
+      toast.success('Despesa corrigida e acertos atualizados.');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+};
 
 /**
  * Fetches all expenses with their splits and related data.

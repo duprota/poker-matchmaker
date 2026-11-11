@@ -1,15 +1,16 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Utensils, Gamepad2 } from "lucide-react";
+import { Trash2, Utensils, Gamepad2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import type { ExpenseWithSplits } from "@/hooks/useExpenses";
 
 interface ExpenseCardProps {
   expense: ExpenseWithSplits;
   onDelete: () => void;
+  onEdit: () => void;
 }
 
-export const ExpenseCard = ({ expense, onDelete }: ExpenseCardProps) => {
+export const ExpenseCard = ({ expense, onDelete, onEdit }: ExpenseCardProps) => {
   const paidByName = expense.paid_by_player?.name ?? "Unknown";
   const date = format(new Date(expense.created_at), "MMM dd, yyyy");
   const gameName = expense.game
@@ -31,10 +32,11 @@ export const ExpenseCard = ({ expense, onDelete }: ExpenseCardProps) => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center justify-end gap-1 max-w-[45%] shrink-0">
             <span className="font-bold text-base tabular-nums">
               R$ {Number(expense.total_amount).toFixed(2)}
             </span>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Editar despesa" aria-label={`Editar despesa ${expense.description}`} onClick={onEdit}><Pencil className="w-4 h-4" /></Button>
             <Button
               variant="ghost"
               size="icon"

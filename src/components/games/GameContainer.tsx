@@ -16,6 +16,7 @@ import { useOptimisticCashOut } from "@/hooks/useOptimisticCashOut";
 import { BuyInDialog } from './BuyInDialog';
 import { parseBuyIn } from './buyInCorrection';
 import { useQueryClient } from '@tanstack/react-query';
+import { GameCorrectionControl } from './GameCorrectionControl';
 
 interface GameContainerProps {
   game: Game;
@@ -202,6 +203,7 @@ export const GameContainer = ({
   if (game.status === "completed") {
     return (
       <div className="grid gap-8">
+        <GameCorrectionControl gameId={game.id} status={game.status} refresh={refreshGame} />
         <GameSummary players={displayPlayers} onEditBuyIn={setBuyInPlayer} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} gameId={game.id} />
         <LiveScoresChart gameId={game.id} />
         {buyInDialog}
@@ -212,6 +214,7 @@ export const GameContainer = ({
   // Permitir adicionar jogadores nos status "created" e "ongoing"
   const allowAddingPlayers = game.status === "created" || game.status === "ongoing";
   return <div className="grid gap-8">
+      <GameCorrectionControl gameId={game.id} status={game.status} refresh={refreshGame} />
       {allowAddingPlayers && <div className="flex justify-between items-center">
           
           

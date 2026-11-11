@@ -1270,6 +1270,10 @@ export type Database = {
         Args: { p_job_id: string; p_token: string }
         Returns: boolean
       }
+      commit_game_reconciliation: {
+        Args: { p_data: Json; p_job_id: string; p_token: string }
+        Returns: undefined
+      }
       edit_expense: {
         Args: {
           p_description: string

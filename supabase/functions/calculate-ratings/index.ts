@@ -191,7 +191,7 @@ export async function calculateForGame(supabase: any, gameId: string) {
 
   if (pErr) throw pErr;
 
-  const playerMap = new Map(players.map((p: any) => [p.id, p]));
+  const playerMap = new Map<string, any>(players.map((p: any) => [p.id, p]));
   const ratings: Rating[] = playerIds.map((id: string) => {
     const p = playerMap.get(id);
     return { mu: Number(p?.mu ?? 25), sigma: Number(p?.sigma ?? 8.333) };
@@ -363,7 +363,7 @@ async function determineTier(supabase: any, gameId: string, avgSkill: number): P
     .select("id, skill_score")
     .in("id", allPlayerIds);
 
-  const skillMap = new Map((allPlayers || []).map((p: any) => [p.id, Number(p.skill_score ?? 0)]));
+  const skillMap = new Map<string, any>((allPlayers || []).map((p: any) => [p.id, Number(p.skill_score ?? 0)]));
 
   // Compute avg skill per game
   const gameSkillAvgs: number[] = [];
@@ -413,7 +413,7 @@ export async function calculateAtpForGame(supabase: any, gameId: string) {
     .in("id", playerIds);
 
   if (pErr) throw pErr;
-  const skillMap = new Map(players.map((p: any) => [p.id, Number(p.skill_score ?? 0)]));
+  const skillMap = new Map<string, any>(players.map((p: any) => [p.id, Number(p.skill_score ?? 0)]));
 
   // 3. Calculate avg skill of this game
   const skills = playerIds.map((pid: string) => skillMap.get(pid) ?? 0);

@@ -271,7 +271,7 @@ if (import.meta.main) Deno.serve(async (req) => {
   } catch (err) {
     console.error("Error:", err);
     return new Response(
-      JSON.stringify({ error: err.message || "Internal error" }),
+      JSON.stringify({ error: err instanceof Error ? err.message : "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -310,7 +310,7 @@ export async function handleRecalibrate(
     .select("id, skill_score")
     .in("id", playerIds);
 
-  const skillMap = new Map(
+  const skillMap = new Map<string, number>(
     (players || []).map((p: any) => [p.id, Number(p.skill_score) || 800])
   );
 

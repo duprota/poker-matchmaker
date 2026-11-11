@@ -1,5 +1,5 @@
 import { Navigation } from "@/components/Navigation";
-import { useExpenses, useDeleteExpense } from "@/hooks/useExpenses";
+import { useExpenses, useDeleteExpense, type ExpenseWithSplits } from "@/hooks/useExpenses";
 import { ExpenseCard } from "@/components/expenses/ExpenseCard";
 import { CreateExpenseDialog } from "@/components/expenses/CreateExpenseDialog";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const Expenses = () => {
   const deleteExpense = useDeleteExpense();
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<ExpenseWithSplits | null>(null);
 
   const handleConfirmDelete = () => {
     if (deleteId) {
@@ -68,6 +69,7 @@ const Expenses = () => {
               >
                 <ExpenseCard
                   expense={expense}
+                  onEdit={() => { setEditing(expense); setCreateOpen(true); }}
                   onDelete={() => setDeleteId(expense.id)}
                 />
               </div>
@@ -76,7 +78,7 @@ const Expenses = () => {
         )}
       </div>
 
-      <CreateExpenseDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateExpenseDialog key={editing?.id ?? 'new'} expense={editing ?? undefined} open={createOpen} onOpenChange={value => { setCreateOpen(value); if (!value) setEditing(null); }} />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

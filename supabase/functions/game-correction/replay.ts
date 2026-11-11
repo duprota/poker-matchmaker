@@ -1,7 +1,7 @@
 import { ReplayStore } from './memory.ts';
-import { calculateForGame, calculateAtpForGame } from '../calculate-ratings/index.ts';
-import { evaluateBadges } from '../evaluate-badges/index.ts';
-import { handleRecalibrate } from '../calculate-live-scores/index.ts';
+import { calculateForGame, calculateAtpForGame } from './engines/ratings.ts';
+import { evaluateBadges } from './engines/badges.ts';
+import { handleRecalibrate } from './engines/live.ts';
 
 export async function rebuild(tables: Record<string, any[]>, progress: (n:number)=>Promise<void>) {
   const games=tables.games.filter(g=>g.status==='completed').sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));

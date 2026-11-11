@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useCreateExpense } from "@/hooks/useExpenses";
+import { useCreateExpense, useEditExpense, type ExpenseWithSplits } from "@/hooks/useExpenses";
 import { useGamePlayers } from "@/hooks/useGamePlayers";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -28,9 +28,10 @@ type SplitMode = "equal" | "percentage" | "parts" | "direct";
 interface CreateExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  expense?: ExpenseWithSplits;
 }
 
-export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogProps) => {
+export const CreateExpenseDialog = ({ open, onOpenChange, expense }: CreateExpenseDialogProps) => {
   const [description, setDescription] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [paidByPlayerId, setPaidByPlayerId] = useState("");
@@ -41,6 +42,8 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
   const [totalParts, setTotalParts] = useState("");
 
   const createExpense = useCreateExpense();
+  const editExpense = useEditExpense(expense?.id);
+  const mutation = expense ? editExpense : createExpense;
 
   const { data: allPlayers = [] } = useQuery({
     queryKey: ["all-players"],
@@ -83,16 +86,15 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
   }, [gameId, gamePlayers, allPlayers]);
 
   useEffect(() => {
-    setSelectedPlayers([]);
-    setPaidByPlayerId("");
-    setCustomAmounts({});
-  }, [gameId]);
-
-  // Reset custom inputs when split mode changes
-  useEffect(() => {
-    setCustomAmounts({});
-    setTotalParts("");
-  }, [splitMode]);
+    if (!open || !expense) return;
+    setDescription(expense.description);
+    setTotalAmount(String(expense.total_amount));
+    setPaidByPlayerId(expense.paid_by_player_id);
+    setGameId(expense.game_id);
+    setSelectedPlayers(expense.expense_splits.map(s => s.player_id));
+    setSplitMode('direct');
+    setCustomAmounts(Object.fromEntries(expense.expense_splits.map(s => [s.player_id, String(s.amount)])));
+  }, [open, expense]);
 
   const togglePlayer = (playerId: string) => {
     setSelectedPlayers((prev) =>
@@ -115,7 +117,9 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
 
   const splits = useMemo(() => {
     if (splitMode === "equal") {
-      return selectedPlayers.map((pid) => ({ player_id: pid, amount: equalShare }));
+      const cents = Math.round(amount * 100);
+      const base = Math.floor(cents / selectedPlayers.length);
+      return selectedPlayers.map((pid, i) => ({ player_id: pid, amount: (base + (i < cents % selectedPlayers.length ? 1 : 0)) / 100 }));
     }
     if (splitMode === "percentage") {
       return selectedPlayers.map((pid) => {
@@ -188,7 +192,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
 
   const handleSubmit = () => {
     if (!isValid) return;
-    createExpense.mutate(
+    mutation.mutate(
       {
         description,
         total_amount: amount,
@@ -295,11 +299,11 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={value => { if (!mutation.isPending) onOpenChange(value); }}>
       <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
           <DrawerTitle className="bg-gradient-to-r from-primary via-secondary-foreground to-accent-foreground bg-clip-text text-transparent">
-            New Expense
+            {expense ? 'Editar despesa' : 'New Expense'}
           </DrawerTitle>
         </DrawerHeader>
 
@@ -332,7 +336,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
             <Label>Link to game (optional)</Label>
             <Select
               value={gameId ?? "none"}
-              onValueChange={(v) => setGameId(v === "none" ? null : v)}
+              onValueChange={(v) => { setGameId(v === "none" ? null : v); setSelectedPlayers([]); setPaidByPlayerId(''); setCustomAmounts({}); }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="No game" />
@@ -408,7 +412,7 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
                 <ToggleGroup
                   type="single"
                   value={splitMode}
-                  onValueChange={(v) => v && setSplitMode(v as SplitMode)}
+                  onValueChange={(v) => { if (v) { setSplitMode(v as SplitMode); setCustomAmounts({}); setTotalParts(''); } }}
                   className="justify-start"
                 >
                   <ToggleGroupItem value="equal" aria-label="Igual" className="text-xs gap-1 px-2.5">
@@ -436,12 +440,13 @@ export const CreateExpenseDialog = ({ open, onOpenChange }: CreateExpenseDialogP
         </div>
 
         <DrawerFooter>
+          {mutation.error && <p role="alert" className="text-sm text-destructive">{mutation.error.message}</p>}
           <Button
             className="w-full"
-            disabled={!isValid || createExpense.isPending}
+            disabled={!isValid || mutation.isPending}
             onClick={handleSubmit}
           >
-            {createExpense.isPending ? "Saving..." : "Create Expense"}
+            {mutation.isPending ? 'Saving...' : expense ? 'Salvar alterações' : 'Create Expense'}
           </Button>
         </DrawerFooter>
       </DrawerContent>

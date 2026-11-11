@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { gameCorrection } from "@/lib/gameCorrection";
 
 interface FinalizeGameFormProps {
   isOpen: boolean;
@@ -48,31 +49,12 @@ export const FinalizeGameForm = ({
       console.log("Starting game finalization...");
       setUpdating(true);
 
-      // Update each player's final result
-      for (const player of players) {
-        console.log(`Updating final result for player ${player.id} to ${results[player.id]}`);
-        const { error: updateError } = await supabase.from("game_players").update({
-          final_result: results[player.id],
-          payment_status: results[player.id] >= 0 ? 'pending' : 'pending'
-        }).eq("id", player.id);
-        if (updateError) throw updateError;
-
-        // Add to game history
-        const { error: historyError } = await supabase.from("game_history").insert({
-          game_id: player.game_id,
-          game_player_id: player.id,
-          event_type: "result_update",
-          amount: results[player.id]
-        });
-        if (historyError) throw historyError;
-      }
-
-      // Update game status to completed
-      const gameId = players[0].game_id;
-      const { error: gameError } = await supabase.from("games").update({
-        status: "completed"
-      }).eq("id", gameId);
-      if (gameError) throw gameError;
+      const gameId = players[0]?.game_id;
+      if (!gameId) throw new Error("Game not found");
+      await gameCorrection('finalize', {
+        game_id: gameId,
+        results: players.map(player => ({ id: player.id, final_result: results[player.id] ?? 0 })),
+      });
 
       // Clean up live score snapshots: keep only the monotonic (non-decreasing)
       // rebuy totals so the evolution chart shows a clean sequence
@@ -100,46 +82,10 @@ export const FinalizeGameForm = ({
         console.error("Live scores cleanup error (non-blocking):", cleanupError);
       }
 
-      // Calculate skill ratings
-      console.log("Calculating skill ratings for game:", gameId);
-      const { error: ratingError } = await supabase.functions.invoke("calculate-ratings", {
-        body: { game_id: gameId, action: "calculate" },
-      });
-      if (ratingError) {
-        console.error("Rating calculation error (non-blocking):", ratingError);
-      }
-
-      // Calculate ATP points
-      console.log("Calculating ATP points for game:", gameId);
-      const { error: atpError } = await supabase.functions.invoke("calculate-ratings", {
-        body: { game_id: gameId, action: "calculate-atp" },
-      });
-      if (atpError) {
-        console.error("ATP calculation error (non-blocking):", atpError);
-      }
-
-      // Recalibrate live probability params
-      console.log("Recalibrating live params for game:", gameId);
-      const { error: recalError } = await supabase.functions.invoke("calculate-live-scores", {
-        body: { game_id: gameId, action: "recalibrate" },
-      });
-      if (recalError) {
-        console.error("Recalibration error (non-blocking):", recalError);
-      }
-
-      // Evaluate badges
-      console.log("Evaluating badges for game:", gameId);
-      const { error: badgeError } = await supabase.functions.invoke("evaluate-badges", {
-        body: { game_id: gameId },
-      });
-      if (badgeError) {
-        console.error("Badge evaluation error (non-blocking):", badgeError);
-      }
-      
       console.log("Game finalization completed successfully");
       toast({
         title: "Success",
-        description: "Game finalized successfully"
+        description: "Jogo finalizado. Rankings e estatísticas em atualização."
       });
       onFinalize(results);
       onClose();
