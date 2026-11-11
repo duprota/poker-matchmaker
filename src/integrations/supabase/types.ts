@@ -1215,7 +1215,7 @@ export type Database = {
       promote_to_manager: { Args: { user_id: string }; Returns: undefined }
     }
     Enums: {
-      game_event_type: "rebuy" | "result_update"
+      game_event_type: "rebuy" | "result_update" | "buyin_update"
       group_member_role: "admin" | "member"
       player_vote_type: "like" | "dislike"
       poker_hand_type:
@@ -1351,7 +1351,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      game_event_type: ["rebuy", "result_update"],
+      game_event_type: ["rebuy", "result_update", "buyin_update"],
       group_member_role: ["admin", "member"],
       player_vote_type: ["like", "dislike"],
       poker_hand_type: [

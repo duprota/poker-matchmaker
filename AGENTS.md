@@ -3,3 +3,4 @@
 - Confirm cashouts from the returned database row, refresh authoritative game data explicitly, and reject failed writes so callers cannot report false success.
 - Keep live probability calculations server-side; local exit overlays only change membership and displayed exit balances, never the scoring algorithm.
 - Use one standalone cashout dialog for initial exits and corrections, keep it mounted until confirmed, and reserve result/error space; mobile visual-viewport geometry is its sole keyboard-layout owner.
+- Confirm buy-in corrections from the returned row and share confirmed overrides at game level; the database trigger audits changes and appends completed-game ledger deltas atomically without rewriting settlements or final chips.

@@ -17,6 +17,7 @@ interface PlayerGameCardProps {
   player: GamePlayer;
   onRebuyChange: (playerId: string, newRebuys: number) => Promise<void>;
   onCashOut?: (playerId: string, finalStack: number) => Promise<void>;
+  onEditBuyIn?: (player: GamePlayer) => void;
   onRemovePlayer?: (playerId: string) => void;
   isProcessing: boolean;
 }
@@ -25,6 +26,7 @@ export function PlayerGameCard({
   player,
   onRebuyChange,
   onCashOut,
+  onEditBuyIn,
   onRemovePlayer,
   isProcessing
 }: PlayerGameCardProps) {
@@ -214,7 +216,8 @@ export function PlayerGameCard({
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                {onEditBuyIn && <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => onEditBuyIn(player)}>Corrigir buy-in</Button>}
                 <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => openCashOut(true)}>
                   <DollarSign className="h-4 w-4 mr-1" /> Editar valor
                 </Button>
@@ -311,6 +314,7 @@ export function PlayerGameCard({
               </div>
               
               <div className="flex flex-wrap gap-2">
+                {onEditBuyIn && <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => onEditBuyIn(player)}>Corrigir buy-in</Button>}
                 <Button
                   onClick={handleQuickRebuy}
                   disabled={isProcessing}

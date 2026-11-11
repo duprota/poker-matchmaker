@@ -13,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useOptimisticCashOut } from "@/hooks/useOptimisticCashOut";
+import { BuyInDialog } from './BuyInDialog';
+import { parseBuyIn } from './buyInCorrection';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface GameContainerProps {
   game: Game;
@@ -32,6 +35,24 @@ export const GameContainer = ({
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const cashOut = useOptimisticCashOut(game.id, game.players || []);
   const [liveRefreshVersion, setLiveRefreshVersion] = useState(0);
+  const [buyInPlayer, setBuyInPlayer] = useState<GamePlayer | null>(null);
+  const [buyInOverrides, setBuyInOverrides] = useState<Record<string, number>>({});
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    setBuyInOverrides(previous => Object.fromEntries(Object.entries(previous).filter(([id, amount]) => game.players.find(player => player.id === id)?.initial_buyin !== amount)));
+  }, [game.players]);
+  const saveBuyIn = async (id: string, amount: number) => {
+    if (parseBuyIn(String(amount)) === null) throw new Error('Invalid buy-in');
+    const { data, error } = await supabase.from('game_players').update({ initial_buyin: amount })
+      .eq('id', id).eq('game_id', game.id).select('id, initial_buyin').single();
+    if (error) throw error;
+    if (!data || data.initial_buyin !== amount) throw new Error('Buy-in not confirmed');
+    setBuyInOverrides(previous => ({ ...previous, [id]: amount }));
+    if (game.status === 'ongoing') setLiveRefreshVersion(previous => previous + 1);
+    await refreshGame();
+    void queryClient.invalidateQueries();
+  };
+  const buyInDialog = <BuyInDialog player={buyInPlayer} onClose={() => setBuyInPlayer(null)} onSave={saveBuyIn} />;
 
   const handleCashOut = async (id: string, value: number, persist: () => Promise<void>) => {
     await cashOut.save(id, value, persist);
@@ -76,7 +97,7 @@ export const GameContainer = ({
 
   // Players with optimistic overrides applied — used by ALL displays
   // (cards, Total in Play, money flow chart) so everything updates together
-  const displayPlayers = cashOut.players.map(p =>
+  const displayPlayers = cashOut.players.map(player => buyInOverrides[player.id] === undefined ? player : { ...player, initial_buyin: buyInOverrides[player.id] }).map(p =>
     rebuyOverrides[p.id] !== undefined ? { ...p, total_rebuys: rebuyOverrides[p.id] } : p
   );
 
@@ -181,8 +202,9 @@ export const GameContainer = ({
   if (game.status === "completed") {
     return (
       <div className="grid gap-8">
-        <GameSummary players={game.players} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} gameId={game.id} />
+        <GameSummary players={displayPlayers} onEditBuyIn={setBuyInPlayer} gameHistory={[]} date={game.date} name={game.name} place={game.place} startedAt={game.started_at} gameId={game.id} />
         <LiveScoresChart gameId={game.id} />
+        {buyInDialog}
       </div>
     );
   }
@@ -202,7 +224,7 @@ export const GameContainer = ({
         console.log("Rebuys saved");
       }} savingRebuys={false} setRebuys={() => {
         console.log("Rebuys updated");
-      }} onOptimisticRebuy={setRebuyOverride} onCashOutSave={handleCashOut} cashOutOverrides={cashOut.overrides} onRemovePlayer={handleRemovePlayer} onAddPlayer={() => {
+      }} onEditBuyIn={setBuyInPlayer} onOptimisticRebuy={setRebuyOverride} onCashOutSave={handleCashOut} cashOutOverrides={cashOut.overrides} onRemovePlayer={handleRemovePlayer} onAddPlayer={() => {
         setShowAddPlayerDialog(true);
         fetchPlayers();
       }} />}
@@ -222,6 +244,7 @@ export const GameContainer = ({
       {game.status === "ongoing" && <LiveProbabilityPanel gameId={game.id} gameStatus={game.status} players={displayPlayers} cashOutOverrides={cashOut.overrides} refreshVersion={liveRefreshVersion} />}
 
       {game.status !== "created" && <GameMoneyFlowChart players={displayPlayers} gameHistory={[]} />}
+      {buyInDialog}
 
       <Dialog open={showAddPlayerDialog} onOpenChange={setShowAddPlayerDialog}>
         <DialogContent>

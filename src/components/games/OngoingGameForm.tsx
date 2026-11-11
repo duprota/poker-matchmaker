@@ -21,6 +21,7 @@ export interface OngoingGameFormProps {
   cashOutOverrides: CashOutOverrides;
   onRemovePlayer?: (playerId: string) => void;
   onAddPlayer?: () => void;
+  onEditBuyIn?: (player: import('@/types/game').GamePlayer) => void;
 }
 export const OngoingGameForm = ({
   players,
@@ -28,7 +29,8 @@ export const OngoingGameForm = ({
   onCashOutSave,
   cashOutOverrides,
   onRemovePlayer,
-  onAddPlayer
+  onAddPlayer,
+  onEditBuyIn
 }: OngoingGameFormProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const sortedPlayers = [...players].sort((a, b) => a.player.name.localeCompare(b.player.name));
@@ -147,7 +149,7 @@ export const OngoingGameForm = ({
       
       <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" variants={container} initial="hidden" animate="show">
         {filteredPlayers.map(gamePlayer => <motion.div key={gamePlayer.id} variants={item}>
-            <PlayerGameCard player={gamePlayer} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onCashOut={handleCashOut} isProcessing={cashOutOverrides[gamePlayer.id]?.saving ?? false} />
+            <PlayerGameCard player={gamePlayer} onEditBuyIn={onEditBuyIn} onRemovePlayer={onRemovePlayer} onRebuyChange={handleRebuyChange} onCashOut={handleCashOut} isProcessing={cashOutOverrides[gamePlayer.id]?.saving ?? false} />
           </motion.div>)}
       </motion.div>
       

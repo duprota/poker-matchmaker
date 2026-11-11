@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Permitir correção de buy-in após saída e após encerramento, com confirmação e totais consistentes
+- [x] Verificar correções, falhas e efeitos financeiros em partida isolada removida após teste; partidas reais preservadas
 - [x] Unificar registro e correção de saída em janela estável, com Zerou, confirmação e erro preservado
 - [x] Verificar digitação, salvamento e correção em simulação desktop/mobile sem alterar o jogo real; teclado nativo ainda não verificado
 - [x] Estabilizar a janela de saída durante a digitação e com espaço reduzido; teclado nativo do aparelho não disponível no teste

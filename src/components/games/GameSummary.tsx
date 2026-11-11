@@ -9,6 +9,8 @@ import { ShareButton } from "./summary/ShareButton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
 
 interface GameSummaryProps {
   players: GamePlayer[];
@@ -18,6 +20,7 @@ interface GameSummaryProps {
   place?: string;
   startedAt?: string;
   gameId?: string;
+  onEditBuyIn?: (player: GamePlayer) => void;
 }
 
 export const GameSummary = ({ 
@@ -28,15 +31,17 @@ export const GameSummary = ({
   place,
   startedAt,
   gameId,
+  onEditBuyIn,
 }: GameSummaryProps) => {
   const { data: gameBadges } = useQuery({
     queryKey: ["game-badges", gameId],
     enabled: !!gameId,
     queryFn: async () => {
+      if (!gameId) return [];
       const { data: badges } = await supabase
         .from("player_badges" as any)
         .select("*")
-        .eq("game_id", gameId!);
+        .eq("game_id", gameId);
 
       if (!badges || badges.length === 0) return [];
 
@@ -108,6 +113,17 @@ export const GameSummary = ({
       <div className="animate-fade-in" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
         <GameStats players={players} />
       </div>
+      {onEditBuyIn && <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Buy-ins</h2>
+        <div className="divide-y border-y">
+          {players.map(player => <div key={player.id} className="flex items-center justify-between gap-3 py-3">
+            <span className="min-w-0 break-words font-medium">{player.player.name}</span>
+            <Button variant="outline" size="sm" className="shrink-0 gap-2 tabular-nums" aria-label={`Corrigir buy-in de ${player.player.name}`} onClick={() => onEditBuyIn(player)}>
+              ${player.initial_buyin.toLocaleString('pt-BR')}<Pencil className="h-3 w-3" />
+            </Button>
+          </div>)}
+        </div>
+      </section>}
 
       {gameBadges && gameBadges.length > 0 && (
         <div className="animate-fade-in" style={{ animationDelay: '700ms', animationFillMode: 'both' }}>

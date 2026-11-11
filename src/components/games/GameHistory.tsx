@@ -26,7 +26,7 @@ import {
 
 interface GameHistoryEntry {
   id: string;
-  event_type: 'rebuy' | 'result_update';
+  event_type: 'rebuy' | 'result_update' | 'buyin_update';
   amount: number;
   created_at: string;
   game_player_id: string;
@@ -238,7 +238,7 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
                 {entry.game_players?.player?.name || 'Unknown Player'}
               </TableCell>
               <TableCell>
-                {entry.event_type === 'rebuy' ? 'Rebuy' : 'Result Update'}
+                {entry.event_type === 'rebuy' ? 'Rebuy' : entry.event_type === 'buyin_update' ? 'Correção de buy-in' : 'Result Update'}
               </TableCell>
               <TableCell className="text-right">
                 {editingId === entry.id ? (
@@ -254,6 +254,7 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
               </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-2">
+                  {entry.event_type !== 'buyin_update' && <>
                   {editingId === entry.id ? (
                     <>
                       <Button
@@ -306,6 +307,7 @@ export const GameHistory = ({ gameId, onHistoryUpdate }: GameHistoryProps) => {
                       </AlertDialog>
                     </>
                   )}
+                  </>}
                 </div>
               </TableCell>
             </TableRow>
