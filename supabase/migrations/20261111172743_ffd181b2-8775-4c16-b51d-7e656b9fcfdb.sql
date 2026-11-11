@@ -1,0 +1,1 @@
+DO $$ DECLARE definition text; BEGIN SELECT pg_get_functiondef('public.change_game_completion(uuid,text,jsonb)'::regprocedure) INTO definition; definition:=replace(definition,'IF g.manager_id IS DISTINCT FROM auth.uid() THEN','IF g.manager_id IS NOT NULL AND g.manager_id IS DISTINCT FROM auth.uid() THEN'); EXECUTE definition; END $$;
