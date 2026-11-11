@@ -93,7 +93,7 @@ function getTierPointsForPosition(tier: string, position: number): number {
 }
 
 // ── Handler ────────────────────────────────────────────────────────────
-Deno.serve(async (req) => {
+if (import.meta.main) Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function calculateForGame(supabase: any, gameId: string) {
+export async function calculateForGame(supabase: any, gameId: string) {
   const { data: gamePlayers, error: gpErr } = await supabase
     .from("game_players")
     .select("player_id, final_result")
@@ -389,7 +389,7 @@ async function determineTier(supabase: any, gameId: string, avgSkill: number): P
   return "1000";
 }
 
-async function calculateAtpForGame(supabase: any, gameId: string) {
+export async function calculateAtpForGame(supabase: any, gameId: string) {
   // 1. Get game players with results
   const { data: gamePlayers, error: gpErr } = await supabase
     .from("game_players")

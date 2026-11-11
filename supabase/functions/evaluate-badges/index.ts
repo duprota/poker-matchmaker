@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+export async function evaluateBadges(req: Request, replayStore?: any) {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = replayStore ?? createClient(supabaseUrl, supabaseKey);
 
     const { game_id } = await req.json();
     if (!game_id) {
@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
       // First deactivate all existing
       await supabase
         .from("player_badges")
-        .update({ is_active: false, lost_at: new Date().toISOString() })
+        .update({ is_active: false, lost_at: supabase.now ?? new Date().toISOString() })
         .eq("badge_code", "ave_cinzas")
         .eq("is_active", true)
         .eq("player_id", pid);
@@ -441,7 +441,7 @@ Deno.serve(async (req) => {
       // Deactivate previous leader
       await supabase
         .from("player_badges")
-        .update({ is_active: false, lost_at: new Date().toISOString() })
+        .update({ is_active: false, lost_at: supabase.now ?? new Date().toISOString() })
         .eq("badge_code", "cabeca_chave")
         .eq("is_active", true)
         .neq("player_id", leaderId);
@@ -461,7 +461,7 @@ Deno.serve(async (req) => {
         if (!top3Ids.includes(pb.player_id)) {
           await supabase
             .from("player_badges")
-            .update({ is_active: false, lost_at: new Date().toISOString() })
+            .update({ is_active: false, lost_at: supabase.now ?? new Date().toISOString() })
             .eq("id", pb.id);
         }
       }
@@ -474,7 +474,7 @@ Deno.serve(async (req) => {
     // CRAQUE DA RODADA
     await supabase
       .from("player_badges")
-      .update({ is_active: false, lost_at: new Date().toISOString() })
+      .update({ is_active: false, lost_at: supabase.now ?? new Date().toISOString() })
       .eq("badge_code", "craque_rodada")
       .eq("is_active", true);
 
@@ -494,7 +494,7 @@ Deno.serve(async (req) => {
     // EFICIÊNCIA MÁXIMA
     await supabase
       .from("player_badges")
-      .update({ is_active: false, lost_at: new Date().toISOString() })
+      .update({ is_active: false, lost_at: supabase.now ?? new Date().toISOString() })
       .eq("badge_code", "eficiencia")
       .eq("is_active", true);
 
@@ -554,7 +554,9 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+if (import.meta.main) Deno.serve(req => evaluateBadges(req));
 
 async function activateDynamic(
   supabase: any,
@@ -599,7 +601,7 @@ async function activateDynamic(
 async function deactivateDynamic(supabase: any, playerId: string, badgeCode: string) {
   await supabase
     .from("player_badges")
-    .update({ is_active: false, lost_at: new Date().toISOString() })
+    .update({ is_active: false, lost_at: supabase.now ?? new Date().toISOString() })
     .eq("player_id", playerId)
     .eq("badge_code", badgeCode)
     .eq("is_active", true);

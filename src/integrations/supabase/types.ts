@@ -1281,6 +1281,10 @@ export type Database = {
         }
         Returns: string
       }
+      perform_game_correction: {
+        Args: { p_action: string; p_payload: Json; p_user_id: string }
+        Returns: Json
+      }
       promote_to_manager: { Args: { user_id: string }; Returns: undefined }
       refresh_pending_settlements: { Args: never; Returns: undefined }
       retry_reconciliation: { Args: { p_job_id: string }; Returns: undefined }

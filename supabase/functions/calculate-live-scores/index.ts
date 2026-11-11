@@ -35,7 +35,7 @@ function getPhase(totalRebuys: number): string {
   return "late";
 }
 
-Deno.serve(async (req) => {
+if (import.meta.main) Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function handleRecalibrate(
+export async function handleRecalibrate(
   supabase: any,
   game_id: string,
   corsHeaders: Record<string, string>
