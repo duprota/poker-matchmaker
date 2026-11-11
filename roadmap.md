@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Reabrir jogos pela interface com reconciliação de rankings e finanças
+- [ ] Editar despesas existentes preservando pagamentos e corrigindo saldos
 - [x] Permitir correção de buy-in após saída e após encerramento, com confirmação e totais consistentes
 - [x] Verificar correções, falhas e efeitos financeiros em partida isolada removida após teste; partidas reais preservadas
 - [x] Unificar registro e correção de saída em janela estável, com Zerou, confirmação e erro preservado
