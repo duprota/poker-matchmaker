@@ -467,6 +467,56 @@ export type Database = {
           },
         ]
       }
+      game_reconciliation_jobs: {
+        Row: {
+          created_at: string
+          cursor: number
+          error: string | null
+          game_id: string
+          id: string
+          operation: string
+          requested_by: string
+          stage: string
+          status: string
+          updated_at: string
+          worker_token: string | null
+        }
+        Insert: {
+          created_at?: string
+          cursor?: number
+          error?: string | null
+          game_id: string
+          id?: string
+          operation: string
+          requested_by: string
+          stage?: string
+          status?: string
+          updated_at?: string
+          worker_token?: string | null
+        }
+        Update: {
+          created_at?: string
+          cursor?: number
+          error?: string | null
+          game_id?: string
+          id?: string
+          operation?: string
+          requested_by?: string
+          stage?: string
+          status?: string
+          updated_at?: string
+          worker_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_reconciliation_jobs_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_transactions: {
         Row: {
           amount: number
@@ -1212,7 +1262,28 @@ export type Database = {
       }
     }
     Functions: {
+      change_game_completion: {
+        Args: { p_game_id: string; p_operation: string; p_results?: Json }
+        Returns: string
+      }
+      claim_reconciliation: {
+        Args: { p_job_id: string; p_token: string }
+        Returns: boolean
+      }
+      edit_expense: {
+        Args: {
+          p_description: string
+          p_expense_id: string
+          p_game_id: string
+          p_payer: string
+          p_splits: Json
+          p_total: number
+        }
+        Returns: string
+      }
       promote_to_manager: { Args: { user_id: string }; Returns: undefined }
+      refresh_pending_settlements: { Args: never; Returns: undefined }
+      retry_reconciliation: { Args: { p_job_id: string }; Returns: undefined }
     }
     Enums: {
       game_event_type: "rebuy" | "result_update" | "buyin_update"
